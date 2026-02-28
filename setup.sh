@@ -13,7 +13,7 @@
 # Credentials:
 #   Elastic:  elastic / changeme    → http://localhost:5601
 #   Splunk:   admin / BlueTeamLab1! → http://localhost:8000
-#   Cribl:    admin / CriblLab1!    → http://localhost:9000
+#   Cribl:    admin / admin    → http://localhost:9000
 #
 # Prerequisites: Docker Desktop, Git
 # Note: On Windows, run this in Git Bash or WSL2
@@ -50,7 +50,6 @@ cd "$SCRIPT_DIR"
 SIEM_MODE=""
 INCLUDE_SIMULATOR=true
 INCLUDE_CRIBL=false
-INCLUDE_MYTHIC=false
 SKIP_CHECKS=false
 
 for arg in "$@"; do
@@ -59,7 +58,7 @@ for arg in "$@"; do
         --splunk)   SIEM_MODE="splunk" ;;
         --both)     SIEM_MODE="both" ;;
         --cribl)    SIEM_MODE="elastic"; INCLUDE_CRIBL=true ;;
-        --full)     SIEM_MODE="both"; INCLUDE_CRIBL=true; INCLUDE_MYTHIC=true ;;
+        --full)     SIEM_MODE="both"; INCLUDE_CRIBL=true ;;
         --no-sim)   INCLUDE_SIMULATOR=false ;;
         --skip-checks) SKIP_CHECKS=true ;;
         --help|-h)
@@ -69,7 +68,7 @@ for arg in "$@"; do
             echo "  --splunk       Splunk SIEM (free 500MB/day)"
             echo "  --both         Both SIEMs side-by-side"
             echo "  --cribl        Elastic + Cribl Stream log pipeline"
-            echo "  --full         All SIEMs + Cribl Stream + Mythic preparation"
+            echo "  --full         All SIEMs + Cribl Stream"
             echo "  --no-sim       Skip the log simulator"
             echo "  --skip-checks  Skip prerequisite checks"
             exit 0
@@ -290,7 +289,7 @@ if [ "$INCLUDE_CRIBL" = true ]; then
     CRIBL_READY=false
     for i in $(seq 1 30); do
         if curl -sf http://localhost:9000/api/v1/health 2>/dev/null | grep -q '"healthy"'; then
-            log_ok "Cribl Stream is ready → http://localhost:9000 (admin / CriblLab1!)"
+            log_ok "Cribl Stream is ready → http://localhost:9000 (admin / admin)"
             CRIBL_READY=true
             break
         fi
@@ -371,7 +370,7 @@ fi
 log_step "Configuring MCP for Claude Code"
 
 if [ ! -f ".mcp.json" ]; then
-    cp mcp-config.json .mcp.json
+    cp mcp-config.example.json .mcp.json
     log_ok "MCP config copied to .mcp.json"
     log_warn "Edit .mcp.json and replace <YOUR_GITHUB_PAT> with your Personal Access Token"
     log_warn "Create a PAT at: https://github.com/settings/tokens (scopes: repo, issues, pull_requests)"
@@ -421,7 +420,7 @@ fi
 
 if [ "$INCLUDE_CRIBL" = true ]; then
     echo -e "  ${CYAN}Cribl Stream${NC}:    http://localhost:9000"
-    echo -e "  ${CYAN}               ${NC}   Login: ${YELLOW}admin${NC} / ${YELLOW}CriblLab1!${NC}"
+    echo -e "  ${CYAN}               ${NC}   Login: ${YELLOW}admin${NC} / ${YELLOW}admin${NC}"
 fi
 
 if [ "$INCLUDE_SIMULATOR" = true ]; then

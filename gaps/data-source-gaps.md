@@ -18,7 +18,6 @@
 | GAP-007 | Network flow / proxy logs | T1090.004 domain fronting, T1071 | High | Add Zeek/Suricata container to lab |
 | GAP-008 | ETW process telemetry | T1056.001 keylogging, T1620 .NET in-mem | High | Requires Elastic Endpoint agent (not Sysmon) |
 | GAP-009 | Sysmon EID 25 (Process tampering) | T1055 injection evasion detection | Medium | Add EID 25 to simulator |
-| GAP-010 | Docker not installed | ALL — SIEM cannot start | Critical | Install Docker Desktop |
 
 ---
 
@@ -195,30 +194,10 @@ Elastic Endpoint agent (instead of Sysmon) provides ETW-based telemetry includin
 
 ---
 
-### GAP-010: Docker Not Installed (Critical — Lab Blocker)
-
-**Severity**: Critical
-**Impact**: ALL detections blocked — cannot start SIEM, log simulator, or Elastic MCP
-
-**Resolution**:
-1. Install Docker Desktop for Windows: https://www.docker.com/products/docker-desktop/
-2. Enable WSL 2 backend (required for Windows)
-3. Run: `make setup` (choose Elastic stack)
-4. Verify: `curl http://localhost:9200/_cluster/health`
-
-**After Docker is installed**, the following will become available:
-- Elasticsearch at `http://localhost:9200`
-- Kibana at `http://localhost:5601`
-- Log simulator generating ~5 EPS of baseline + attack events
-- Elastic MCP tools for programmatic SIEM access
-
----
-
 ## Resolution Priority
 
 | Priority | Gap | Effort | Impact |
 |---|---|---|---|
-| P0 (Blocker) | GAP-010: Install Docker | Low (download + install) | Unblocks everything |
 | P1 (High) | GAP-004: DNS events (EID 22) | Low (simulator change) | Enables domain fronting detection |
 | P1 (High) | GAP-001: File events (EID 11) | Low (simulator change) | Enables startup folder detection |
 | P1 (High) | GAP-002: EID 7045 service events | Low (simulator change) | Enables service persistence detection |

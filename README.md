@@ -82,7 +82,7 @@ Or use `make setup` for the same interactive experience.
 | Splunk Web | http://localhost:8000 | admin | BlueTeamLab1! |
 | Splunk REST API | https://localhost:8089 | admin | BlueTeamLab1! |
 | Splunk HEC | http://localhost:8288 | — | blue-team-lab-hec-token |
-| Cribl Stream | http://localhost:9000 | admin | CriblLab1! |
+| Cribl Stream | http://localhost:9000 | admin | admin |
 
 ## Data Sources
 
@@ -214,8 +214,8 @@ curl -u elastic:changeme http://localhost:9200/sim-attack/_count
 curl -sk https://localhost:8089/services/server/health -u admin:BlueTeamLab1!
 
 # Sigma transpilation
-sigma convert -t elasticsearch -p ecs_windows detections/<tactic>/<rule>.yml
-sigma convert -t splunk detections/<tactic>/<rule>.yml
+sigma convert -t lucene -p ecs_windows detections/<tactic>/<rule>.yml
+sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 ```
 
 ## License

@@ -55,7 +55,7 @@ level: <informational|low|medium|high|critical>
 # Data Comp:   <component — e.g., "Process: Process Creation">
 
 # ─── Deployment Notes ────────────────────────────────────────────────────────
-# Transpile to KQL:    sigma convert -t elasticsearch -p ecs_windows <this_file>
-# Transpile to SPL:    sigma convert -t splunk <this_file>
+# Transpile to Lucene: sigma convert -t lucene -p ecs_windows <this_file>
+# Transpile to SPL:    sigma convert -t splunk --without-pipeline <this_file>
 # Elastic rule JSON:   detections/<tactic>/compiled/<rule_id>.json
-# Elastic index:       logs-simulation-*
+# Elastic index:       sim-*

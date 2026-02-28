@@ -93,7 +93,7 @@ log_ok "Authenticated as $CRIBL_USER"
 
 # ─── Create HEC Input ────────────────────────────────────────────
 log_info "Creating HEC input (port 8088)..."
-cribl_api POST "/m/default/inputs" '{
+cribl_api POST "/system/inputs" '{
   "id": "lab_hec_in",
   "type": "http",
   "disabled": false,
@@ -106,7 +106,7 @@ log_ok "HEC input configured on port 8088"
 
 # ─── Create CIM Normalization Pipeline ───────────────────────────
 log_info "Creating CIM normalization pipeline..."
-cribl_api POST "/m/default/pipelines" '{
+cribl_api POST "/pipelines" '{
   "id": "cim_normalize",
   "description": "Normalize ECS fields to Splunk CIM + drop noisy events for log reduction",
   "functions": [
@@ -152,11 +152,11 @@ log_ok "CIM normalization pipeline created"
 
 # ─── Create Elasticsearch Output ─────────────────────────────────
 log_info "Creating Elasticsearch output destination..."
-cribl_api POST "/m/default/outputs" "{
+cribl_api POST "/system/outputs" "{
   \"id\": \"elastic_out\",
   \"type\": \"elasticsearch\",
   \"hosts\": [\"$ES_URL\"],
-  \"index\": \"logs-cribl-{_simulation && _simulation.type == 'attack' ? 'attack' : 'baseline'}\",
+  \"index\": \"sim-{_simulation && _simulation.type == 'attack' ? 'attack' : 'baseline'}\",
   \"authType\": \"basic\",
   \"username\": \"elastic\",
   \"password\": \"changeme\",
@@ -168,7 +168,7 @@ log_ok "Elasticsearch output configured → $ES_URL"
 
 # ─── Create Splunk HEC Output ────────────────────────────────────
 log_info "Creating Splunk HEC output destination..."
-cribl_api POST "/m/default/outputs" "{
+cribl_api POST "/system/outputs" "{
   \"id\": \"splunk_out\",
   \"type\": \"splunk_hec\",
   \"url\": \"$SPLUNK_HEC_URL\",
@@ -183,7 +183,7 @@ log_ok "Splunk HEC output configured → $SPLUNK_HEC_URL"
 
 # ─── Create Routing Rules ─────────────────────────────────────────
 log_info "Creating routing rules..."
-cribl_api POST "/m/default/routes" '{
+cribl_api POST "/routes" '{
   "id": "lab_routes",
   "routes": [
     {
@@ -221,7 +221,7 @@ echo ""
 echo -e "${GREEN}Cribl Stream configured!${NC}"
 echo ""
 echo -e "  ${CYAN}Cribl Web UI${NC}:  http://localhost:9000"
-echo -e "  ${CYAN}Login${NC}:         admin / CriblLab1!"
+echo -e "  ${CYAN}Login${NC}:         admin / admin"
 echo ""
 echo -e "  ${CYAN}Data flow:${NC}"
 echo "    Simulator → Cribl HEC (8088)"

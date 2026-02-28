@@ -351,7 +351,7 @@ A process with an anomalous executable path accesses another process requesting 
 
 Lab is running. Start building detections:
 1. Build rank 1 (T1055.001) first — highest signal, best data
-2. Transpile: `sigma convert -t elasticsearch -p ecs_windows detections/privilege_escalation/t1055_001_create_remote_thread.yml`
+2. Transpile: `sigma convert -t lucene -p ecs_windows detections/privilege_escalation/t1055_001_create_remote_thread.yml`
 3. Validate against attack index (auth required):
    ```bash
    curl -u elastic:changeme -s -X POST "http://localhost:9200/sim-attack/_search" \

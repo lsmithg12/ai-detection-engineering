@@ -15,8 +15,7 @@
       "env": {
         "CRIBL_URL":   "http://localhost:9000",
         "CRIBL_USER":  "admin",
-        "CRIBL_PASS":  "CriblLab1!",
-        "CRIBL_GROUP": "default"
+        "CRIBL_PASS":  "admin"
       }
     },
 

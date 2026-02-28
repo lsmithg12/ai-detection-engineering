@@ -61,7 +61,7 @@ Follow this cycle for every detection you build:
 ### 3. AUTHOR — Write the Detection
 - Write a Sigma rule in YAML format following the template in `templates/sigma-template.yml`
 - Include: title, description, MITRE ATT&CK mapping, severity, data source, detection logic, false positive notes
-- Transpile to KQL using sigma-cli: `sigma convert -t elasticsearch -p ecs_windows rules/your_rule.yml`
+- Transpile to Lucene using sigma-cli: `sigma convert -t lucene -p ecs_windows rules/your_rule.yml`
 - Store the Sigma rule in `detections/<tactic>/` organized by MITRE tactic
 - Store the transpiled KQL in `detections/<tactic>/compiled/`
 
@@ -174,11 +174,11 @@ curl -s $SPLUNK_AUTH "$SPLUNK_URL/services/search/jobs/<sid>/results?output_mode
 
 ### Sigma Transpilation
 ```bash
-# To Elasticsearch KQL
-sigma convert -t elasticsearch -p ecs_windows detections/<tactic>/<rule>.yml
+# To Elasticsearch Lucene
+sigma convert -t lucene -p ecs_windows detections/<tactic>/<rule>.yml
 
 # To Splunk SPL
-sigma convert -t splunk detections/<tactic>/<rule>.yml
+sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 
 # Always store both compiled outputs when both SIEMs are active
 ```
@@ -331,7 +331,7 @@ ES_PASS=changeme
 SPLUNK_URL=https://localhost:8089
 SPLUNK_AUTH=admin:BlueTeamLab1!
 CRIBL_URL=http://localhost:9000
-CRIBL_AUTH=admin:CriblLab1!
+CRIBL_AUTH=admin:admin
 ```
 
 All Elasticsearch API calls require Basic auth: `-u elastic:changeme`
@@ -344,7 +344,7 @@ All Kibana API calls require auth header: `-u elastic:changeme`
 | `sim-baseline` | Normal enterprise activity | FP baseline queries |
 | `sim-attack` | Fawkes TTP simulations | TP validation queries |
 | `attack-range-samples` | Supplemental ATT&CK data | Load via `pipeline/fetch-attack-range-data.sh` |
-| `logs-cribl-*` | Cribl-normalized events | Populated when `--cribl` profile active |
+| `sim-*` (via Cribl) | Cribl-normalized events | Same indices, routed through Cribl pipeline when `--cribl` active |
 
 ## Cribl Stream MCP Tools
 

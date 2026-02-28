@@ -121,11 +121,11 @@ Read CLAUDE.md, then run the full detection engineering lifecycle:
     - Save to detections/<tactic>/<rule>.yml
 
 19. Transpile to KQL:
-    sigma convert -t elasticsearch -p ecs_windows detections/<tactic>/<rule>.yml
+    sigma convert -t lucene -p ecs_windows detections/<tactic>/<rule>.yml
     Save output to detections/<tactic>/compiled/<rule>.kql
 
 20. If Splunk is running, also transpile to SPL:
-    sigma convert -t splunk detections/<tactic>/<rule>.yml
+    sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
     Save to detections/<tactic>/compiled/<rule>.spl
 
 === PHASE 7: VALIDATE DETECTIONS ===
@@ -241,7 +241,7 @@ The Fawkes vanilla-injection command uses: VirtualAllocEx → WriteProcessMemory
    cribl_get_input_samples + cribl_preview_pipeline — confirm injection fields present
 
 3. Author detections/privilege_escalation/t1055_001_create_remote_thread.yml
-4. Transpile: sigma convert -t elasticsearch -p ecs_windows <rule>.yml
+4. Transpile: sigma convert -t lucene -p ecs_windows <rule>.yml
 5. Validate TP rate against sim-attack, FP rate against sim-baseline
 6. Deploy to Kibana: POST /api/detection_engine/rules
 7. Create tests and triage playbook

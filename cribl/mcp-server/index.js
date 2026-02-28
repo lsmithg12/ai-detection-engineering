@@ -13,13 +13,12 @@
  *
  * Usage:
  *   node index.js
- *   CRIBL_URL=http://localhost:9000 CRIBL_PASS=CriblLab1! node index.js
+ *   CRIBL_URL=http://localhost:9000 CRIBL_PASS=admin node index.js
  *
  * Environment variables:
  *   CRIBL_URL   — Cribl Stream URL (default: http://localhost:9000)
  *   CRIBL_USER  — Username (default: admin)
- *   CRIBL_PASS  — Password (default: CriblLab1!)
- *   CRIBL_GROUP — Worker group name (default: default)
+ *   CRIBL_PASS  — Password (default: admin)
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -34,8 +33,7 @@ import https from "https";
 // ─── Configuration ────────────────────────────────────────────────────────────
 const CRIBL_URL  = process.env.CRIBL_URL   || "http://localhost:9000";
 const CRIBL_USER = process.env.CRIBL_USER  || "admin";
-const CRIBL_PASS = process.env.CRIBL_PASS  || "CriblLab1!";
-const CRIBL_GROUP = process.env.CRIBL_GROUP || "default";
+const CRIBL_PASS = process.env.CRIBL_PASS  || "admin";
 
 let authToken = null;
 let tokenExpiry = 0;
@@ -119,11 +117,10 @@ async function criblPatch(path, body) {
 async function criblHealth() {
   try {
     const res = await criblGet("/api/v1/health");
-    const info = await criblGet(`/api/v1/m/${CRIBL_GROUP}/system/info`);
+    const info = await criblGet(`/api/v1/system/info`);
     return {
       healthy: res.body.healthy || false,
       url: CRIBL_URL,
-      group: CRIBL_GROUP,
       version: info.body?.version,
       license: info.body?.license?.type || "unknown",
     };
@@ -133,7 +130,7 @@ async function criblHealth() {
 }
 
 async function criblListPipelines() {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/pipelines`);
+  const res = await criblGet(`/api/v1/pipelines`);
   const pipelines = res.body.items || res.body || [];
   return pipelines.map((p) => ({
     id: p.id,
@@ -148,7 +145,7 @@ async function criblListPipelines() {
 }
 
 async function criblGetPipeline(id) {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/pipelines/${id}`);
+  const res = await criblGet(`/api/v1/pipelines/${id}`);
   if (res.status !== 200) throw new Error(`Pipeline '${id}' not found (${res.status})`);
   const p = res.body;
   return {
@@ -179,7 +176,7 @@ async function criblPreviewPipeline(pipelineId, sampleEvents) {
     timeout: 5000,
   };
   const res = await criblPost(
-    `/api/v1/m/${CRIBL_GROUP}/pipelines/${pipelineId}/preview`,
+    `/api/v1/pipelines/${pipelineId}/preview`,
     body
   );
   if (res.status !== 200) {
@@ -194,7 +191,7 @@ async function criblPreviewPipeline(pipelineId, sampleEvents) {
 
 async function criblAddPipelineFunction(pipelineId, functionDef, insertAt = -1) {
   // Get current pipeline
-  const pipelineRes = await criblGet(`/api/v1/m/${CRIBL_GROUP}/pipelines/${pipelineId}`);
+  const pipelineRes = await criblGet(`/api/v1/pipelines/${pipelineId}`);
   if (pipelineRes.status !== 200) throw new Error(`Pipeline '${pipelineId}' not found`);
 
   const pipeline = pipelineRes.body;
@@ -215,7 +212,7 @@ async function criblAddPipelineFunction(pipelineId, functionDef, insertAt = -1) 
   }
 
   pipeline.functions = functions;
-  const res = await criblPatch(`/api/v1/m/${CRIBL_GROUP}/pipelines/${pipelineId}`, pipeline);
+  const res = await criblPatch(`/api/v1/pipelines/${pipelineId}`, pipeline);
   if (res.status !== 200) {
     throw new Error(`Update failed (${res.status}): ${JSON.stringify(res.body)}`);
   }
@@ -228,7 +225,7 @@ async function criblAddPipelineFunction(pipelineId, functionDef, insertAt = -1) 
 }
 
 async function criblRemovePipelineFunction(pipelineId, functionIndex) {
-  const pipelineRes = await criblGet(`/api/v1/m/${CRIBL_GROUP}/pipelines/${pipelineId}`);
+  const pipelineRes = await criblGet(`/api/v1/pipelines/${pipelineId}`);
   if (pipelineRes.status !== 200) throw new Error(`Pipeline '${pipelineId}' not found`);
 
   const pipeline = pipelineRes.body;
@@ -241,7 +238,7 @@ async function criblRemovePipelineFunction(pipelineId, functionIndex) {
   const removed = functions.splice(functionIndex, 1)[0];
   pipeline.functions = functions;
 
-  const res = await criblPatch(`/api/v1/m/${CRIBL_GROUP}/pipelines/${pipelineId}`, pipeline);
+  const res = await criblPatch(`/api/v1/pipelines/${pipelineId}`, pipeline);
   if (res.status !== 200) {
     throw new Error(`Update failed (${res.status}): ${JSON.stringify(res.body)}`);
   }
@@ -254,7 +251,7 @@ async function criblRemovePipelineFunction(pipelineId, functionIndex) {
 }
 
 async function criblGetMetrics() {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/metrics/totals`);
+  const res = await criblGet(`/api/v1/system/metrics/totals`);
   const items = res.body.items || res.body || [];
   return {
     pipelines: items.map((m) => ({
@@ -272,7 +269,7 @@ async function criblGetMetrics() {
 }
 
 async function criblListInputs() {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/inputs`);
+  const res = await criblGet(`/api/v1/system/inputs`);
   const inputs = res.body.items || res.body || [];
   return inputs.map((i) => ({
     id: i.id,
@@ -287,7 +284,7 @@ async function criblListInputs() {
 
 async function criblGetInputSamples(inputId, count = 10) {
   // Retrieve captured sample events from an input's event capture buffer
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/inputs/${inputId}/samples`);
+  const res = await criblGet(`/api/v1/system/inputs/${inputId}/samples`);
   const samples = (res.body.items || res.body || []).slice(0, count);
   return {
     input: inputId,
@@ -298,7 +295,7 @@ async function criblGetInputSamples(inputId, count = 10) {
 }
 
 async function criblListOutputs() {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/outputs`);
+  const res = await criblGet(`/api/v1/system/outputs`);
   const outputs = res.body.items || res.body || [];
   return outputs.map((o) => ({
     id: o.id,
@@ -310,7 +307,7 @@ async function criblListOutputs() {
 }
 
 async function criblTestOutput(outputId) {
-  const res = await criblPost(`/api/v1/m/${CRIBL_GROUP}/outputs/${outputId}/test`, {});
+  const res = await criblPost(`/api/v1/system/outputs/${outputId}/test`, {});
   return {
     output: outputId,
     success: res.status === 200,
@@ -320,7 +317,7 @@ async function criblTestOutput(outputId) {
 }
 
 async function criblGetRoutes() {
-  const res = await criblGet(`/api/v1/m/${CRIBL_GROUP}/routes`);
+  const res = await criblGet(`/api/v1/routes`);
   const routes = res.body.routes || res.body.items || res.body || [];
   return {
     total: routes.length,
@@ -340,7 +337,7 @@ async function criblGetRoutes() {
 
 async function criblUpdateRoutes(routes) {
   const body = { routes };
-  const res = await criblPost(`/api/v1/m/${CRIBL_GROUP}/routes`, body);
+  const res = await criblPost(`/api/v1/routes`, body);
   if (res.status !== 200) {
     throw new Error(`Routes update failed (${res.status}): ${JSON.stringify(res.body)}`);
   }

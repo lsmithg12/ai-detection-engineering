@@ -31,7 +31,7 @@ Simulator creates the template on startup; setup.sh also creates it as a belt-an
 | `sim-baseline` | log-simulator | Baseline Windows/Linux ECS events | ~5 EPS continuous | Yes |
 | `sim-attack` | log-simulator | Fawkes TTP attack scenarios (ECS) | Burst every 300s | Yes |
 | `attack-range-samples` | fetch-attack-range-data.sh | ATT&CK sim events (AtomicRedTeam) | Static on import | Optional |
-| `logs-cribl-*` | Cribl Stream pipeline | Normalized events via Cribl | ~5 EPS when Cribl active | Optional |
+| `sim-*` (via Cribl) | Cribl Stream pipeline | Same indices, routed via Cribl | ~5 EPS when Cribl active | Optional |
 | `.internal.alerts-security.alerts-default-000001` | Elastic Security | Generated security alerts | On rule fire | Index exists, 0 alerts |
 
 **Elasticsearch auth**: `elastic` / `changeme`
@@ -151,9 +151,9 @@ _simulation.label             (keyword) — short human label
 
 | Agent | Data Generated | Index |
 |---|---|---|
-| `sysmon` | Process, network, registry, image load, injection events | `logs-simulation*` |
-| `winlogbeat` | Authentication events (EID 4624) | `logs-simulation*` |
-| `auditbeat` | Linux process events | `logs-simulation*` |
+| `sysmon` | Process, network, registry, image load, injection events | `sim-*` |
+| `winlogbeat` | Authentication events (EID 4624) | `sim-*` |
+| `auditbeat` | Linux process events | `sim-*` |
 
 ---
 
