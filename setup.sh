@@ -273,14 +273,26 @@ fi
 
 if [[ "$SIEM_MODE" == "splunk" || "$SIEM_MODE" == "both" ]]; then
     log_info "Waiting for Splunk (this takes ~2-3 min)..."
+    SPLUNK_READY=false
     for i in $(seq 1 90); do
         if curl -sf -k https://localhost:8089/services/server/health -u admin:BlueTeamLab1! &>/dev/null; then
             log_ok "Splunk is ready → http://localhost:8000 (admin / BlueTeamLab1!)"
+            SPLUNK_READY=true
             break
         fi
         [ "$i" -eq 90 ] && log_warn "Splunk still starting — check http://localhost:8000"
         sleep 5
     done
+
+    # Create simulation indexes (default.yml index creation is unreliable)
+    if [ "$SPLUNK_READY" = true ]; then
+        log_info "Creating Splunk indexes..."
+        for idx in sysmon attack_simulation wineventlog linux network; do
+            curl -sf -k -u admin:BlueTeamLab1! -X POST "https://localhost:8089/services/data/indexes" \
+                -d name="$idx" -d datatype=event > /dev/null 2>&1 || true
+        done
+        log_ok "Splunk indexes created (sysmon, attack_simulation, wineventlog, linux, network)"
+    fi
 fi
 
 if [ "$INCLUDE_CRIBL" = true ]; then
