@@ -1,0 +1,28 @@
+# Global Exclusion List
+# Applied across all detection rules where referenced.
+# GUARDRAIL: Do not add more than 3 exclusions to a single rule without human review.
+#
+# Format:
+#   rule_id: <sigma rule UUID>
+#   exclusions:
+#     - field: <field name>
+#       value: <value or pattern>
+#       reason: <why this is excluded>
+#       added: YYYY-MM-DD
+
+global_process_exclusions:
+  - process.executable|contains:
+      - 'C:\Windows\System32\MsMpEng.exe'       # Windows Defender
+      - 'C:\Program Files\CrowdStrike\'          # CrowdStrike EDR
+      - 'C:\Program Files\SentinelOne\'          # SentinelOne EDR
+    reason: "Known security tools may trigger injection-like behavior during scanning"
+    added: 2026-02-23
+
+global_registry_exclusions:
+  - registry.path|contains:
+      - 'SOFTWARE\Microsoft\Windows\CurrentVersion\Run\OneDrive'
+      - 'SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Teams'
+    reason: "Known legitimate software using Run keys"
+    added: 2026-02-23
+
+# Per-rule exclusions are tracked in tuning/changelog/

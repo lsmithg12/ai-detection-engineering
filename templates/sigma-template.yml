@@ -1,0 +1,61 @@
+title: <Short descriptive title — verb phrase, e.g. "CreateRemoteThread from Unsigned Process">
+id: <uuid v4 — generate with python3 -c "import uuid; print(uuid.uuid4())">
+status: experimental                 # experimental | test | stable | deprecated
+description: |
+  <1-3 sentence description of what this detects and why it matters.
+  Include the adversary technique and the artifact being observed.>
+author: blue-team-agent
+date: YYYY-MM-DD
+modified: YYYY-MM-DD
+references:
+  - https://attack.mitre.org/techniques/TXXXX/XXX/
+  - https://github.com/galoryber/fawkes        # if Fawkes-specific
+  - <link to blog post or research if applicable>
+tags:
+  - attack.tactic_name                          # e.g. attack.execution
+  - attack.tXXXX.XXX                            # e.g. attack.t1055.001
+  - fawkes                                      # always tag Fawkes-related rules
+logsource:
+  category: <process_creation|process_access|registry_set|image_load|network_connection|file_event>
+  product: windows                              # windows | linux | macos
+detection:
+  selection:
+    # List the key fields and values that identify the malicious activity.
+    # Use exact values for keywords, wildcards (*) for patterns.
+    EventID: <Sysmon event ID if applicable>
+    FieldName: 'value'
+    AnotherField|contains:
+      - 'pattern1'
+      - 'pattern2'
+  filter_legitimate:
+    # Optional: exclude known-good processes/paths to reduce FPs
+    process.executable|contains:
+      - 'C:\Windows\System32\'
+      - 'C:\Program Files\'
+  condition: selection and not filter_legitimate
+falsepositives:
+  - <Describe known benign scenarios that may trigger this rule>
+  - <e.g., "Legitimate software updaters that use remote thread injection">
+level: <informational|low|medium|high|critical>
+
+# ─── Validation ──────────────────────────────────────────────────────────────
+# True Positive Test:
+#   File: tests/true_positives/tXXXX_XXX_<short-name>_tp.json
+#   Description: <what the TP test event looks like>
+#
+# True Negative Test:
+#   File: tests/true_negatives/tXXXX_XXX_<short-name>_tn.json
+#   Description: <what the TN test event looks like>
+
+# ─── MITRE Coverage ──────────────────────────────────────────────────────────
+# Tactic:      <Tactic Name> (TAXXXX)
+# Technique:   <Technique Name> (TXXXX)
+# Sub-tech:    <Sub-technique Name> (TXXXX.XXX)
+# Data Source: <DS category from ATT&CK data sources>
+# Data Comp:   <component — e.g., "Process: Process Creation">
+
+# ─── Deployment Notes ────────────────────────────────────────────────────────
+# Transpile to KQL:    sigma convert -t elasticsearch -p ecs_windows <this_file>
+# Transpile to SPL:    sigma convert -t splunk <this_file>
+# Elastic rule JSON:   detections/<tactic>/compiled/<rule_id>.json
+# Elastic index:       logs-simulation-*

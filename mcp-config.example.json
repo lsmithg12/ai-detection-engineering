@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "elasticsearch": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--network", "blue-team-lab",
+        "-e", "ES_URL=http://elastic:changeme@elasticsearch:9200",
+        "docker.elastic.co/mcp/elasticsearch"
+      ]
+    },
+    "cribl": {
+      "command": "node",
+      "args": ["./cribl/mcp-server/index.js"],
+      "env": {
+        "CRIBL_URL":   "http://localhost:9000",
+        "CRIBL_USER":  "admin",
+        "CRIBL_PASS":  "CriblLab1!",
+        "CRIBL_GROUP": "default"
+      }
+    },
+
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_PAT>"
+      }
+    }
+
+  }
+}

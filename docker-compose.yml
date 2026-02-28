@@ -1,0 +1,221 @@
+# =============================================================================
+# Blue Team Detection Engineering Lab
+# Supports: Elastic, Splunk, and Cribl Stream (mix and match)
+#
+# Usage:
+#   Elastic only:    docker compose --profile elastic --profile simulator up -d
+#   Splunk only:     docker compose --profile splunk --profile simulator up -d
+#   Elastic+Cribl:   docker compose --profile elastic --profile cribl --profile simulator up -d
+#   All:             docker compose --profile elastic --profile splunk --profile cribl --profile simulator up -d
+#
+# Or use setup.sh for interactive one-command startup.
+#
+# Credentials:
+#   Elastic:  elastic / changeme    → http://localhost:5601
+#   Splunk:   admin / BlueTeamLab1! → http://localhost:8000
+#   Cribl:    admin / CriblLab1!    → http://localhost:9000
+#
+# Simulator Indices (Elastic): sim-baseline / sim-attack
+# Simulator Indexes (Splunk):  sysmon / attack_simulation
+# =============================================================================
+
+services:
+
+  # ─────────────────────────────────────────────────────
+  # ELASTICSEARCH STACK
+  # ─────────────────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: elasticsearch
+    profiles: ["elastic"]
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ELASTIC_PASSWORD=changeme
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - cluster.name=blue-team-lab
+      - xpack.encryptedSavedObjects.encryptionKey=a7f3b8c2d1e4f5a6b7c8d9e0f1a2b3c4
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:changeme http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - labnet
+
+  # Sets the kibana_system password on first run.
+  # Kibana 8.x forbids connecting as the 'elastic' superuser — this init
+  # container ensures the kibana_system user exists with the expected password.
+  kibana-setup:
+    image: curlimages/curl:latest
+    container_name: kibana-setup
+    profiles: ["elastic"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["sh", "-c", "curl -sf -u elastic:changeme -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -H 'Content-Type: application/json' -d '{\"password\":\"changeme\"}' && echo ' kibana_system password set' || echo ' (already set or failed)'"]
+    networks:
+      - labnet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: kibana
+    profiles: ["elastic"]
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=changeme
+      - xpack.security.enabled=true
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7f3b8c2d1e4f5a6b7c8d9e0f1a2b3c4
+      - xpack.encryptedSavedObjects.encryptionKey=a7f3b8c2d1e4f5a6b7c8d9e0f1a2b3c4
+      - server.host=0.0.0.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5601/api/status | grep -q 'available'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - labnet
+
+  elastic-mcp:
+    image: docker.elastic.co/mcp/elasticsearch
+    container_name: elastic-mcp
+    profiles: ["elastic"]
+    command: ["stdio"]
+    environment:
+      - ES_URL=http://elastic:changeme@elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - labnet
+
+  # ─────────────────────────────────────────────────────
+  # SPLUNK STACK (Free tier — 500MB/day)
+  # ─────────────────────────────────────────────────────
+  splunk:
+    image: splunk/splunk:9.3
+    container_name: splunk
+    profiles: ["splunk"]
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=BlueTeamLab1!
+      - SPLUNK_HEC_TOKEN=blue-team-lab-hec-token
+    ports:
+      - "8000:8000"       # Splunk Web UI
+      - "8288:8088"       # HTTP Event Collector (HEC) — on 8288 to avoid Cribl HEC conflict
+      - "8089:8089"       # Splunk REST API (splunkd)
+      - "9997:9997"       # Receiving port (forwarders)
+    volumes:
+      - splunk-data:/opt/splunk/var
+      - ./splunk/default.yml:/tmp/defaults/default.yml:ro
+      - ./splunk/apps/blue_team_lab:/opt/splunk/etc/apps/blue_team_lab:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "https://localhost:8089/services/server/health", "-k", "-u", "admin:BlueTeamLab1!"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+    networks:
+      - labnet
+
+  # ─────────────────────────────────────────────────────
+  # CRIBL STREAM (Free tier — 1GB/day)
+  # Log pipeline: normalize, reduce, route to Elastic/Splunk
+  # UI: http://localhost:9000 (admin / CriblLab1!)
+  # HEC input: localhost:8088 (send logs here, Cribl fans out to SIEMs)
+  # ─────────────────────────────────────────────────────
+  cribl-stream:
+    image: cribl/cribl:latest
+    container_name: cribl-stream
+    profiles: ["cribl"]
+    environment:
+      - CRIBL_DIST_MASTER_URL=           # empty = single-node free mode
+      - CRIBL_ADMIN_PASSWORD=CriblLab1!  # initial admin password
+    ports:
+      - "9000:9000"    # Cribl Web UI + REST API
+      - "8088:8088"    # HEC input — point simulator/forwarders here
+      - "5044:5044"    # Beats/Logstash input (Winlogbeat, Filebeat)
+    volumes:
+      - cribl-config:/opt/cribl/local
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9000/api/v1/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+    networks:
+      - labnet
+
+  # ─────────────────────────────────────────────────────
+  # LOG SIMULATOR
+  # Generates realistic Windows/Linux telemetry mapped to
+  # MITRE ATT&CK — feeds Elastic and/or Splunk
+  # ─────────────────────────────────────────────────────
+  log-simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: log-simulator
+    profiles: ["simulator"]
+    environment:
+      # ── Direct SIEM destinations (used when Cribl is NOT running) ──
+      - ES_URL=http://elasticsearch:9200
+      - ES_USER=elastic
+      - ES_PASS=changeme
+      - SPLUNK_HEC_URL=http://splunk:8088
+      - SPLUNK_HEC_TOKEN=blue-team-lab-hec-token
+      # ── Cribl pipeline (optional — when Cribl profile is active) ──
+      # If set, simulator routes ALL traffic through Cribl instead of direct to SIEMs.
+      # Cribl then fans out to Elastic and/or Splunk per its routing rules.
+      # Cribl routing — enabled when Cribl profile is active:
+      - CRIBL_HEC_URL=http://cribl-stream:8088
+      - CRIBL_HEC_TOKEN=blue-team-lab-hec-token
+      # ── Simulation settings ──
+      # baseline = normal activity only
+      # attack   = Fawkes TTP simulation only
+      # mixed    = normal + periodic attack bursts (recommended)
+      - SIM_MODE=mixed
+      - SIM_EPS=5
+      # Seconds between attack scenario bursts
+      - SIM_ATTACK_INTERVAL=300
+    volumes:
+      - ./simulator/scenarios:/app/scenarios:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+        required: false
+      splunk:
+        condition: service_healthy
+        required: false
+      cribl-stream:
+        condition: service_healthy
+        required: false
+    networks:
+      - labnet
+
+volumes:
+  es-data:
+    driver: local
+  splunk-data:
+    driver: local
+  cribl-config:
+    driver: local
+
+networks:
+  labnet:
+    name: blue-team-lab
+    driver: bridge

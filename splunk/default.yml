@@ -1,0 +1,20 @@
+---
+splunk:
+  hec:
+    enable: true
+    port: 8088
+    ssl: false
+    token: blue-team-lab-hec-token
+  indexes:
+    - name: main
+      datatype: event
+    - name: wineventlog
+      datatype: event
+    - name: sysmon
+      datatype: event
+    - name: linux
+      datatype: event
+    - name: attack_simulation
+      datatype: event
+    - name: network
+      datatype: event

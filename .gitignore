@@ -1,0 +1,41 @@
+# Secrets — never commit these
+.env
+*.env
+.mcp.json
+mcp-config.json
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Lab data (large, generated)
+simulator/data/
+*.ndjson
+*.json.gz
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/projects/

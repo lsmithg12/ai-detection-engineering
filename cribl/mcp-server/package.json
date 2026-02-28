@@ -1,0 +1,16 @@
+{
+  "name": "cribl-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Cribl Stream — exposes pipeline management tools to Claude Code",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
