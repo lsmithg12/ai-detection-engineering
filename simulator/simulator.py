@@ -610,74 +610,100 @@ def ensure_index_template():
 
 
 # ─── Main Loop ───────────────────────────────────────────────────────
-def check_connectivity():
-    """Verify at least one SIEM backend is reachable."""
-    global CRIBL_HEC_URL
-    es_ok = False
-    splunk_ok = False
+def _check_es():
+    """Check Elasticsearch connectivity."""
+    if not ES_URL:
+        return False
+    try:
+        headers = _es_auth_header()
+        req = urllib.request.Request(f"{ES_URL}/_cluster/health", headers=headers)
+        urllib.request.urlopen(req, timeout=5)
+        print(f"  [+] Elasticsearch: {ES_URL}")
+        return True
+    except Exception:
+        print(f"  [-] Elasticsearch not reachable at {ES_URL}")
+        return False
 
-    if ES_URL:
-        try:
-            headers = _es_auth_header()
-            req = urllib.request.Request(f"{ES_URL}/_cluster/health", headers=headers)
+
+def _check_cribl():
+    """Check Cribl HEC connectivity."""
+    if not CRIBL_HEC_URL:
+        return False
+    try:
+        hec_health_url = CRIBL_HEC_URL.rstrip("/") + "/services/collector/health/1.0"
+        req = urllib.request.Request(
+            hec_health_url,
+            headers={"Authorization": f"Splunk {CRIBL_HEC_TOKEN}"}
+        )
+        urllib.request.urlopen(req, timeout=5)
+        print(f"  [+] Cribl HEC: {CRIBL_HEC_URL} (routing to all configured destinations)")
+        return True
+    except Exception:
+        print(f"  [-] Cribl HEC not reachable at {CRIBL_HEC_URL}")
+        return False
+
+
+def _check_splunk():
+    """Check Splunk HEC connectivity."""
+    if not SPLUNK_HEC_URL:
+        return False
+    try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        hec_health_url = SPLUNK_HEC_URL.rstrip("/") + "/services/collector/health/1.0"
+        req = urllib.request.Request(
+            hec_health_url,
+            headers={"Authorization": f"Splunk {SPLUNK_HEC_TOKEN}"}
+        )
+        if SPLUNK_HEC_URL.startswith("https"):
+            urllib.request.urlopen(req, timeout=5, context=ctx)
+        else:
             urllib.request.urlopen(req, timeout=5)
-            es_ok = True
-            print(f"  [+] Elasticsearch: {ES_URL}")
-        except Exception:
-            print(f"  [-] Elasticsearch not reachable at {ES_URL}")
-
-    if CRIBL_HEC_URL:
-        try:
-            hec_health_url = CRIBL_HEC_URL.rstrip("/") + "/services/collector/health/1.0"
-            req = urllib.request.Request(
-                hec_health_url,
-                headers={"Authorization": f"Splunk {CRIBL_HEC_TOKEN}"}
-            )
-            urllib.request.urlopen(req, timeout=5)
-            splunk_ok = True  # Cribl acts as the SIEM proxy
-            print(f"  [+] Cribl HEC: {CRIBL_HEC_URL} (routing to all configured destinations)")
-        except Exception:
-            print(f"  [-] Cribl HEC not reachable at {CRIBL_HEC_URL}")
-            print(f"  [*] Disabling Cribl routing — falling back to direct SIEM delivery")
-            CRIBL_HEC_URL = ""
-    if not CRIBL_HEC_URL and SPLUNK_HEC_URL:
-        try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            hec_health_url = SPLUNK_HEC_URL.rstrip("/") + "/services/collector/health/1.0"
-            req = urllib.request.Request(
-                hec_health_url,
-                headers={"Authorization": f"Splunk {SPLUNK_HEC_TOKEN}"}
-            )
-            if SPLUNK_HEC_URL.startswith("https"):
-                urllib.request.urlopen(req, timeout=5, context=ctx)
-            else:
-                urllib.request.urlopen(req, timeout=5)
-            splunk_ok = True
-            print(f"  [+] Splunk HEC: {SPLUNK_HEC_URL}")
-        except Exception:
-            print(f"  [-] Splunk HEC not reachable at {SPLUNK_HEC_URL}")
-
-    return es_ok or splunk_ok
+        print(f"  [+] Splunk HEC: {SPLUNK_HEC_URL}")
+        return True
+    except Exception:
+        print(f"  [-] Splunk HEC not reachable at {SPLUNK_HEC_URL}")
+        return False
 
 
 def main():
+    global CRIBL_HEC_URL
+
     print("=" * 60)
     print("  Blue Team Lab — Log Simulator")
     print(f"  Mode: {SIM_MODE} | EPS: {SIM_EPS} | Attack interval: {SIM_ATTACK_INTERVAL}s")
     print("=" * 60)
 
-    # Wait for at least one backend
+    # Wait for at least one backend to be reachable
     print("\n[*] Checking SIEM connectivity...")
     retries = 0
-    while not check_connectivity():
+    while True:
+        es_ok = _check_es()
+        cribl_ok = _check_cribl()
+        splunk_ok = _check_splunk() if not cribl_ok else False
+
+        if es_ok or cribl_ok or splunk_ok:
+            break
         retries += 1
         if retries > 30:
             print("[!] No SIEM backend reachable after 30 retries. Exiting.")
             sys.exit(1)
         print(f"  [.] Waiting for SIEM backends... (attempt {retries}/30)")
         time.sleep(10)
+
+    # If Cribl is configured but not reachable after initial check, give it extra time
+    # (Cribl HEC listener starts after the health endpoint)
+    if CRIBL_HEC_URL and not cribl_ok:
+        print("  [*] Cribl configured but HEC not ready — waiting up to 60s...")
+        for i in range(6):
+            time.sleep(10)
+            if _check_cribl():
+                cribl_ok = True
+                break
+        if not cribl_ok:
+            print("  [*] Cribl HEC not available — falling back to direct SIEM delivery")
+            CRIBL_HEC_URL = ""
 
     # Create index template before sending events
     if ES_URL:
