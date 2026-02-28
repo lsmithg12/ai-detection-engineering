@@ -124,7 +124,7 @@ services:
     volumes:
       - splunk-data:/opt/splunk/var
       - ./splunk/default.yml:/tmp/defaults/default.yml:ro
-      - ./splunk/apps/blue_team_lab:/opt/splunk/etc/apps/blue_team_lab:ro
+      - ./splunk/apps/blue_team_lab:/opt/splunk/etc/apps/blue_team_lab
     healthcheck:
       test: ["CMD", "curl", "-sf", "https://localhost:8089/services/server/health", "-k", "-u", "admin:BlueTeamLab1!"]
       interval: 15s
