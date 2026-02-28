@@ -14,7 +14,7 @@ references:
 tags:
   - attack.tactic_name                          # e.g. attack.execution
   - attack.tXXXX.XXX                            # e.g. attack.t1055.001
-  - fawkes                                      # always tag Fawkes-related rules
+  - detection.fawkes                              # always tag Fawkes-related rules
 logsource:
   category: <process_creation|process_access|registry_set|image_load|network_connection|file_event>
   product: windows                              # windows | linux | macos

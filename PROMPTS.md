@@ -8,6 +8,8 @@ Copy-paste these into Claude Code to kick off different workflows.
 
 The complete workflow — from raw logs through Cribl normalization to deployed, validated, tuned detections. This is the primary prompt for the lab.
 
+> **Note**: Phases 2-3 (Cribl pipeline) are optional — skip them if you're not running with `--cribl` or `--full`. Jump from Phase 1 straight to Phase 4.
+
 ```
 Read CLAUDE.md, then run the full detection engineering lifecycle:
 
@@ -17,18 +19,18 @@ Read CLAUDE.md, then run the full detection engineering lifecycle:
    - Elasticsearch: curl -u elastic:changeme http://localhost:9200/_cluster/health
    - Kibana: curl http://localhost:5601/api/status
    - Splunk (if running): curl -sk -u admin:BlueTeamLab1! https://localhost:8089/services/server/health
-   - Cribl Stream: Use cribl_health MCP tool
+   - Cribl Stream (if running): Use cribl_health MCP tool
 
 2. Confirm logs are flowing into the simulation indices:
    - Elastic: GET sim-baseline/_count and sim-attack/_count
-   - Splunk: search index=sysmon | head 5
+   - Splunk (if running): search index=sysmon | head 5
 
-3. Confirm Cribl is receiving and forwarding events:
+3. (SKIP if Cribl is not running) Confirm Cribl is receiving and forwarding events:
    - cribl_list_inputs → find 'lab_hec_in'
    - cribl_get_metrics → check events_in > 0
    - cribl_test_output for each configured output
 
-=== PHASE 2: LOG ONBOARDING — REVIEW INCOMING DATA ===
+=== PHASE 2: LOG ONBOARDING — REVIEW INCOMING DATA (SKIP if no Cribl) ===
 
 4. Pull 10 live sample events from the Cribl HEC input:
    - cribl_get_input_samples(input_id='lab_hec_in', count=10)
@@ -50,7 +52,7 @@ Read CLAUDE.md, then run the full detection engineering lifecycle:
    Required Splunk CIM fields (for SPL detections):
    - src_ip, dest_ip, dest_port, user, host, process, CommandLine, EventCode
 
-=== PHASE 3: WRITE CRIBL PARSERS — CIM COMPLIANCE & LOG REDUCTION ===
+=== PHASE 3: WRITE CRIBL PARSERS — CIM COMPLIANCE & LOG REDUCTION (SKIP if no Cribl) ===
 
 7. For each field gap found in Phase 2, add a pipeline function. Always test with
    cribl_preview_pipeline BEFORE applying to the live pipeline.

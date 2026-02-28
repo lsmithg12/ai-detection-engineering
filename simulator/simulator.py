@@ -612,6 +612,7 @@ def ensure_index_template():
 # ─── Main Loop ───────────────────────────────────────────────────────
 def check_connectivity():
     """Verify at least one SIEM backend is reachable."""
+    global CRIBL_HEC_URL
     es_ok = False
     splunk_ok = False
 
@@ -627,12 +628,6 @@ def check_connectivity():
 
     if CRIBL_HEC_URL:
         try:
-            # Check Cribl health endpoint
-            req = urllib.request.Request(
-                CRIBL_HEC_URL.replace("/services/collector", "").rstrip("/").rsplit(":", 1)[0] + ":9000/api/v1/health"
-                if ":" in CRIBL_HEC_URL else f"{CRIBL_HEC_URL}/api/v1/health"
-            )
-            # Simpler: just try the HEC health endpoint
             hec_health_url = CRIBL_HEC_URL.rstrip("/") + "/services/collector/health/1.0"
             req = urllib.request.Request(
                 hec_health_url,
@@ -643,7 +638,9 @@ def check_connectivity():
             print(f"  [+] Cribl HEC: {CRIBL_HEC_URL} (routing to all configured destinations)")
         except Exception:
             print(f"  [-] Cribl HEC not reachable at {CRIBL_HEC_URL}")
-    elif SPLUNK_HEC_URL:
+            print(f"  [*] Disabling Cribl routing — falling back to direct SIEM delivery")
+            CRIBL_HEC_URL = ""
+    if not CRIBL_HEC_URL and SPLUNK_HEC_URL:
         try:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False

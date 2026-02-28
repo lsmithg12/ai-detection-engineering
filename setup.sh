@@ -210,7 +210,6 @@ DIRS=(
     "tuning/changelog"
     "pipeline"
     "monitoring"
-    "simulator/scenarios"
     "splunk/apps"
 )
 
@@ -370,10 +369,53 @@ fi
 log_step "Configuring MCP for Claude Code"
 
 if [ ! -f ".mcp.json" ]; then
-    cp mcp-config.example.json .mcp.json
-    log_ok "MCP config copied to .mcp.json"
-    log_warn "Edit .mcp.json and replace <YOUR_GITHUB_PAT> with your Personal Access Token"
-    log_warn "Create a PAT at: https://github.com/settings/tokens (scopes: repo, issues, pull_requests)"
+    # Build .mcp.json dynamically based on available tools
+    MCP_SERVERS='    "elasticsearch": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--network", "blue-team-lab",
+        "-e", "ES_URL=http://elastic:changeme@elasticsearch:9200",
+        "docker.elastic.co/mcp/elasticsearch"
+      ]
+    }'
+
+    if command -v node &>/dev/null; then
+        if [ "$INCLUDE_CRIBL" = true ]; then
+            MCP_SERVERS="$MCP_SERVERS"',
+    "cribl": {
+      "command": "node",
+      "args": ["./cribl/mcp-server/index.js"],
+      "env": {
+        "CRIBL_URL":   "http://localhost:9000",
+        "CRIBL_USER":  "admin",
+        "CRIBL_PASS":  "admin"
+      }
+    }'
+        fi
+        MCP_SERVERS="$MCP_SERVERS"',
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_PAT>"
+      }
+    }'
+        log_warn "Edit .mcp.json and replace <YOUR_GITHUB_PAT> with your Personal Access Token"
+        log_warn "Create a PAT at: https://github.com/settings/tokens (scopes: repo, issues, pull_requests)"
+    else
+        log_warn "Node.js not installed — GitHub and Cribl MCP servers not added to .mcp.json"
+        log_warn "Install Node.js and re-run setup, or copy entries from mcp-config.example.json"
+    fi
+
+    cat > .mcp.json <<MCPEOF
+{
+  "mcpServers": {
+$MCP_SERVERS
+  }
+}
+MCPEOF
+    log_ok "MCP config generated at .mcp.json"
 else
     log_ok ".mcp.json already exists (not overwritten)"
 fi
