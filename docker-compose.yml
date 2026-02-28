@@ -194,8 +194,6 @@ services:
       - SIM_EPS=5
       # Seconds between attack scenario bursts
       - SIM_ATTACK_INTERVAL=300
-    volumes:
-      - ./simulator/scenarios:/app/scenarios:ro
     depends_on:
       elasticsearch:
         condition: service_healthy
