@@ -1,0 +1,45 @@
+{
+  "_description": "True positive: Fawkes steal-token command accessing LSASS for token duplication",
+  "_technique": "T1134.001",
+  "_fawkes_command": "steal-token",
+  "_expected_result": "ALERT",
+  "_validation": {
+    "date": "2026-03-01",
+    "result": "TP confirmed — 1/1 match in sim-attack",
+    "baseline_events": 6088,
+    "false_positives": 0
+  },
+  "event": {
+    "category": "process",
+    "type": "access",
+    "action": "Process accessed (rule: ProcessAccess)",
+    "code": "10"
+  },
+  "process": {
+    "name": "update_helper.exe",
+    "executable": "C:\\Users\\agarcia\\AppData\\Local\\Temp\\update_helper.exe",
+    "pid": 857
+  },
+  "winlog": {
+    "event_data": {
+      "TargetImage": "C:\\Windows\\System32\\lsass.exe",
+      "GrantedAccess": "0x0040"
+    }
+  },
+  "user": {
+    "name": "agarcia",
+    "domain": "CORP"
+  },
+  "host": {
+    "name": "WS-EXEC-01",
+    "os": {
+      "platform": "windows"
+    }
+  },
+  "_simulation": {
+    "type": "attack",
+    "technique": "T1134.001",
+    "fawkes_command": "steal-token",
+    "label": "token_theft"
+  }
+}

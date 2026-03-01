@@ -59,6 +59,7 @@ Follow this cycle for every detection you build:
 - If a required data source is missing, document it in `gaps/data-source-gaps.md`
 
 ### 3. AUTHOR — Write the Detection
+- **First**: Read `templates/detection-authoring-rules.md` for known pitfalls, SIEM-specific syntax issues, and quality patterns
 - Write a Sigma rule in YAML format following the template in `templates/sigma-template.yml`
 - Include: title, description, MITRE ATT&CK mapping, severity, data source, detection logic, false positive notes
 - Transpile to Lucene using sigma-cli: `sigma convert -t lucene -p ecs_windows rules/your_rule.yml`

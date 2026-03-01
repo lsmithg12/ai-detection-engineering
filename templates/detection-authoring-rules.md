@@ -73,9 +73,11 @@ A living reference for writing high-quality detections. **Check this file before
 ### Saved Search Deployment
 - POST to `${SPLUNK_URL}/servicesNS/admin/search/saved/searches`
 - Auth: `-sk -u admin:BlueTeamLab1!`
+- **CRITICAL**: Use `--data-urlencode` for `name`, `search`, `cron_schedule`, `alert_comparator`, and `alert_type` — any value with spaces, special chars, or `*` will fail with bare `-d`
 - Key fields: `name`, `search`, `is_scheduled=1`, `cron_schedule="*/5 * * * *"`
-- Alert fields: `alert_type=number_of_events`, `alert_comparator="greater than"`, `alert_threshold=0`
+- Alert fields: `alert_type="number of events"` (with space, NOT `number_of_events`), `alert_comparator="greater than"`, `alert_threshold=0`
 - Severity: `alert.severity=4` (high), `alert.severity=3` (medium)
+- Use `-sf` flag carefully — it suppresses error responses. Use `-sk` (insecure but show output) for debugging.
 
 ---
 
@@ -148,3 +150,6 @@ sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 | 2026-03-01 | T1547.001 | Lucene backslash wildcards fail on keyword fields | Use simplified patterns: `*CurrentVersion*Run*` |
 | 2026-03-01 | T1547.001 | ES risk_score/severity mismatch causes deploy error | risk_score 73 = severity "high" (must align) |
 | 2026-03-01 | All | Cribl `source` field conflicts with ECS source object | Pipeline removes `source` field in eval cleanup |
+| 2026-03-01 | All | Splunk `-d` flag fails with spaces/wildcards in values | Use `--data-urlencode` for name, search, cron, alert_type, alert_comparator |
+| 2026-03-01 | All | Splunk `alert_type` value has a space | Use `"number of events"` not `"number_of_events"` |
+| 2026-03-01 | All | `curl -sf` suppresses Splunk API error bodies | Use `-sk` during debugging, only add `-f` for scripted success checks |

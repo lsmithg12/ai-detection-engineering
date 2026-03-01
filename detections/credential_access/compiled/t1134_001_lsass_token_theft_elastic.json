@@ -1,0 +1,73 @@
+{
+  "rule_id": "69c68ad8-ab9c-4e1b-9cba-47a4f87392a2",
+  "name": "LSASS Process Access for Token Theft [T1134.001]",
+  "description": "Detects processes accessing LSASS with access rights that allow token duplication (0x0040 = PROCESS_DUP_HANDLE). The Fawkes C2 agent 'steal-token' command opens LSASS to duplicate tokens for privilege escalation. Legitimate LSASS access from non-system processes is rare, making this a high-fidelity detection.",
+  "risk_score": 99,
+  "severity": "critical",
+  "type": "query",
+  "query": "winlog.event_data.TargetImage:*lsass.exe AND winlog.event_data.GrantedAccess:(0x0040 OR 0x1FFFFF OR 0x1010 OR 0x1410 OR 0x1438 OR 0x143a) AND NOT process.executable:(*csrss.exe OR *lsm.exe OR *wininit.exe OR *services.exe OR *svchost.exe OR *WmiPrvSE.exe OR *msiexec.exe OR *Windows?Defender*)",
+  "language": "lucene",
+  "index": ["sim-*"],
+  "interval": "5m",
+  "from": "now-6m",
+  "enabled": true,
+  "tags": ["Fawkes C2", "T1134.001", "Privilege Escalation", "Credential Access"],
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0004",
+        "name": "Privilege Escalation",
+        "reference": "https://attack.mitre.org/tactics/TA0004/"
+      },
+      "technique": [
+        {
+          "id": "T1134",
+          "name": "Access Token Manipulation",
+          "reference": "https://attack.mitre.org/techniques/T1134/",
+          "subtechnique": [
+            {
+              "id": "T1134.001",
+              "name": "Token Impersonation/Theft",
+              "reference": "https://attack.mitre.org/techniques/T1134/001/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0006",
+        "name": "Credential Access",
+        "reference": "https://attack.mitre.org/tactics/TA0006/"
+      },
+      "technique": [
+        {
+          "id": "T1134",
+          "name": "Access Token Manipulation",
+          "reference": "https://attack.mitre.org/techniques/T1134/",
+          "subtechnique": [
+            {
+              "id": "T1134.001",
+              "name": "Token Impersonation/Theft",
+              "reference": "https://attack.mitre.org/techniques/T1134/001/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1134/001/",
+    "https://github.com/galoryber/fawkes",
+    "https://docs.microsoft.com/en-us/windows/win32/procthread/process-security-and-access-rights"
+  ],
+  "false_positives": [
+    "Legitimate security tools that scan LSASS (AV engines, EDR agents)",
+    "Windows Error Reporting crash handling for LSASS",
+    "Task Manager or Process Explorer querying process information"
+  ],
+  "author": ["blue-team-agent"],
+  "license": "Elastic License v2"
+}
