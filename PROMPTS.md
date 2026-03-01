@@ -402,6 +402,111 @@ Build a detection for T1053.005 (Scheduled Task) using the full branch + PR work
 
 ---
 
+## Threat Intel Analysis — New Intel Ingestion
+
+Analyze a threat intelligence source (blog post, report URL, or pasted text) and map it to actionable detections for this lab. This is the "intel-to-detection" pipeline.
+
+```
+Read CLAUDE.md and templates/detection-authoring-rules.md, then analyze the threat intel I provide.
+
+=== PHASE 1: INTEL INGESTION ===
+
+I will provide one of:
+- A URL to a blog post, threat report, or advisory
+- Pasted text from a report
+- A malware family name or threat actor name to research
+
+If given a URL, fetch the content and extract all relevant technical details.
+If given a name, search the web for recent threat reports and TTPs.
+
+=== PHASE 2: TTP EXTRACTION ===
+
+From the intel source, extract and organize:
+
+1. **Threat Actor / Malware Profile**
+   - Name, aliases, known targets, motivation
+   - Tools and frameworks used (Cobalt Strike, Sliver, custom C2, etc.)
+
+2. **Techniques Observed** (map each to MITRE ATT&CK)
+   For each technique found:
+   | Technique ID | Name | Description from Report | Confidence |
+   |---|---|---|---|
+   | T1059.001 | PowerShell | "Used encoded PowerShell to download..." | High |
+
+3. **Indicators of Compromise (IOCs)**
+   - File hashes (MD5/SHA256)
+   - IP addresses, domains, URLs
+   - File paths, registry keys, service names
+   - Mutex names, named pipes
+   - Note: IOCs are ephemeral — TTPs are more valuable for detection
+
+4. **Artifacts Generated** (what logs would this produce?)
+   - Process creation events (EID 1)
+   - Network connections (EID 3)
+   - Registry modifications (EID 13)
+   - Process access (EID 10)
+   - File creation (EID 11)
+   - Image loads (EID 7)
+
+=== PHASE 3: CROSS-REFERENCE WITH OUR ENVIRONMENT ===
+
+5. Read coverage/attack-matrix.md — check which extracted techniques we already detect
+
+6. Query Elasticsearch to check data availability:
+   - For each extracted technique, check if we have the required Sysmon EventID:
+     curl -u elastic:changeme http://localhost:9200/sim-baseline/_search \
+       -d '{"query":{"term":{"event.code":"<EID>"}},"size":0}'
+   - Also check sim-attack for any matching simulation data
+
+7. Read coverage/data-sources.md — verify field availability for each technique
+
+8. Cross-reference with Fawkes capabilities (threat-intel/fawkes/fawkes-ttp-mapping.md):
+   - Which extracted techniques overlap with Fawkes commands?
+   - This overlap = highest priority (we can simulate AND detect)
+
+=== PHASE 4: DETECTION FEASIBILITY REPORT ===
+
+Generate a structured report with three sections:
+
+### A. Detections We Can Build Now
+Techniques where we have:
+- The required data source (Sysmon EID present in sim-baseline/sim-attack)
+- The required fields mapped in our indices
+- No existing detection deployed
+
+For each, provide:
+| Technique | Data Source | Detection Approach | Estimated FP Risk | Priority |
+|---|---|---|---|---|
+
+### B. Detections Blocked by Data Gaps
+Techniques where we're missing:
+- Required Sysmon EventID not being collected
+- Required fields not in our index mappings
+- Network/host data not available
+
+For each, specify what's missing and what would need to change.
+
+### C. Already Covered
+Techniques we already detect — note if our existing rules would catch the specific variant described in the intel.
+
+=== PHASE 5: ACTIONABLE OUTPUT ===
+
+9. Create a prioritized detection plan:
+   - Rank by: (a) overlap with report TTPs, (b) data availability, (c) FP risk
+   - Top 3 recommendations with specific detection logic sketches
+
+10. Optionally create GitHub Issues for new coverage gaps discovered:
+    Title: [Gap] No detection for <Technique> (<ID>) — from <Intel Source>
+    Body: technique description, data requirements, priority, source reference
+
+11. Save the analysis to: threat-intel/analysis/<date>-<source-name>.md
+    Include: source URL, extraction date, all TTPs mapped, detection recommendations
+
+Ask me for the intel source to analyze.
+```
+
+---
+
 ## Security Review
 
 ```

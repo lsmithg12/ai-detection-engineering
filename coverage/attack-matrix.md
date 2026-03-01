@@ -1,8 +1,8 @@
 # MITRE ATT&CK Coverage Matrix — Fawkes C2 Detections
 
 **Last updated**: 2026-03-01
-**Detections deployed**: 1
-**Techniques covered**: 1 / 21 (5%)
+**Detections deployed**: 2
+**Techniques covered**: 2 / 21 (10%)
 
 Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | ❌ No coverage
 
@@ -13,7 +13,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Tactic | Techniques | Covered | In Progress | Backlogged | Gap |
 |---|---|---|---|---|---|
 | Execution (TA0002) | 7 | 1 | 0 | 1 | 5 |
-| Persistence (TA0003) | 6 | 0 | 0 | 2 | 4 |
+| Persistence (TA0003) | 6 | 1 | 0 | 1 | 4 |
 | Privilege Escalation (TA0004) | 5 | 0 | 0 | 2 | 3 |
 | Defense Evasion (TA0005) | 7 | 0 | 0 | 2 | 5 |
 | Credential Access (TA0006) | 5 | 0 | 0 | 1 | 4 |
@@ -21,7 +21,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Lateral Movement (TA0008) | 2 | 0 | 0 | 0 | 2 |
 | Collection (TA0009) | 3 | 0 | 0 | 0 | 3 |
 | Command and Control (TA0011) | 3 | 0 | 0 | 1 | 2 |
-| **Total** | **48** | **1** | **0** | **9** | **37** |
+| **Total** | **48** | **2** | **0** | **8** | **37** |
 
 ---
 
@@ -41,7 +41,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1547 | .001 | Registry Run Keys | `persist -method registry` | 📋 Backlogged | — |
+| T1547 | .001 | Registry Run Keys | `persist -method registry` | ✅ Deployed | [t1547_001_registry_run_key.yml](../detections/persistence/t1547_001_registry_run_key.yml) |
 | T1547 | .001 | Startup Folder | `persist -method startup-folder` | ⚠️ Data gap (no Sysmon EID 11) | — |
 | T1053 | .005 | Scheduled Task | `schtask -action create` | 📋 Backlogged | — |
 | T1543 | .003 | Windows Service | `service -action create` | ⚠️ Data gap (no EID 7045) | — |
@@ -135,6 +135,6 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Date | Deployed | Techniques | % Coverage |
 |---|---|---|---|
-| 2026-03-01 | 1 | 1/21 | 5% |
+| 2026-03-01 | 2 | 2/21 | 10% |
 
 *This table updates with each detection deployment.*

@@ -1,0 +1,38 @@
+{
+  "description": "Fawkes C2 persist -method registry — writes to HKCU Run key for persistence",
+  "technique": "T1547.001",
+  "fawkes_command": "persist -method registry",
+  "expected_result": "ALERT",
+  "event": {
+    "@timestamp": "2026-03-01T05:00:00.000000+00:00",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "registry": {
+      "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\WindowsUpdate",
+      "value": "C:\\Users\\Public\\svchost.exe"
+    },
+    "process": {
+      "pid": 5432,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe"
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": { "platform": "windows" }
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1547.001",
+      "fawkes_command": "persist",
+      "label": "registry_run_key"
+    }
+  }
+}

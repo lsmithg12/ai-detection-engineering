@@ -1,0 +1,50 @@
+{
+  "rule_id": "bddcc2fe-4e9a-48af-a674-756c4bcb1ecd",
+  "name": "Registry Run Key Persistence [T1547.001]",
+  "description": "Detects modification of Windows Registry Run/RunOnce keys used for persistence. Fawkes C2 agent uses 'persist -method registry' to write to HKCU/HKLM Run keys.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "query",
+  "query": "registry.path:(*CurrentVersion*Run* OR *CurrentVersion*RunOnce* OR *CurrentVersion*RunServices*) AND NOT process.executable:(*msiexec.exe OR *svchost.exe OR *Microsoft*)",
+  "language": "lucene",
+  "index": ["sim-*"],
+  "interval": "5m",
+  "from": "now-6m",
+  "enabled": true,
+  "tags": ["Fawkes C2", "T1547.001", "Persistence"],
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0003",
+        "name": "Persistence",
+        "reference": "https://attack.mitre.org/tactics/TA0003/"
+      },
+      "technique": [
+        {
+          "id": "T1547",
+          "name": "Boot or Logon Autostart Execution",
+          "reference": "https://attack.mitre.org/techniques/T1547/",
+          "subtechnique": [
+            {
+              "id": "T1547.001",
+              "name": "Registry Run Keys / Startup Folder",
+              "reference": "https://attack.mitre.org/techniques/T1547/001/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1547/001/",
+    "https://github.com/galoryber/fawkes"
+  ],
+  "false_positives": [
+    "Legitimate software installations writing Run keys",
+    "Group Policy client updating startup entries",
+    "Enterprise management tools (SCCM, Intune)"
+  ],
+  "author": ["blue-team-agent"],
+  "license": "Elastic License v2"
+}
