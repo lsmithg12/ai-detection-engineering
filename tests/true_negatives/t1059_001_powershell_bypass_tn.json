@@ -1,0 +1,44 @@
+{
+  "description": "Normal process creation — notepad.exe, should NOT trigger PowerShell bypass detection",
+  "technique": "T1059.001",
+  "expected_result": "NO_ALERT",
+  "event": {
+    "@timestamp": "2026-03-01T04:40:00.000000+00:00",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 12345,
+      "name": "notepad.exe",
+      "executable": "C:\\Windows\\System32\\notepad.exe",
+      "command_line": "notepad.exe C:\\Users\\jsmith\\Documents\\notes.txt",
+      "parent": {
+        "pid": 5678,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-SALES-03",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "baseline",
+      "technique": "",
+      "fawkes_command": "",
+      "label": "normal_activity"
+    }
+  }
+}

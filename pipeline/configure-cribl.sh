@@ -138,9 +138,10 @@ else
     log_warn "Pipeline may already exist (re-run is idempotent)"
 fi
 
-# ─── 3. Create Elasticsearch Output ──────────────────────────────
+# ─── 3. Create Elasticsearch Outputs ─────────────────────────────
 # Type must be "elastic" (not "elasticsearch"). Requires "url" field.
-log_info "Creating Elasticsearch output..."
+# Two outputs: sim-baseline (normal) and sim-attack (attack scenarios).
+log_info "Creating Elasticsearch outputs..."
 RESULT=$(cribl_api POST "/system/outputs" '{
   "id": "elastic_out",
   "type": "elastic",
@@ -150,12 +151,29 @@ RESULT=$(cribl_api POST "/system/outputs" '{
   "username": "elastic",
   "password": "changeme",
   "compress": false,
-  "description": "Elastic SIEM — events after CIM normalization"
+  "description": "Elastic SIEM — baseline events"
 }')
 if echo "$RESULT" | grep -q '"elastic_out"'; then
-    log_ok "Elasticsearch output configured → http://elasticsearch:9200"
+    log_ok "Elasticsearch baseline output → sim-baseline"
 else
-    log_warn "ES output may already exist (re-run is idempotent)"
+    log_warn "ES baseline output may already exist"
+fi
+
+RESULT=$(cribl_api POST "/system/outputs" '{
+  "id": "elastic_attack",
+  "type": "elastic",
+  "url": "http://elasticsearch:9200",
+  "index": "sim-attack",
+  "authType": "basic",
+  "username": "elastic",
+  "password": "changeme",
+  "compress": false,
+  "description": "Elastic SIEM — attack events only"
+}')
+if echo "$RESULT" | grep -q '"elastic_attack"'; then
+    log_ok "Elasticsearch attack output → sim-attack"
+else
+    log_warn "ES attack output may already exist"
 fi
 
 # ─── 4. Create Splunk HEC Output ─────────────────────────────────
@@ -178,13 +196,33 @@ fi
 
 # ─── 5. Configure Routes ─────────────────────────────────────────
 # Routes use PATCH on the default route group (not POST to create new ones).
+# Attack events → sim-attack (Elastic) + sysmon (Splunk), non-final so they also hit baseline route.
+# Baseline events → sim-baseline (Elastic) + sysmon (Splunk).
 log_info "Configuring routing rules..."
 RESULT=$(cribl_api PATCH "/routes/default" '{
   "id": "default",
   "routes": [
     {
-      "id": "all_to_elastic",
-      "name": "All Events → Elastic",
+      "id": "attack_to_elastic",
+      "name": "Attack Events → Elastic (sim-attack)",
+      "filter": "__e._simulation && __e._simulation.type === \"attack\"",
+      "pipeline": "cim_normalize",
+      "output": "elastic_attack",
+      "final": false,
+      "disabled": false
+    },
+    {
+      "id": "attack_to_splunk",
+      "name": "Attack Events → Splunk",
+      "filter": "__e._simulation && __e._simulation.type === \"attack\"",
+      "pipeline": "cim_normalize",
+      "output": "splunk_out",
+      "final": true,
+      "disabled": false
+    },
+    {
+      "id": "baseline_to_elastic",
+      "name": "Baseline → Elastic (sim-baseline)",
       "filter": "true",
       "pipeline": "cim_normalize",
       "output": "elastic_out",
@@ -192,8 +230,8 @@ RESULT=$(cribl_api PATCH "/routes/default" '{
       "disabled": false
     },
     {
-      "id": "all_to_splunk",
-      "name": "All Events → Splunk",
+      "id": "baseline_to_splunk",
+      "name": "Baseline → Splunk",
       "filter": "true",
       "pipeline": "cim_normalize",
       "output": "splunk_out",
@@ -202,8 +240,8 @@ RESULT=$(cribl_api PATCH "/routes/default" '{
     }
   ]
 }')
-if echo "$RESULT" | grep -q '"all_to_elastic"'; then
-    log_ok "Routes configured (all events → Elastic + Splunk)"
+if echo "$RESULT" | grep -q '"attack_to_elastic"'; then
+    log_ok "Routes configured (attack → sim-attack, baseline → sim-baseline, both → Splunk)"
 else
     log_err "Failed to configure routes: $RESULT"
 fi
@@ -227,6 +265,6 @@ echo ""
 echo -e "  ${CYAN}Data flow:${NC}"
 echo "    Simulator → Cribl HEC (8088)"
 echo "    ├── CIM normalize pipeline (ECS → Splunk field aliases)"
-echo "    ├── → Elastic (9200) — sim-baseline index"
-echo "    └── → Splunk HEC (8088) — sysmon index"
+echo "    ├── Attack events  → Elastic (sim-attack) + Splunk (sysmon)"
+echo "    └── Baseline events → Elastic (sim-baseline) + Splunk (sysmon)"
 echo ""

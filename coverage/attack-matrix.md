@@ -1,8 +1,8 @@
 # MITRE ATT&CK Coverage Matrix — Fawkes C2 Detections
 
-**Last updated**: _not yet started_
-**Detections deployed**: 0
-**Techniques covered**: 0 / 21 (0%)
+**Last updated**: 2026-03-01
+**Detections deployed**: 1
+**Techniques covered**: 1 / 21 (5%)
 
 Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | ❌ No coverage
 
@@ -12,7 +12,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Tactic | Techniques | Covered | In Progress | Backlogged | Gap |
 |---|---|---|---|---|---|
-| Execution (TA0002) | 7 | 0 | 0 | 2 | 5 |
+| Execution (TA0002) | 7 | 1 | 0 | 1 | 5 |
 | Persistence (TA0003) | 6 | 0 | 0 | 2 | 4 |
 | Privilege Escalation (TA0004) | 5 | 0 | 0 | 2 | 3 |
 | Defense Evasion (TA0005) | 7 | 0 | 0 | 2 | 5 |
@@ -21,7 +21,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Lateral Movement (TA0008) | 2 | 0 | 0 | 0 | 2 |
 | Collection (TA0009) | 3 | 0 | 0 | 0 | 3 |
 | Command and Control (TA0011) | 3 | 0 | 0 | 1 | 2 |
-| **Total** | **48** | **0** | **0** | **10** | **37** |
+| **Total** | **48** | **1** | **0** | **9** | **37** |
 
 ---
 
@@ -29,7 +29,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1059 | .001 | PowerShell | `powershell` | 📋 Backlogged | — |
+| T1059 | .001 | PowerShell | `powershell` | ✅ Deployed | [t1059_001_powershell_bypass.yml](../detections/execution/t1059_001_powershell_bypass.yml) |
 | T1059 | .003 | Windows Command Shell | `run`, `shell` | ❌ No coverage | — |
 | T1047 | — | Windows Management Instrumentation | `wmi` | ⚠️ Data gap (no Sysmon EID 19-21) | — |
 | T1620 | — | Reflective Code Loading | `inline-assembly` | ⚠️ Data gap | — |
@@ -135,6 +135,6 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Date | Deployed | Techniques | % Coverage |
 |---|---|---|---|
-| — | 0 | 0/21 | 0% |
+| 2026-03-01 | 1 | 1/21 | 5% |
 
 *This table updates with each detection deployment.*

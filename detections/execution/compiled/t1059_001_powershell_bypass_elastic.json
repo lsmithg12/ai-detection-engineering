@@ -1,0 +1,50 @@
+{
+  "rule_id": "b7a9d54f-a85c-4c55-a2d8-5b19ba14b884",
+  "name": "PowerShell Execution with Bypass Flags [T1059.001]",
+  "description": "Detects PowerShell execution using -ExecutionPolicy Bypass or -NoProfile flags, commonly used by Fawkes C2 agent 'powershell' command to evade script execution restrictions.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "query",
+  "query": "(process.name:(*powershell.exe OR *pwsh.exe)) AND (process.command_line:(*\\-ExecutionPolicy\\ Bypass* OR *\\-ep\\ bypass* OR *\\-exec\\ bypass* OR *\\-NoProfile* OR *\\-nop* OR *\\-EncodedCommand* OR *\\-enc\\ * OR *\\-WindowStyle\\ Hidden* OR *\\-w\\ hidden*)) AND (NOT (process.parent.executable:(*C\\:\\\\Windows\\\\CCM\\\\* OR *C\\:\\\\Program\\ Files\\\\Microsoft\\ Configuration\\ Manager*)))",
+  "language": "lucene",
+  "index": ["sim-*"],
+  "interval": "5m",
+  "from": "now-6m",
+  "enabled": true,
+  "tags": ["Fawkes C2", "T1059.001", "Execution"],
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0002",
+        "name": "Execution",
+        "reference": "https://attack.mitre.org/tactics/TA0002/"
+      },
+      "technique": [
+        {
+          "id": "T1059",
+          "name": "Command and Scripting Interpreter",
+          "reference": "https://attack.mitre.org/techniques/T1059/",
+          "subtechnique": [
+            {
+              "id": "T1059.001",
+              "name": "PowerShell",
+              "reference": "https://attack.mitre.org/techniques/T1059/001/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1059/001/",
+    "https://github.com/galoryber/fawkes"
+  ],
+  "false_positives": [
+    "SCCM/ConfigMgr scripts using -ExecutionPolicy Bypass",
+    "Enterprise software deployment tools",
+    "System administrator maintenance scripts"
+  ],
+  "author": ["blue-team-agent"],
+  "license": "Elastic License v2"
+}
