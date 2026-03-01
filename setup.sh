@@ -243,8 +243,32 @@ fi
 log_info "Building containers (first run downloads images — may take a few minutes)..."
 docker compose "${PROFILES[@]}" build 2>&1 | tail -5
 
-log_info "Starting services..."
-docker compose "${PROFILES[@]}" up -d
+# When Cribl is active, start everything EXCEPT the simulator first.
+# Cribl's HEC input must be configured (via configure-cribl.sh) before the
+# simulator can route through it.  The simulator is started after Cribl setup.
+if [ "$INCLUDE_CRIBL" = true ] && [ "$INCLUDE_SIMULATOR" = true ]; then
+    # Build profile args without the simulator (it starts after Cribl is configured)
+    PROFILES_NO_SIM=()
+    SKIP_NEXT=false
+    for p in "${PROFILES[@]}"; do
+        if [ "$p" == "--profile" ]; then
+            SKIP_NEXT=true
+            continue
+        fi
+        if [ "$SKIP_NEXT" = true ]; then
+            SKIP_NEXT=false
+            if [ "$p" == "simulator" ]; then
+                continue
+            fi
+            PROFILES_NO_SIM+=("--profile" "$p")
+        fi
+    done
+    log_info "Starting SIEM + Cribl services (simulator deferred until Cribl is configured)..."
+    docker compose "${PROFILES_NO_SIM[@]}" up -d
+else
+    log_info "Starting services..."
+    docker compose "${PROFILES[@]}" up -d
+fi
 
 # ─── Wait for Services ──────────────────────────────────────────
 log_step "Waiting for Services to Initialize"
@@ -273,14 +297,26 @@ fi
 
 if [[ "$SIEM_MODE" == "splunk" || "$SIEM_MODE" == "both" ]]; then
     log_info "Waiting for Splunk (this takes ~2-3 min)..."
+    SPLUNK_READY=false
     for i in $(seq 1 90); do
         if curl -sf -k https://localhost:8089/services/server/health -u admin:BlueTeamLab1! &>/dev/null; then
             log_ok "Splunk is ready → http://localhost:8000 (admin / BlueTeamLab1!)"
+            SPLUNK_READY=true
             break
         fi
         [ "$i" -eq 90 ] && log_warn "Splunk still starting — check http://localhost:8000"
         sleep 5
     done
+
+    # Create simulation indexes (default.yml index creation is unreliable)
+    if [ "$SPLUNK_READY" = true ]; then
+        log_info "Creating Splunk indexes..."
+        for idx in sysmon attack_simulation wineventlog linux network; do
+            curl -sf -k -u admin:BlueTeamLab1! -X POST "https://localhost:8089/services/data/indexes" \
+                -d name="$idx" -d datatype=event > /dev/null 2>&1 || true
+        done
+        log_ok "Splunk indexes created (sysmon, attack_simulation, wineventlog, linux, network)"
+    fi
 fi
 
 if [ "$INCLUDE_CRIBL" = true ]; then
@@ -300,6 +336,12 @@ if [ "$INCLUDE_CRIBL" = true ]; then
         log_info "Auto-configuring Cribl Stream pipeline..."
         bash pipeline/configure-cribl.sh 2>&1 | grep -E '^\s+\[' || \
             log_warn "Cribl auto-config had issues — open http://localhost:9000 to configure manually"
+    fi
+
+    # Now that Cribl HEC is configured, start the simulator
+    if [ "$INCLUDE_SIMULATOR" = true ]; then
+        log_info "Starting log simulator (Cribl HEC is now configured)..."
+        docker compose --profile simulator up -d log-simulator
     fi
 fi
 
