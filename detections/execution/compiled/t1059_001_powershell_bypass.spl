@@ -1,0 +1,1 @@
+process.name IN ("*powershell.exe", "*pwsh.exe") process.command_line IN ("*-ExecutionPolicy Bypass*", "*-ep bypass*", "*-exec bypass*", "*-NoProfile*", "*-nop*", "*-EncodedCommand*", "*-enc *", "*-WindowStyle Hidden*", "*-w hidden*") NOT (process.parent.executable IN ("*C:\\Windows\\CCM\\*", "*C:\\Program Files\\Microsoft Configuration Manager*"))

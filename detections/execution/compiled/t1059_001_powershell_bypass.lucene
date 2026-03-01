@@ -1,0 +1,1 @@
+(process.name:(*powershell.exe OR *pwsh.exe)) AND (process.command_line:(*\-ExecutionPolicy\ Bypass* OR *\-ep\ bypass* OR *\-exec\ bypass* OR *\-NoProfile* OR *\-nop* OR *\-EncodedCommand* OR *\-enc\ * OR *\-WindowStyle\ Hidden* OR *\-w\ hidden*)) AND (NOT (process.parent.executable:(*C\:\\Windows\\CCM\\* OR *C\:\\Program\ Files\\Microsoft\ Configuration\ Manager*)))

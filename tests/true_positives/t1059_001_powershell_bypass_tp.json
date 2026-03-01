@@ -1,0 +1,45 @@
+{
+  "description": "Fawkes C2 powershell command — executes with -NoProfile -ExecutionPolicy Bypass targeting lsass",
+  "technique": "T1059.001",
+  "fawkes_command": "powershell",
+  "expected_result": "ALERT",
+  "event": {
+    "@timestamp": "2026-03-01T04:43:06.044038+00:00",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 33322,
+      "name": "powershell.exe",
+      "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "command_line": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"Get-Process | Where-Object {$_.ProcessName -eq 'lsass'}\"",
+      "parent": {
+        "pid": 63347,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1059.001",
+      "fawkes_command": "powershell",
+      "label": "suspicious_powershell"
+    }
+  }
+}

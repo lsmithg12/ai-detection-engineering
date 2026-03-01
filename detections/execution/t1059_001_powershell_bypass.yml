@@ -1,0 +1,67 @@
+title: PowerShell Execution with Bypass Flags
+id: b7a9d54f-a85c-4c55-a2d8-5b19ba14b884
+status: experimental
+description: |
+  Detects PowerShell execution using -ExecutionPolicy Bypass or -NoProfile flags,
+  which are commonly used by adversaries to evade script execution restrictions.
+  Fawkes C2 agent uses the 'powershell' command which spawns powershell.exe with
+  bypass flags to execute arbitrary PowerShell commands on compromised hosts.
+author: blue-team-agent
+date: 2026-03-01
+modified: 2026-03-01
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    process.name|endswith:
+      - 'powershell.exe'
+      - 'pwsh.exe'
+  selection_flags:
+    process.command_line|contains:
+      - '-ExecutionPolicy Bypass'
+      - '-ep bypass'
+      - '-exec bypass'
+      - '-NoProfile'
+      - '-nop'
+      - '-EncodedCommand'
+      - '-enc '
+      - '-WindowStyle Hidden'
+      - '-w hidden'
+  filter_legitimate:
+    process.parent.executable|contains:
+      - 'C:\Windows\CCM\'
+      - 'C:\Program Files\Microsoft Configuration Manager'
+  condition: selection_process and selection_flags and not filter_legitimate
+falsepositives:
+  - SCCM/ConfigMgr scripts that use -ExecutionPolicy Bypass
+  - Enterprise software deployment tools using PowerShell with bypass flags
+  - System administrators running maintenance scripts
+level: high
+
+# ─── Validation ──────────────────────────────────────────────────────────────
+# True Positive Test:
+#   File: tests/true_positives/t1059_001_powershell_bypass_tp.json
+#   Description: powershell.exe -NoProfile -ExecutionPolicy Bypass targeting lsass
+#
+# True Negative Test:
+#   File: tests/true_negatives/t1059_001_powershell_bypass_tn.json
+#   Description: Legitimate process creation (notepad.exe, chrome.exe)
+
+# ─── MITRE Coverage ──────────────────────────────────────────────────────────
+# Tactic:      Execution (TA0002)
+# Technique:   Command and Scripting Interpreter (T1059)
+# Sub-tech:    PowerShell (T1059.001)
+# Data Source: Process: Process Creation
+# Data Comp:   Sysmon EventID 1
+
+# ─── Deployment Notes ────────────────────────────────────────────────────────
+# Transpile to Lucene: sigma convert -t lucene -p ecs_windows detections/execution/t1059_001_powershell_bypass.yml
+# Transpile to SPL:    sigma convert -t splunk --without-pipeline detections/execution/t1059_001_powershell_bypass.yml
