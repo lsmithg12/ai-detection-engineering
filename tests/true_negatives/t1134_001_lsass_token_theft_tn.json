@@ -1,0 +1,33 @@
+{
+  "_description": "True negative: WmiPrvSE.exe legitimately accessing LSASS for WMI queries — should NOT trigger alert",
+  "_technique": "T1134.001",
+  "_expected_result": "NO_ALERT",
+  "_rationale": "WmiPrvSE.exe is a trusted Windows system process that routinely accesses LSASS for WMI operations. This is excluded by the filter_system_processes block.",
+  "event": {
+    "category": "process",
+    "type": "access",
+    "action": "Process accessed (rule: ProcessAccess)",
+    "code": "10"
+  },
+  "process": {
+    "name": "WmiPrvSE.exe",
+    "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+    "pid": 4212
+  },
+  "winlog": {
+    "event_data": {
+      "TargetImage": "C:\\Windows\\System32\\lsass.exe",
+      "GrantedAccess": "0x1410"
+    }
+  },
+  "user": {
+    "name": "SYSTEM",
+    "domain": "NT AUTHORITY"
+  },
+  "host": {
+    "name": "DC-01",
+    "os": {
+      "platform": "windows"
+    }
+  }
+}

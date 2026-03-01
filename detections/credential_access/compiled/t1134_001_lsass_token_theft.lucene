@@ -1,0 +1,1 @@
+winlog.event_data.TargetImage:*lsass.exe AND winlog.event_data.GrantedAccess:(0x0040 OR 0x1FFFFF OR 0x1010 OR 0x1410 OR 0x1438 OR 0x143a) AND NOT process.executable:(*csrss.exe OR *lsm.exe OR *wininit.exe OR *services.exe OR *svchost.exe OR *WmiPrvSE.exe OR *msiexec.exe OR *Windows?Defender*)

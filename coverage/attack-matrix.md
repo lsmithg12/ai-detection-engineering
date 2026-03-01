@@ -1,8 +1,8 @@
 # MITRE ATT&CK Coverage Matrix — Fawkes C2 Detections
 
 **Last updated**: 2026-03-01
-**Detections deployed**: 2
-**Techniques covered**: 2 / 21 (10%)
+**Detections deployed**: 3
+**Techniques covered**: 3 / 21 (14%)
 
 Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | ❌ No coverage
 
@@ -14,14 +14,14 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 |---|---|---|---|---|---|
 | Execution (TA0002) | 7 | 1 | 0 | 1 | 5 |
 | Persistence (TA0003) | 6 | 1 | 0 | 1 | 4 |
-| Privilege Escalation (TA0004) | 5 | 0 | 0 | 2 | 3 |
+| Privilege Escalation (TA0004) | 5 | 1 | 0 | 1 | 3 |
 | Defense Evasion (TA0005) | 7 | 0 | 0 | 2 | 5 |
-| Credential Access (TA0006) | 5 | 0 | 0 | 1 | 4 |
+| Credential Access (TA0006) | 5 | 1 | 0 | 0 | 4 |
 | Discovery (TA0007) | 10 | 0 | 0 | 1 | 9 |
 | Lateral Movement (TA0008) | 2 | 0 | 0 | 0 | 2 |
 | Collection (TA0009) | 3 | 0 | 0 | 0 | 3 |
 | Command and Control (TA0011) | 3 | 0 | 0 | 1 | 2 |
-| **Total** | **48** | **2** | **0** | **8** | **37** |
+| **Total** | **48** | **3** | **0** | **7** | **37** |
 
 ---
 
@@ -58,7 +58,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | T1055 | .004 | Process Injection: APC | `apc-injection` | 📋 Backlogged | — |
 | T1055 | .012 | Process Injection: Threadless | `threadless-inject` | ⚠️ Data gap | — |
 | T1055 | .015 | Process Injection: PoolParty | `poolparty-injection` | ⚠️ Data gap | — |
-| T1134 | .001 | Token Impersonation | `steal-token` | 📋 Backlogged | — |
+| T1134 | .001 | Token Impersonation | `steal-token` | ✅ Deployed | [t1134_001_lsass_token_theft.yml](../detections/credential_access/t1134_001_lsass_token_theft.yml) |
 
 ---
 
@@ -79,7 +79,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1134 | .001 | Token Impersonation | `steal-token` | 📋 Backlogged | — |
+| T1134 | .001 | Token Impersonation | `steal-token` | ✅ Deployed | [t1134_001_lsass_token_theft.yml](../detections/credential_access/t1134_001_lsass_token_theft.yml) |
 | T1134 | .003 | Make/Impersonate Token | `make-token` | ❌ No coverage | — |
 | T1056 | .001 | Keylogging | `keylog` | ⚠️ Data gap (ETW/hook events) | — |
 | T1555 | .001 | macOS Keychain | `keychain` | ❌ No coverage (macOS) | — |
@@ -136,5 +136,6 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Date | Deployed | Techniques | % Coverage |
 |---|---|---|---|
 | 2026-03-01 | 2 | 2/21 | 10% |
+| 2026-03-01 | 3 | 3/21 | 14% |
 
 *This table updates with each detection deployment.*

@@ -1,0 +1,73 @@
+title: LSASS Process Access for Token Theft
+id: 69c68ad8-ab9c-4e1b-9cba-47a4f87392a2
+status: experimental
+description: |
+  Detects processes accessing LSASS (lsass.exe) with access rights that allow
+  token duplication (PROCESS_DUP_HANDLE = 0x0040). The Fawkes C2 agent uses
+  its 'steal-token' command to open LSASS and duplicate tokens for privilege
+  escalation. This is a high-fidelity detection because legitimate LSASS access
+  from non-system processes is rare.
+author: blue-team-agent
+date: 2026-03-01
+modified: 2026-03-01
+references:
+  - https://attack.mitre.org/techniques/T1134/001/
+  - https://github.com/galoryber/fawkes
+  - https://docs.microsoft.com/en-us/windows/win32/procthread/process-security-and-access-rights
+tags:
+  - attack.privilege_escalation
+  - attack.credential_access
+  - attack.t1134.001
+  - detection.fawkes
+logsource:
+  category: process_access
+  product: windows
+detection:
+  selection:
+    winlog.event_data.TargetImage|endswith: '\lsass.exe'
+    winlog.event_data.GrantedAccess|contains:
+      - '0x0040'
+      - '0x1FFFFF'
+      - '0x1010'
+      - '0x1410'
+      - '0x1438'
+      - '0x143a'
+  filter_system_processes:
+    process.executable|contains:
+      - 'C:\Windows\System32\csrss.exe'
+      - 'C:\Windows\System32\lsm.exe'
+      - 'C:\Windows\System32\wininit.exe'
+      - 'C:\Windows\System32\services.exe'
+      - 'C:\Windows\System32\svchost.exe'
+      - 'C:\Windows\System32\WmiPrvSE.exe'
+      - 'C:\Windows\System32\msiexec.exe'
+      - 'C:\Program Files\Windows Defender'
+      - 'C:\ProgramData\Microsoft\Windows Defender'
+  condition: selection and not filter_system_processes
+falsepositives:
+  - Legitimate security tools that scan LSASS (e.g., AV engines, EDR agents)
+  - Windows Error Reporting (WerFault.exe) crash handling for LSASS
+  - Task Manager or Process Explorer querying process information
+level: critical
+
+# ─── Validation ──────────────────────────────────────────────────────────────
+# True Positive Test:
+#   File: tests/true_positives/t1134_001_lsass_token_theft_tp.json
+#   Description: Fawkes steal-token accessing lsass.exe with 0x0040 from Temp folder
+#
+# True Negative Test:
+#   File: tests/true_negatives/t1134_001_lsass_token_theft_tn.json
+#   Description: WmiPrvSE.exe legitimately accessing lsass.exe
+
+# ─── MITRE Coverage ──────────────────────────────────────────────────────────
+# Tactic:      Privilege Escalation (TA0004), Credential Access (TA0006)
+# Technique:   Access Token Manipulation (T1134)
+# Sub-tech:    Token Impersonation/Theft (T1134.001)
+# Data Source: Process: Process Access
+# Data Comp:   Sysmon EventID 10
+
+# ─── Deployment Notes ────────────────────────────────────────────────────────
+# Transpile to Lucene: sigma convert -t lucene -p ecs_windows detections/credential_access/t1134_001_lsass_token_theft.yml
+# Transpile to SPL:    sigma convert -t splunk --without-pipeline detections/credential_access/t1134_001_lsass_token_theft.yml
+# Elastic rule JSON:   detections/credential_access/compiled/t1134_001_lsass_token_theft_elastic.json
+# Elastic index:       sim-*

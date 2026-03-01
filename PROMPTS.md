@@ -11,7 +11,7 @@ The complete workflow — from raw logs through Cribl normalization to deployed,
 > **Note**: Phases 2-3 (Cribl pipeline) are optional — skip them if you're not running with `--cribl` or `--full`. Jump from Phase 1 straight to Phase 4.
 
 ```
-Read CLAUDE.md, then run the full detection engineering lifecycle:
+Read CLAUDE.md and templates/detection-authoring-rules.md, then run the full detection engineering lifecycle:
 
 === PHASE 1: SETUP VERIFICATION ===
 
@@ -115,6 +115,9 @@ Read CLAUDE.md, then run the full detection engineering lifecycle:
 === PHASE 6: BUILD DETECTIONS ===
 
 17. Create a feature branch: git checkout -b detection/t<ID>-<short-name>
+
+17b. Re-read templates/detection-authoring-rules.md — check for known pitfalls
+     with the field types, SIEM syntax, and deployment steps you're about to use.
 
 18. For the selected technique, author a Sigma rule following templates/sigma-template.yml:
     - Full metadata: title, description, author, date, MITRE ATT&CK tags
@@ -232,7 +235,7 @@ Read the CLAUDE.md file, then:
 ## Build First Detection — Process Injection
 
 ```
-Build a detection for Fawkes vanilla-injection (T1055.001):
+Read templates/detection-authoring-rules.md first, then build a detection for Fawkes vanilla-injection (T1055.001):
 
 The Fawkes vanilla-injection command uses: VirtualAllocEx → WriteProcessMemory → CreateRemoteThread
 
@@ -291,7 +294,7 @@ Perform a full Cribl pipeline audit and optimization pass:
 ## Bulk Build — All Persistence Detections
 
 ```
-Build detections for all Fawkes persistence mechanisms. Follow the
+Read templates/detection-authoring-rules.md first. Build detections for all Fawkes persistence mechanisms. Follow the
 full lifecycle (intel→cribl review→author→validate→deploy→report) for each:
 
 1. Registry Run Keys (T1547.001) — Fawkes `persist -method registry`
@@ -379,7 +382,7 @@ Load supplemental attack telemetry from Splunk Attack Range / BOTS datasets:
 ## Full PR Workflow — Single Detection
 
 ```
-Build a detection for T1053.005 (Scheduled Task) using the full branch + PR workflow:
+Read templates/detection-authoring-rules.md first. Build a detection for T1053.005 (Scheduled Task) using the full branch + PR workflow:
 
 1. git checkout -b detection/t1053-005-scheduled-task
 2. Preview sim-attack data for T1053.005 through Cribl: cribl_get_input_samples + cribl_preview_pipeline
