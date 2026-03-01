@@ -109,31 +109,51 @@ RESULT=$(cribl_api POST "/pipelines" '{
   "conf": {
     "functions": [
       {
+        "id": "rename",
+        "filter": "true",
+        "description": "Save Cribl internal fields before serde overwrites them",
+        "conf": {
+          "wildcardDepth": 5,
+          "renameExpr": "C.Rename.rename(name, [[/^host$/, \"_cribl_host\"], [/^source$/, \"_cribl_source\"]])"
+        }
+      },
+      {
+        "id": "serde",
+        "filter": "true",
+        "description": "Parse _raw JSON into top-level ECS fields (process, user, host, etc.)",
+        "conf": {
+          "mode": "extract",
+          "type": "json",
+          "srcField": "_raw"
+        }
+      },
+      {
         "id": "eval",
         "filter": "true",
-        "description": "ECS-to-CIM field aliases for Splunk compatibility",
+        "description": "Cribl processing marker + CIM aliases + cleanup",
         "conf": {
           "add": [
-            {"name": "EventCode",   "value": "__e[\"event.code\"]"},
-            {"name": "src_ip",      "value": "__e[\"source.ip\"]"},
-            {"name": "dest_ip",     "value": "__e[\"destination.ip\"]"},
-            {"name": "dest_port",   "value": "__e[\"destination.port\"]"},
-            {"name": "user",        "value": "__e[\"user.name\"]"},
-            {"name": "host",        "value": "__e[\"host.name\"]"},
-            {"name": "process",     "value": "__e[\"process.name\"]"},
-            {"name": "CommandLine", "value": "__e[\"process.command_line\"]"},
-            {"name": "Image",       "value": "__e[\"process.executable\"]"},
-            {"name": "ParentImage", "value": "__e[\"process.parent.executable\"]"},
-            {"name": "TargetObject","value": "__e[\"registry.path\"]"},
-            {"name": "Details",     "value": "__e[\"registry.value\"]"}
-          ]
+            {"name": "cribl_pipe",      "value": "\"cim_normalize\""},
+            {"name": "cribl_processed", "value": "true"},
+            {"name": "cribl_ts",        "value": "Date.now()"},
+            {"name": "EventCode",       "value": "__e.event && __e.event.code"},
+            {"name": "CommandLine",     "value": "__e.process && __e.process.command_line"},
+            {"name": "Image",           "value": "__e.process && __e.process.executable"},
+            {"name": "ParentImage",     "value": "__e.process && __e.process.parent && __e.process.parent.executable"},
+            {"name": "TargetObject",    "value": "__e.registry && __e.registry.path"},
+            {"name": "Details",         "value": "__e.registry && __e.registry.value"},
+            {"name": "src_ip",          "value": "__e.source && __e.source.ip"},
+            {"name": "dest_ip",         "value": "__e.destination && __e.destination.ip"},
+            {"name": "dest_port",       "value": "__e.destination && __e.destination.port"}
+          ],
+          "remove": ["_raw", "_cribl_host", "_cribl_source", "cribl_breaker", "source"]
         }
       }
     ]
   }
 }')
 if echo "$RESULT" | grep -q '"cim_normalize"'; then
-    log_ok "CIM normalization pipeline created (12 field mappings)"
+    log_ok "CIM normalization pipeline created (serde + markers + CIM aliases)"
 else
     log_warn "Pipeline may already exist (re-run is idempotent)"
 fi
@@ -182,7 +202,7 @@ log_info "Creating Splunk HEC output..."
 RESULT=$(cribl_api POST "/system/outputs" '{
   "id": "splunk_out",
   "type": "splunk_hec",
-  "url": "http://splunk:8088",
+  "url": "http://splunk:8088/services/collector",
   "token": "blue-team-lab-hec-token",
   "index": "sysmon",
   "sourcetype": "sysmon",

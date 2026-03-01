@@ -1,0 +1,35 @@
+{
+  "description": "Legitimate msiexec.exe writing to Uninstall registry path — should NOT trigger",
+  "technique": "T1547.001",
+  "expected_result": "NO_ALERT",
+  "event": {
+    "@timestamp": "2026-03-01T05:00:00.000000+00:00",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "registry": {
+      "path": "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{guid}",
+      "value": "Microsoft Visual C++ 2019"
+    },
+    "process": {
+      "pid": 8765,
+      "name": "msiexec.exe",
+      "executable": "C:\\Windows\\System32\\msiexec.exe"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-SALES-03",
+      "os": { "platform": "windows" }
+    },
+    "_simulation": {
+      "type": "baseline",
+      "label": "normal_registry_write"
+    }
+  }
+}

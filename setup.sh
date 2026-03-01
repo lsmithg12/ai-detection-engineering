@@ -334,7 +334,7 @@ if [ "$INCLUDE_CRIBL" = true ]; then
 
     if [ "$CRIBL_READY" = true ] && [ -f "pipeline/configure-cribl.sh" ]; then
         log_info "Auto-configuring Cribl Stream pipeline..."
-        bash pipeline/configure-cribl.sh 2>&1 | grep -E '^\s+\[' || \
+        bash pipeline/configure-cribl.sh 2>&1 | grep -E '^\s+\[|Cribl Stream configured' || \
             log_warn "Cribl auto-config had issues — open http://localhost:9000 to configure manually"
     fi
 

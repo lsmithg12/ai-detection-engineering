@@ -1,0 +1,59 @@
+title: Registry Run Key Persistence
+id: bddcc2fe-4e9a-48af-a674-756c4bcb1ecd
+status: experimental
+description: |
+  Detects modification of Windows Registry Run/RunOnce keys, which are a common
+  persistence mechanism used by adversaries. Fawkes C2 agent uses the 'persist
+  -method registry' command to write to HKCU or HKLM Run keys, ensuring the
+  implant executes on user logon or system startup.
+author: blue-team-agent
+date: 2026-03-01
+modified: 2026-03-01
+references:
+  - https://attack.mitre.org/techniques/T1547/001/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.persistence
+  - attack.t1547.001
+  - detection.fawkes
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection:
+    registry.path|contains:
+      - '\CurrentVersion\Run\'
+      - '\CurrentVersion\RunOnce\'
+      - '\CurrentVersion\RunServices\'
+      - '\CurrentVersion\RunServicesOnce\'
+      - '\CurrentVersion\Explorer\Shell Folders'
+      - '\CurrentVersion\Explorer\User Shell Folders'
+  filter_legitimate:
+    process.executable|contains:
+      - 'C:\Windows\System32\msiexec.exe'
+      - 'C:\Windows\System32\svchost.exe'
+      - 'C:\Program Files\Microsoft'
+      - 'C:\Program Files (x86)\Microsoft'
+      - 'C:\Windows\SoftwareDistribution'
+  condition: selection and not filter_legitimate
+falsepositives:
+  - Legitimate software installations writing Run keys
+  - Group Policy client updating startup entries
+  - Enterprise management tools (SCCM, Intune)
+level: high
+
+# ─── Validation ──────────────────────────────────────────────────────────────
+# True Positive Test:
+#   File: tests/true_positives/t1547_001_registry_run_key_tp.json
+#   Description: Fawkes persist -method registry writing to HKCU\...\Run
+#
+# True Negative Test:
+#   File: tests/true_negatives/t1547_001_registry_run_key_tn.json
+#   Description: Legitimate msiexec.exe writing to Uninstall registry path
+
+# ─── MITRE Coverage ──────────────────────────────────────────────────────────
+# Tactic:      Persistence (TA0003)
+# Technique:   Boot or Logon Autostart Execution (T1547)
+# Sub-tech:    Registry Run Keys / Startup Folder (T1547.001)
+# Data Source: Windows Registry: Windows Registry Key Modification
+# Data Comp:   Sysmon EventID 13
