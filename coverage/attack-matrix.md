@@ -3,8 +3,10 @@
 **Last updated**: 2026-03-01
 **Detections deployed**: 3
 **Techniques covered**: 3 / 21 (14%)
+**Intel sources**: Fawkes C2 (21 techniques), Scattered Spider/UNC3944 (20 techniques)
 
 Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | ❌ No coverage
+Intel tags: [F] = Fawkes, [SS] = Scattered Spider, [F+SS] = both sources
 
 ---
 
@@ -12,16 +14,16 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Tactic | Techniques | Covered | In Progress | Backlogged | Gap |
 |---|---|---|---|---|---|
-| Execution (TA0002) | 7 | 1 | 0 | 1 | 5 |
-| Persistence (TA0003) | 6 | 1 | 0 | 1 | 4 |
+| Execution (TA0002) | 7 | 1 | 0 | 2 | 4 |
+| Persistence (TA0003) | 6 | 1 | 0 | 2 | 3 |
 | Privilege Escalation (TA0004) | 5 | 1 | 0 | 1 | 3 |
-| Defense Evasion (TA0005) | 7 | 0 | 0 | 2 | 5 |
-| Credential Access (TA0006) | 5 | 1 | 0 | 0 | 4 |
+| Defense Evasion (TA0005) | 11 | 0 | 0 | 6 | 5 |
+| Credential Access (TA0006) | 6 | 1 | 0 | 1 | 4 |
 | Discovery (TA0007) | 10 | 0 | 0 | 1 | 9 |
 | Lateral Movement (TA0008) | 2 | 0 | 0 | 0 | 2 |
 | Collection (TA0009) | 3 | 0 | 0 | 0 | 3 |
-| Command and Control (TA0011) | 3 | 0 | 0 | 1 | 2 |
-| **Total** | **48** | **3** | **0** | **7** | **37** |
+| Command and Control (TA0011) | 4 | 0 | 0 | 2 | 2 |
+| **Total** | **54** | **3** | **0** | **16** | **35** |
 
 ---
 
@@ -29,9 +31,9 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1059 | .001 | PowerShell | `powershell` | ✅ Deployed | [t1059_001_powershell_bypass.yml](../detections/execution/t1059_001_powershell_bypass.yml) |
-| T1059 | .003 | Windows Command Shell | `run`, `shell` | ❌ No coverage | — |
-| T1047 | — | Windows Management Instrumentation | `wmi` | ⚠️ Data gap (no Sysmon EID 19-21) | — |
+| T1059 | .001 | PowerShell | `powershell` | ✅ Deployed | [t1059_001_powershell_bypass.yml](../detections/execution/t1059_001_powershell_bypass.yml) | [F+SS] |
+| T1059 | .003 | Windows Command Shell | `run`, `shell` | ❌ No coverage | — | [F] |
+| T1047 | — | Windows Management Instrumentation | `wmi` | 📋 Backlogged (process-based via EID 1) | — | [F+SS] |
 | T1620 | — | Reflective Code Loading | `inline-assembly` | ⚠️ Data gap | — |
 | T1059 | .003 | BOF Execution | `inline-execute` | ⚠️ Data gap | — |
 
@@ -43,8 +45,8 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 |---|---|---|---|---|---|
 | T1547 | .001 | Registry Run Keys | `persist -method registry` | ✅ Deployed | [t1547_001_registry_run_key.yml](../detections/persistence/t1547_001_registry_run_key.yml) |
 | T1547 | .001 | Startup Folder | `persist -method startup-folder` | ⚠️ Data gap (no Sysmon EID 11) | — |
-| T1053 | .005 | Scheduled Task | `schtask -action create` | 📋 Backlogged | — |
-| T1543 | .003 | Windows Service | `service -action create` | ⚠️ Data gap (no EID 7045) | — |
+| T1053 | .005 | Scheduled Task | `schtask -action create` | 📋 Backlogged | — | [F+SS] |
+| T1543 | .003 | Windows Service | `service -action create` | 📋 Backlogged (sc.exe via EID 1) | — | [F+SS] |
 | T1053 | .003 | Cron Job | `crontab -action add` | ❌ No coverage | — |
 | T1543 | .001 | Launch Agent | `launchagent` | ❌ No coverage (macOS) | — |
 
@@ -54,7 +56,7 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1055 | .001 | Process Injection: CreateRemoteThread | `vanilla-injection` | 📋 Backlogged | — |
+| T1055 | .001 | Process Injection: CreateRemoteThread | `vanilla-injection` | 📋 Backlogged | — | [F+SS] |
 | T1055 | .004 | Process Injection: APC | `apc-injection` | 📋 Backlogged | — |
 | T1055 | .012 | Process Injection: Threadless | `threadless-inject` | ⚠️ Data gap | — |
 | T1055 | .015 | Process Injection: PoolParty | `poolparty-injection` | ⚠️ Data gap | — |
@@ -67,11 +69,15 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
 | T1055 | .001 | Process Injection | `vanilla-injection` | 📋 Backlogged | — |
-| T1562 | .001 | Disable/Modify Tools (AMSI) | `autopatch`, `start-clr` | 📋 Backlogged | — |
-| T1070 | .006 | Timestomp | `timestomp` | ⚠️ Data gap (no EID 2) | — |
-| T1027 | .001 | Binary Padding | `binary-inflate` | ⚠️ Data gap | — |
-| T1090 | .004 | Domain Fronting | built-in C2 | ⚠️ Data gap (need network proxy logs) | — |
-| T1497 | .003 | Time-based Evasion | `sleep` | ❌ No coverage | — |
+| T1562 | .001 | Disable/Modify Tools (AMSI) | `autopatch`, `start-clr` | 📋 Backlogged | — | [F] |
+| T1070 | .001 | Clear Windows Event Logs | — | 📋 Backlogged (wevtutil via EID 1) | — | [SS] |
+| T1070 | .004 | File Deletion | — | 📋 Backlogged (cipher/sdelete via EID 1) | — | [SS] |
+| T1070 | .006 | Timestomp | `timestomp` | ⚠️ Data gap (no EID 2) | — | [F] |
+| T1027 | — | Encoded PowerShell | — | 📋 Backlogged (EID 1) | — | [SS] |
+| T1027 | .001 | Binary Padding | `binary-inflate` | ⚠️ Data gap | — | [F] |
+| T1197 | — | BITS Jobs | — | 📋 Backlogged (bitsadmin via EID 1) | — | [SS] |
+| T1090 | .004 | Domain Fronting | built-in C2 | ⚠️ Data gap (need network proxy logs) | — | [F] |
+| T1497 | .003 | Time-based Evasion | `sleep` | ❌ No coverage | — | [F] |
 
 ---
 
@@ -80,7 +86,8 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
 | T1134 | .001 | Token Impersonation | `steal-token` | ✅ Deployed | [t1134_001_lsass_token_theft.yml](../detections/credential_access/t1134_001_lsass_token_theft.yml) |
-| T1134 | .003 | Make/Impersonate Token | `make-token` | ❌ No coverage | — |
+| T1003 | — | OS Credential Dumping (Mimikatz) | — | 📋 Backlogged (process via EID 1) | — | [SS] |
+| T1134 | .003 | Make/Impersonate Token | `make-token` | ❌ No coverage | — | [F] |
 | T1056 | .001 | Keylogging | `keylog` | ⚠️ Data gap (ETW/hook events) | — |
 | T1555 | .001 | macOS Keychain | `keychain` | ❌ No coverage (macOS) | — |
 | T1552 | .004 | Private Keys | `ssh-keys` | ❌ No coverage | — |
@@ -125,9 +132,10 @@ Legend: ✅ Deployed | 🔨 In progress | 📋 Backlogged | ⚠️ Data gap | �
 
 | Technique | Sub | Name | Fawkes Cmd | Status | Rule File |
 |---|---|---|---|---|---|
-| T1071 | .001 | HTTP/HTTPS C2 | beacon / `sleep` | 📋 Backlogged | — |
-| T1090 | .004 | Domain Fronting | built-in | ⚠️ Data gap | — |
-| T1573 | .002 | Asymmetric Cryptography | TLS pinning | ⚠️ Data gap | — |
+| T1071 | .001 | HTTP/HTTPS C2 | beacon / `sleep` | 📋 Backlogged | — | [F] |
+| T1219 | — | Remote Access Software | — | 📋 Backlogged (process via EID 1) | — | [SS] |
+| T1090 | .004 | Domain Fronting | built-in | ⚠️ Data gap | — | [F] |
+| T1573 | .002 | Asymmetric Cryptography | TLS pinning | ⚠️ Data gap | — | [F] |
 
 ---
 

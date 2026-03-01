@@ -1,9 +1,10 @@
 # Detection Backlog — Prioritized Top 10
 
 **Created**: 2026-02-23
-**Last confirmed**: 2026-02-25
-**Scoring method**: Fawkes capability match (3pts) + Data source availability (3pts) + Impact (3pts) + Coverage urgency (1pt)
+**Last updated**: 2026-03-01
+**Scoring method**: Intel overlap (3pts) + Data source availability (3pts) + Impact (3pts) + Coverage urgency (1pt)
 **SIEM status**: Elasticsearch 8.17.0 ONLINE | Splunk 9.3.9 ONLINE — lab profile `--both`
+**Intel sources**: Fawkes C2 (primary), Scattered Spider / UNC3944 (2026-03-01)
 
 ---
 
@@ -11,7 +12,7 @@
 
 | Dimension | 3 pts | 2 pts | 1 pt | 0 pts |
 |---|---|---|---|---|
-| **Fawkes match** | Core Fawkes command | Indirect technique | Adjacent technique | Not implemented |
+| **Intel overlap** | Multiple intel sources | Single intel source (Fawkes OR external) | Adjacent technique | Not in any intel |
 | **Data available** | Fully simulated | Partially simulated | Requires config change | Not available |
 | **Impact** | Credential/injection/C2 | Persistence/execution | Discovery | Collection |
 | **Coverage urgency** | 0 detections in tactic | Few detections | Some coverage | Well covered |
@@ -51,10 +52,11 @@ NOT winlog.event_data.SourceImage: ("C:\\Windows\\System32\\*")
 
 ---
 
-### Rank 2 — T1059.001: Suspicious PowerShell Execution
+### ~~Rank 2 — T1059.001: Suspicious PowerShell Execution~~ ✅ DEPLOYED
 
 **Score**: 9/10
 **Fawkes command**: `powershell`
+**Status**: DEPLOYED — `t1059_001_powershell_bypass.yml` (catches bypass flags; Scattered Spider encoded command variant needs separate T1027 rule)
 **MITRE**: Execution → T1059.001
 **ATT&CK description**: Adversary uses PowerShell to execute commands, often with bypass flags to circumvent policy
 
@@ -85,10 +87,11 @@ event.code: "1" AND process.name: "powershell.exe" AND (
 
 ---
 
-### Rank 3 — T1547.001: Registry Run Key Persistence
+### ~~Rank 3 — T1547.001: Registry Run Key Persistence~~ ✅ DEPLOYED
 
 **Score**: 9/10
 **Fawkes command**: `persist -method registry`
+**Status**: DEPLOYED — also covers Scattered Spider RMM tool persistence via Run keys
 **MITRE**: Persistence → T1547.001
 **ATT&CK description**: Adversary writes to Run/RunOnce registry keys to achieve persistence across reboots
 
@@ -116,10 +119,11 @@ registry.value: (*AppData\\Local\\Temp* OR *ProgramData* OR *AppData\\Roaming*)
 
 ---
 
-### Rank 4 — T1134.001: Token Impersonation via LSASS Access
+### ~~Rank 4 — T1134.001: Token Impersonation via LSASS Access~~ ✅ DEPLOYED
 
 **Score**: 9/10
 **Fawkes command**: `steal-token`
+**Status**: DEPLOYED — covers LSASS access for token theft
 **MITRE**: Credential Access / Privilege Escalation → T1134.001
 **ATT&CK description**: Adversary duplicates a token from a privileged process to impersonate a higher-privilege user
 
@@ -332,42 +336,63 @@ A process with an anomalous executable path accesses another process requesting 
 
 ## Backlog Summary Table
 
-| Rank | Technique | Fawkes Cmd | Score | Data | Rule File |
+### Tier 1 — Data Available, Build Now
+
+| Rank | Technique | Intel Source(s) | Score | Data | Rule File |
 |---|---|---|---|---|---|
-| 1 | T1055.001 CreateRemoteThread | vanilla-injection | 10/10 | Available | `privilege_escalation/t1055_001_create_remote_thread.yml` |
-| 2 | T1059.001 Suspicious PowerShell | powershell | 9/10 | Available | `execution/t1059_001_suspicious_powershell.yml` |
-| 3 | T1547.001 Registry Run Keys | persist -method registry | 9/10 | Available | `persistence/t1547_001_registry_run_key.yml` |
-| 4 | T1134.001 LSASS Token Theft | steal-token | 9/10 | Available | `credential_access/t1134_001_lsass_access_token_theft.yml` |
-| 5 | T1071.001 C2 Beaconing | sleep/beacon | 8/10 | Available | `command_and_control/t1071_001_c2_beaconing_unusual_process.yml` |
-| 6 | T1053.005 Scheduled Task | schtask | 8/10 | Available | `persistence/t1053_005_scheduled_task_persistence.yml` |
-| 7 | T1562.001 AMSI Bypass CLR | start-clr, autopatch | 7/10 | Available | `defense_evasion/t1562_001_amsi_bypass_clr_load.yml` |
-| 8 | T1087.002 Discovery Burst | net-enum, whoami, ps | 7/10 | Available | `discovery/t1087_002_discovery_command_burst.yml` |
-| 9 | T1055.004 APC Injection | apc-injection | 6/10 | Partial | `privilege_escalation/t1055_004_apc_injection.yml` |
-| 10 | T1543.003 Windows Service | service | 5/10 | Partial | `persistence/t1543_003_windows_service_creation.yml` |
+| 1 | T1055.001 CreateRemoteThread | Fawkes, Scattered Spider | 10/10 | Available | `privilege_escalation/t1055_001_create_remote_thread.yml` |
+| 2 | T1053.005 Scheduled Task | Fawkes, Scattered Spider | 9/10 | Available | `persistence/t1053_005_scheduled_task_persistence.yml` |
+| 3 | T1071.001 C2 Beaconing | Fawkes | 8/10 | Available | `command_and_control/t1071_001_c2_beaconing_unusual_process.yml` |
+| 4 | T1562.001 AMSI Bypass CLR | Fawkes | 7/10 | Available | `defense_evasion/t1562_001_amsi_bypass_clr_load.yml` |
+| 5 | T1087.002 Discovery Burst | Fawkes, Scattered Spider | 7/10 | Available | `discovery/t1087_002_discovery_command_burst.yml` |
+| 6 | T1070.001 Event Log Clearing | Scattered Spider | 7/10 | Available | `defense_evasion/t1070_001_event_log_clearing.yml` |
+| 7 | T1197 BITS Jobs Download | Scattered Spider | 6/10 | Available | `defense_evasion/t1197_bitsadmin_download.yml` |
+| 8 | T1070.004 Anti-Forensics (cipher/sdelete) | Scattered Spider | 6/10 | Available | `defense_evasion/t1070_004_file_deletion_tools.yml` |
+| 9 | T1219 Remote Access Software (process) | Scattered Spider | 6/10 | Available | `command_and_control/t1219_remote_access_software_process.yml` |
+| 10 | T1047 WMI Execution (process) | Fawkes, Scattered Spider | 6/10 | Available | `execution/t1047_wmi_execution_process.yml` |
+| 11 | T1543.003 Windows Service (sc.exe) | Fawkes, Scattered Spider | 5/10 | Available | `persistence/t1543_003_windows_service_creation.yml` |
+| 12 | T1027 Encoded PowerShell | Scattered Spider | 5/10 | Available | `defense_evasion/t1027_encoded_powershell.yml` |
+| 13 | T1003 Mimikatz Process Execution | Scattered Spider | 5/10 | Available | `credential_access/t1003_mimikatz_process.yml` |
+
+### Tier 2 — Partial Data / Needs Log Onboarding
+
+| Rank | Technique | Intel Source(s) | Score | Data | Blocker |
+|---|---|---|---|---|---|
+| 14 | T1055.004 APC Injection | Fawkes | 6/10 | Partial | EID 8 not APC-labelled |
+| 15 | T1219 Remote Access (DNS) | Scattered Spider | 6/10 | Blocked | Needs EID 22 |
+| 16 | T1219 Remote Access (file) | Scattered Spider | 5/10 | Blocked | Needs EID 11 |
+| 17 | T1059.001 PowerShell Script Block | Scattered Spider | 5/10 | Blocked | Needs EID 4104 |
+| 18 | T1559 RMM Named Pipes | Scattered Spider | 4/10 | Blocked | Needs EID 17/18 |
+| 19 | T1543.003 Service Install (full) | Fawkes, Scattered Spider | 4/10 | Blocked | Needs EID 7045 |
+| 20 | T1047 WMI Persistence | Fawkes, Scattered Spider | 4/10 | Blocked | Needs EID 19/20/21 |
+
+> See `TODO-log-onboarding.md` for onboarding plan to unblock Tier 2 detections.
 
 ---
 
 ## Next Action
 
-Lab is running. Start building detections:
-1. Build rank 1 (T1055.001) first — highest signal, best data
-2. Transpile: `sigma convert -t lucene -p ecs_windows detections/privilege_escalation/t1055_001_create_remote_thread.yml`
-3. Validate against attack index (auth required):
-   ```bash
-   curl -u elastic:changeme -s -X POST "http://localhost:9200/sim-attack/_search" \
-     -H "Content-Type: application/json" \
-     -d '{"query": {"term": {"_simulation.technique": "T1055.001"}}}'
-   ```
-4. Deploy via Kibana Detection Engine API:
-   ```bash
-   curl -u elastic:changeme -X POST "http://localhost:5601/api/detection_engine/rules" \
-     -H "kbn-xsrf: true" -H "Content-Type: application/json" \
-     -d @detections/privilege_escalation/compiled/t1055_001_create_remote_thread.json
-   ```
-5. Repeat for ranks 2–8 (all have data available)
-6. Address data gaps for ranks 9–10 by enhancing the simulator
+### Deployed (3 detections)
+- ~~T1059.001~~ PowerShell Bypass — deployed to both SIEMs
+- ~~T1547.001~~ Registry Run Keys — deployed to both SIEMs
+- ~~T1134.001~~ LSASS Token Theft — deployed to both SIEMs
 
-**Optional**: Load Attack Range supplemental data for additional technique coverage:
-```bash
-./pipeline/fetch-attack-range-data.sh samples
-```
+### Build Next (Tier 1 — data available)
+1. **T1055.001** CreateRemoteThread — highest signal, Fawkes + Scattered Spider overlap
+2. **T1053.005** Scheduled Task — Fawkes + Scattered Spider overlap
+3. **T1071.001** C2 Beaconing — Fawkes priority
+4. **T1562.001** AMSI Bypass — Fawkes priority
+5. **T1070.001** Event Log Clearing — Scattered Spider priority, very low FP
+6. **T1197** BITS Jobs — Scattered Spider, low FP
+7. **T1219** Remote Access Software (process) — Scattered Spider, 7 detections in one
+8. **T1027** Encoded PowerShell — extends our T1059.001 coverage for Scattered Spider variant
+
+### Onboard Logs First (Tier 2)
+See `TODO-log-onboarding.md` for detailed log onboarding plan.
+Priority order: EID 4104 → EID 11 → EID 22 → EID 17/18 → EID 7045
+
+### Intel Sources
+| Source | Date Added | Techniques Extracted | Report |
+|---|---|---|---|
+| Fawkes C2 Agent | 2026-02-23 | 21 | `threat-intel/fawkes/fawkes-ttp-mapping.md` |
+| Scattered Spider (UNC3944) | 2026-03-01 | 20 | `threat-intel/analysis/2026-03-01-scattered-spider.md` |

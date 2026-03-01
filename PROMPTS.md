@@ -463,9 +463,12 @@ From the intel source, extract and organize:
 
 7. Read coverage/data-sources.md — verify field availability for each technique
 
-8. Cross-reference with Fawkes capabilities (threat-intel/fawkes/fawkes-ttp-mapping.md):
-   - Which extracted techniques overlap with Fawkes commands?
-   - This overlap = highest priority (we can simulate AND detect)
+8. Cross-reference with ALL prior intel sources (not just Fawkes):
+   - Read threat-intel/fawkes/fawkes-ttp-mapping.md — Fawkes C2 command overlap
+   - Read all reports in threat-intel/analysis/ — prior intel analysis reports
+   - Read coverage/detection-backlog.md — check the Intel Sources table at the bottom
+   - Techniques that appear in MULTIPLE intel sources get highest priority
+   - Note: the "Intel Sources" table in detection-backlog.md tracks all analyzed sources
 
 === PHASE 4: DETECTION FEASIBILITY REPORT ===
 
@@ -504,6 +507,15 @@ Techniques we already detect — note if our existing rules would catch the spec
 
 11. Save the analysis to: threat-intel/analysis/<date>-<source-name>.md
     Include: source URL, extraction date, all TTPs mapped, detection recommendations
+
+12. Update coverage/detection-backlog.md:
+    - Add new buildable detections to Tier 1 or Tier 2 tables
+    - Add the intel source to the "Intel Sources" table at the bottom
+    - Bump priority for techniques that now appear in multiple intel sources
+
+13. If data gaps were found, update TODO-log-onboarding.md:
+    - Add new BACKLOG items for missing log sources
+    - Note which detections each log source would unlock
 
 Ask me for the intel source to analyze.
 ```
