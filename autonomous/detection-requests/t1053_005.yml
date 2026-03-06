@@ -1,12 +1,12 @@
 technique_id: T1053.005
 title: Scheduled Task Creation for Persistence
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: high
 mitre_tactic: persistence
 requested_by: intel_agent
 requested_date: '2026-03-06T00:00:00Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
-scenario_file: ''
+scenario_file: simulator\scenarios\t1053_005.json
 sigma_rule: ''
 compiled_lucene: ''
 compiled_spl: ''
@@ -21,9 +21,17 @@ alert_volume_24h: 0
 cost_estimate: low
 auto_deploy_eligible: false
 fawkes_commands:
-  - schtask
+- schtask
 changelog:
-  - date: '2026-03-06T00:00:00Z'
-    agent: intel_agent
-    action: created
-    details: Fawkes schtask command creates scheduled tasks. Both Fawkes and Scattered Spider use this technique.
+- date: '2026-03-06T00:00:00Z'
+  agent: intel_agent
+  action: created
+  details: Fawkes schtask command creates scheduled tasks. Both Fawkes and Scattered Spider use this technique.
+- date: '2026-03-06T13:09:48Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-06T13:09:48Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 1 attack, 2 benign events'

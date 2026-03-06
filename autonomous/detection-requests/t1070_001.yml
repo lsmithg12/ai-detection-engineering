@@ -1,11 +1,11 @@
 technique_id: T1070.001
 title: Clear Windows Event Logs
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: high
 requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
 intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
-scenario_file: ''
+scenario_file: simulator\scenarios\t1070_001.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
@@ -20,3 +20,11 @@ changelog:
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
+- date: '2026-03-06T13:09:48Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-06T13:09:48Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 2 attack, 1 benign events'

@@ -1,0 +1,104 @@
+{
+  "technique_id": "T1566.004",
+  "technique_name": "Spearphishing Voice (Vishing)",
+  "description": "Simulates Spearphishing Voice (Vishing) attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "action": "logged-in",
+          "code": "4624",
+          "outcome": "success"
+        },
+        "winlog": {
+          "logon": {
+            "type": "RemoteInteractive",
+            "id": "0x2e603"
+          }
+        },
+        "source": {
+          "ip": "203.0.113.42"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "winlogbeat"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1566.004",
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "Remote login from external IP immediately after MFA reset (vishing follow-up)"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "action": "logged-in",
+          "code": "4624",
+          "outcome": "success"
+        },
+        "winlog": {
+          "logon": {
+            "type": "Interactive",
+            "id": "0xa89aa"
+          }
+        },
+        "source": {
+          "ip": "10.10.1.50"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "winlogbeat"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1566.004",
+          "description": "Normal interactive logon from internal IP"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "source.ip",
+      "winlog.logon.type",
+      "event.code"
+    ],
+    "notes": "Limited endpoint telemetry for vishing. Detection relies on correlation: MFA reset + immediate external login. Sysmon alone insufficient — needs identity provider logs."
+  },
+  "log_sources_used": [
+    "windows_security_4624"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
