@@ -1,0 +1,62 @@
+name: Security Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+concurrency:
+  group: security-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Run on all PRs from agent branches
+    if: >
+      startsWith(github.head_ref, 'agent/') ||
+      startsWith(github.head_ref, 'orchestration/') ||
+      startsWith(github.head_ref, 'detection/') ||
+      startsWith(github.head_ref, 'tuning/')
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r autonomous/orchestration/requirements.txt
+
+      - name: Run Security Agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd autonomous
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from orchestration.state import StateManager
+          from orchestration.agents.security_agent import run
+          sm = StateManager()
+          result = run(sm, pr_number=${{ github.event.pull_request.number }})
+          if result.get('block'):
+              print('BLOCKED: Critical security findings detected')
+              sys.exit(1)
+          print('Security review passed')
+          "
+
+      - name: Post approval if clean
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Security gate passed — no critical findings"
