@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from orchestration.state import StateManager
 from orchestration import learnings
+from orchestration import budget
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -139,11 +140,23 @@ def _create_pr(branch: str, agent_name: str, title: str, body: str):
 def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     """Main entry point for running an agent."""
     run_id = _generate_run_id()
+    start_time = datetime.datetime.now(datetime.timezone.utc)
     print(f"\n{'='*60}")
     print(f"  Patronus Agent Runner — {agent_name}")
     print(f"  Run ID: {run_id}")
-    print(f"  Time: {datetime.datetime.now(datetime.timezone.utc).isoformat()}")
+    print(f"  Time: {start_time.isoformat()}")
     print(f"{'='*60}\n")
+
+    # 0. Budget check
+    budget_decision = budget.check_budget(agent_name)
+    print(f"  [budget] {budget_decision.reason}")
+    if not budget_decision.allowed:
+        print(f"  [{agent_name}] Skipped due to budget constraints.")
+        budget.log_run(agent_name, 0, 0, status="skipped",
+                       skipped_reason=budget_decision.reason)
+        return
+    if budget_decision.mode == "light":
+        print(f"  [{agent_name}] Running in LIGHT mode (reduced workload)")
 
     sm = StateManager()
 
@@ -199,11 +212,22 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
         )
         result = {"summary": f"Agent failed: {e}", "error": True}
 
-    # 5. Retrospective prompt
+    # 5. Log budget usage
+    end_time = datetime.datetime.now(datetime.timezone.utc)
+    duration = (end_time - start_time).total_seconds()
+    items = 0
+    if isinstance(result, dict):
+        items = result.get("detections_reviewed", result.get("items_processed",
+                result.get("files_scanned", result.get("techniques_processed", 1))))
+    budget.log_run(agent_name, duration, items or 1,
+                   status="completed" if not result.get("error") else "error")
+    print(f"  [budget] Logged run: {duration:.1f}s, {items or 1} items")
+
+    # 6. Retrospective prompt
     retro = learnings.get_retrospective_prompt(agent_name, run_id)
     print(f"\n  {retro}\n")
 
-    # 6. Commit, push, PR (skip in dry-run)
+    # 7. Commit, push, PR (skip in dry-run)
     if not dry_run and branch:
         summary = result.get("summary", "completed") if isinstance(result, dict) else "completed"
         pushed = _commit_and_push(branch, agent_name, summary)

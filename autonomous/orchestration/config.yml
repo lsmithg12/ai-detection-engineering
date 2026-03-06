@@ -59,3 +59,10 @@ budget:
   log_file: "autonomous/budget-log.jsonl"
   daily_cap_tokens: 500000
   warn_at_pct: 80
+  models:
+    opus: 1.0
+    sonnet: 0.2
+  light_mode:
+    intel_max_reports: 2
+    blue_max_detections: 2
+    quality_skip_research: true
