@@ -6,25 +6,20 @@ requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
 intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1070_001.json
-sigma_rule: ''
+sigma_rule: detections\defense_evasion\t1070_001.yml
 deployed_date: ''
 last_quality_review: ''
-quality_score: 0.0
+quality_score: 1.0
 fp_rate: 0.0
-tp_rate: 0.0
+tp_rate: 1.0
 alert_volume_24h: 0
 cost_estimate: low
-auto_deploy_eligible: false
+auto_deploy_eligible: true
 changelog:
 - date: '2026-03-06T13:06:21Z'
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: update
-  details: 'Updated fields: scenario_file'
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: transition:REQUESTED->SCENARIO_BUILT
-  details: 'Scenario generated: 2 attack, 1 benign events'
+compiled_lucene: detections\defense_evasion\compiled\t1070_001.lucene
+compiled_spl: detections\defense_evasion\compiled\t1070_001.spl
+mitre_tactic: defense_evasion

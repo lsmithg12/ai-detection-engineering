@@ -20,3 +20,4 @@ changelog:
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
+mitre_tactic: defense_evasion

@@ -7,19 +7,19 @@ requested_by: intel_agent
 requested_date: '2026-03-06T00:00:00Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1053_005.json
-sigma_rule: ''
-compiled_lucene: ''
-compiled_spl: ''
+sigma_rule: detections\persistence\t1053_005.yml
+compiled_lucene: detections\persistence\compiled\t1053_005.lucene
+compiled_spl: detections\persistence\compiled\t1053_005.spl
 deployed_date: ''
 elastic_rule_id: ''
 splunk_saved_search: ''
 last_quality_review: ''
-quality_score: 0.0
+quality_score: 1.0
 fp_rate: 0.0
-tp_rate: 0.0
+tp_rate: 1.0
 alert_volume_24h: 0
 cost_estimate: low
-auto_deploy_eligible: false
+auto_deploy_eligible: true
 fawkes_commands:
 - schtask
 changelog:
@@ -27,11 +27,3 @@ changelog:
   agent: intel_agent
   action: created
   details: Fawkes schtask command creates scheduled tasks. Both Fawkes and Scattered Spider use this technique.
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: update
-  details: 'Updated fields: scenario_file'
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: transition:REQUESTED->SCENARIO_BUILT
-  details: 'Scenario generated: 1 attack, 2 benign events'

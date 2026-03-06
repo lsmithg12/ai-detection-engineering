@@ -7,16 +7,16 @@ requested_by: intel_agent
 requested_date: '2026-03-06T00:00:00Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1055_001.json
-sigma_rule: ''
-compiled_lucene: ''
-compiled_spl: ''
+sigma_rule: detections\privilege_escalation\t1055_001.yml
+compiled_lucene: detections\privilege_escalation\compiled\t1055_001.lucene
+compiled_spl: detections\privilege_escalation\compiled\t1055_001.spl
 deployed_date: ''
 elastic_rule_id: ''
 splunk_saved_search: ''
 last_quality_review: ''
-quality_score: 0.0
+quality_score: 0.667
 fp_rate: 0.0
-tp_rate: 0.0
+tp_rate: 0.5
 alert_volume_24h: 0
 cost_estimate: medium
 auto_deploy_eligible: false
@@ -28,11 +28,3 @@ changelog:
   action: created
   details: "Fawkes vanilla-injection maps to CreateRemoteThread injection. High priority \xE2\u20AC\u201D both Fawkes and\
     \ Scattered Spider use this."
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: update
-  details: 'Updated fields: scenario_file'
-- date: '2026-03-06T13:09:48Z'
-  agent: red-team
-  action: transition:REQUESTED->SCENARIO_BUILT
-  details: 'Scenario generated: 2 attack, 2 benign events'
