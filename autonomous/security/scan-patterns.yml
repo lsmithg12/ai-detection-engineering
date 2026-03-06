@@ -1,0 +1,33 @@
+# Security Agent — Scan Patterns Configuration
+# Edit this file to customize what the security agent scans for.
+# The agent falls back to built-in defaults if this file is empty.
+
+# Secret scanning regex patterns
+# Each entry: {regex: "...", description: "..."}
+# These REPLACE the defaults when present — include all patterns you want.
+secret_patterns: []
+  # Example:
+  # - regex: 'AKIA[0-9A-Z]{16}'
+  #   description: "AWS Access Key ID"
+
+# Files/paths to skip entirely (glob patterns)
+skip_files:
+  - "*.md"
+  - "*.txt"
+  - "CLAUDE.md"
+  - "AUTONOMOUS.md"
+  - "coverage/*"
+  - "threat-intel/analysis/*"
+
+# Known false positives — findings matching these are suppressed
+# Each entry: {file_pattern: "...", finding_pattern: "..."}
+allowlist:
+  - file_pattern: "config.yml"
+    finding_pattern: "Hardcoded password"
+  - file_pattern: "docker-compose.yml"
+    finding_pattern: "Hardcoded password"
+  - file_pattern: "setup.sh"
+    finding_pattern: "Hardcoded password"
+
+# Max exclusion blocks per Sigma rule before flagging
+max_rule_exclusions: 3
