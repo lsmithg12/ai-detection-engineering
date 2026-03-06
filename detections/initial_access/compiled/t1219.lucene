@@ -1,0 +1,1 @@
+(event.code:1 AND (process.name:(AnyDesk.exe OR splashtop.exe)) AND (process.executable:(*splashtop.exe* OR *AnyDesk.exe*)) AND process.parent.name:explorer.exe) AND (NOT process.name:TeamViewer.exe)

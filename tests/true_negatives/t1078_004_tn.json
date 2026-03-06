@@ -1,0 +1,39 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "authentication",
+      "type": "start",
+      "action": "logged-in",
+      "code": "4624",
+      "outcome": "success"
+    },
+    "winlog": {
+      "logon": {
+        "type": "NewCredentials",
+        "id": "0xb37f9"
+      }
+    },
+    "source": {
+      "ip": "10.10.2.100"
+    },
+    "user": {
+      "name": "svc_backup",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "winlogbeat"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1078.004",
+      "description": "Service account NewCredentials logon from internal IP \u2014 normal backup operation"
+    }
+  }
+]

@@ -12,6 +12,8 @@ import datetime
 import json
 import subprocess
 import textwrap
+import urllib.request
+import urllib.error
 from pathlib import Path
 from uuid import uuid4
 
@@ -402,6 +404,179 @@ def assess_quality(metrics: dict) -> str:
         return "needs_rework"
 
 
+# ─── SIEM Deployment ──────────────────────────────────────────────
+
+ES_URL = "http://localhost:9200"
+KIBANA_URL = "http://localhost:5601"
+ES_AUTH = ("elastic", "changeme")
+SPLUNK_URL = "https://localhost:8089"
+SPLUNK_AUTH = ("admin", "BlueTeamLab1!")
+
+
+def _check_siem_available(siem: str) -> bool:
+    """Check if a SIEM is reachable."""
+    try:
+        if siem == "elastic":
+            req = urllib.request.Request(f"{ES_URL}/_cluster/health")
+            creds = f"{ES_AUTH[0]}:{ES_AUTH[1]}"
+            import base64
+            req.add_header("Authorization", "Basic " + base64.b64encode(creds.encode()).decode())
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.status == 200
+        elif siem == "splunk":
+            import ssl
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(f"{SPLUNK_URL}/services/server/health")
+            creds = f"{SPLUNK_AUTH[0]}:{SPLUNK_AUTH[1]}"
+            import base64
+            req.add_header("Authorization", "Basic " + base64.b64encode(creds.encode()).decode())
+            with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
+                return resp.status == 200
+    except Exception:
+        return False
+    return False
+
+
+def deploy_to_elastic(request: dict, lucene_query: str, sigma_rule: dict) -> dict | None:
+    """Deploy detection rule to Elastic Security Detection Engine."""
+    if not _check_siem_available("elastic"):
+        print("    [blue-team] Elastic not available — skipping Elastic deployment")
+        return None
+
+    tid = request["technique_id"]
+    tactic_key = request.get("mitre_tactic", "execution")
+    tactic_name, tactic_id = TACTIC_MAP.get(tactic_key, ("Execution", "TA0002"))
+    title = sigma_rule.get("title", f"Detection for {tid}")
+    severity = sigma_rule.get("level", "high")
+    risk_score, _ = SEVERITY_MAP.get(severity, (73, "high"))
+
+    rule_id = str(uuid4())
+    rule_payload = {
+        "rule_id": rule_id,
+        "name": title,
+        "description": sigma_rule.get("description", f"Detects {tid}"),
+        "type": "query",
+        "query": lucene_query,
+        "index": ["sim-*"],
+        "language": "lucene",
+        "severity": severity,
+        "risk_score": risk_score,
+        "interval": "5m",
+        "from": "now-6m",
+        "enabled": True,
+        "tags": [tid, tactic_name],
+        "threat": [{
+            "framework": "MITRE ATT&CK",
+            "tactic": {"id": tactic_id, "name": tactic_name,
+                       "reference": f"https://attack.mitre.org/tactics/{tactic_id}/"},
+            "technique": [{"id": tid.split(".")[0], "name": request.get("title", tid),
+                           "reference": f"https://attack.mitre.org/techniques/{tid.replace('.', '/')}/"}],
+        }],
+    }
+
+    import base64
+    data = json.dumps(rule_payload).encode()
+    req = urllib.request.Request(
+        f"{KIBANA_URL}/api/detection_engine/rules",
+        data=data, method="POST",
+        headers={
+            "kbn-xsrf": "true",
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + base64.b64encode(f"{ES_AUTH[0]}:{ES_AUTH[1]}".encode()).decode(),
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+            print(f"    [blue-team] Elastic rule created: {result.get('id', rule_id)}")
+            return {"rule_id": rule_id, "elastic_id": result.get("id", "")}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()[:300]
+        print(f"    [blue-team] Elastic deploy failed ({e.code}): {body}")
+        return None
+    except Exception as e:
+        print(f"    [blue-team] Elastic deploy error: {e}")
+        return None
+
+
+def deploy_to_splunk(request: dict, spl_query: str, sigma_rule: dict) -> dict | None:
+    """Deploy detection as a Splunk saved search with alerting."""
+    if not _check_siem_available("splunk"):
+        print("    [blue-team] Splunk not available — skipping Splunk deployment")
+        return None
+
+    tid = request["technique_id"]
+    title = sigma_rule.get("title", f"Detection for {tid}")
+    search_name = f"{request.get('title', tid)} {tid}"
+    severity = sigma_rule.get("level", "high")
+    sev_map = {"informational": "1", "low": "2", "medium": "3", "high": "4", "critical": "5"}
+    alert_severity = sev_map.get(severity, "4")
+
+    # Build SPL search — wrap the transpiled query with index and table
+    full_spl = f'index=sysmon {spl_query} | table _time host user process.name process.command_line process.executable'
+
+    import base64, ssl, urllib.parse
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    params = urllib.parse.urlencode({
+        "name": search_name,
+        "search": full_spl,
+        "is_scheduled": "1",
+        "cron_schedule": "*/5 * * * *",
+        "alert_type": "number of events",
+        "alert_comparator": "greater than",
+        "alert_threshold": "0",
+        "alert.severity": alert_severity,
+        "output_mode": "json",
+    }).encode()
+
+    req = urllib.request.Request(
+        f"{SPLUNK_URL}/servicesNS/admin/search/saved/searches",
+        data=params, method="POST",
+        headers={
+            "Authorization": "Basic " + base64.b64encode(f"{SPLUNK_AUTH[0]}:{SPLUNK_AUTH[1]}".encode()).decode(),
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
+            result = json.loads(resp.read())
+            name = result.get("entry", [{}])[0].get("name", search_name)
+            print(f"    [blue-team] Splunk saved search created: {name}")
+            return {"search_name": name}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()[:300]
+        # If already exists, that's OK
+        if "already exists" in body.lower():
+            print(f"    [blue-team] Splunk saved search already exists: {search_name}")
+            return {"search_name": search_name}
+        print(f"    [blue-team] Splunk deploy failed ({e.code}): {body}")
+        return None
+    except Exception as e:
+        print(f"    [blue-team] Splunk deploy error: {e}")
+        return None
+
+
+def deploy_to_siems(request: dict, lucene: str, spl: str, sigma_rule: dict) -> dict:
+    """Deploy to all available SIEMs. Returns deployment results."""
+    results = {}
+
+    elastic_result = deploy_to_elastic(request, lucene, sigma_rule)
+    if elastic_result:
+        results["elastic"] = elastic_result
+
+    splunk_result = deploy_to_splunk(request, spl, sigma_rule)
+    if splunk_result:
+        results["splunk"] = splunk_result
+
+    return results
+
+
 def author_and_validate(request: dict, state_manager: StateManager, run_id: str) -> dict:
     """
     Full author -> validate -> (optional deploy) cycle for one detection.
@@ -471,6 +646,18 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
           f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
     print(f"    [blue-team] Quality: {quality_tier}")
 
+    # Save test results (required by schema for DEPLOYED transition)
+    results_dir = REPO_ROOT / "tests" / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    results_file = results_dir / f"{tid_under}.json"
+    results_file.write_text(json.dumps({
+        "technique_id": tid,
+        "date": _now_iso(),
+        "sigma_rule": str(rule_path.relative_to(REPO_ROOT)),
+        "metrics": metrics,
+        "quality_tier": quality_tier,
+    }, indent=2), encoding="utf-8")
+
     # Update metrics on request
     state_manager.update(
         tid, agent=AGENT_NAME,
@@ -505,13 +692,46 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
 
     # ─── DEPLOY (conditional) ───────────────────────────────────
     if quality_tier == "auto_deploy":
-        result["status"] = "deployed"
-        result["auto_deployed"] = True
         state_manager.update(tid, agent=AGENT_NAME, auto_deploy_eligible=True)
         print(f"    [blue-team] Eligible for auto-deploy (F1={metrics['f1_score']}, "
               f"FP_rate={metrics['fp_rate']})")
-        # Actual SIEM deployment would happen here in production
-        # For now, mark as validated and ready
+
+        # Load Sigma rule for metadata
+        with open(rule_path, encoding="utf-8") as f:
+            sigma_data = yaml.safe_load(f)
+
+        # Deploy to available SIEMs
+        deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
+
+        if deploy_results:
+            # Transition VALIDATED -> DEPLOYED
+            deploy_details = []
+            if "elastic" in deploy_results:
+                state_manager.update(tid, agent=AGENT_NAME,
+                                     elastic_rule_id=deploy_results["elastic"].get("rule_id", ""))
+                deploy_details.append("Elastic")
+            if "splunk" in deploy_results:
+                state_manager.update(tid, agent=AGENT_NAME,
+                                     splunk_saved_search=deploy_results["splunk"].get("search_name", ""))
+                deploy_details.append("Splunk")
+
+            try:
+                state_manager.transition(tid, "DEPLOYED", agent=AGENT_NAME,
+                                         details=f"Deployed to {' + '.join(deploy_details)}. "
+                                                 f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
+                state_manager.update(tid, agent=AGENT_NAME, deployed_date=_now_iso())
+                print(f"    [blue-team] Transitioned {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
+                result["status"] = "deployed"
+                result["auto_deployed"] = True
+                result["deploy_targets"] = deploy_details
+            except ValueError as e:
+                print(f"    [blue-team] DEPLOYED transition failed: {e}")
+                result["status"] = "validated"
+                result["auto_deployed"] = False
+        else:
+            print(f"    [blue-team] No SIEMs available — staying at VALIDATED")
+            result["status"] = "validated"
+            result["auto_deployed"] = False
     else:
         result["status"] = "validated"
         result["auto_deployed"] = False
@@ -541,11 +761,69 @@ def run(state_manager: StateManager) -> dict:
     if detection_lessons:
         print(f"  [blue-team] {len(detection_lessons)} detection lessons loaded")
 
+    # 1b. Deploy any VALIDATED detections that are auto-deploy eligible
+    validated_pending = state_manager.query_by_state("VALIDATED")
+    deploy_pending = [r for r in validated_pending if r.get("auto_deploy_eligible")]
+    deployed_count = 0
+    if deploy_pending:
+        print(f"  [blue-team] Found {len(deploy_pending)} VALIDATED detections pending deployment")
+        for request in deploy_pending:
+            tid = request["technique_id"]
+            sigma_path = request.get("sigma_rule", "")
+            lucene_path = request.get("compiled_lucene", "")
+            spl_path = request.get("compiled_spl", "")
+
+            if not sigma_path or not lucene_path:
+                continue
+
+            # Load files
+            sigma_full = REPO_ROOT / sigma_path
+            lucene_full = REPO_ROOT / lucene_path
+            spl_full = REPO_ROOT / spl_path if spl_path else None
+
+            if not sigma_full.exists() or not lucene_full.exists():
+                continue
+
+            with open(sigma_full, encoding="utf-8") as f:
+                sigma_data = yaml.safe_load(f)
+            lucene = lucene_full.read_text(encoding="utf-8").strip()
+            spl = spl_full.read_text(encoding="utf-8").strip() if spl_full and spl_full.exists() else ""
+
+            print(f"\n  [blue-team] === Deploying {tid} — {request.get('title', '')} ===")
+            deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
+
+            if deploy_results:
+                deploy_details = []
+                if "elastic" in deploy_results:
+                    state_manager.update(tid, agent=AGENT_NAME,
+                                         elastic_rule_id=deploy_results["elastic"].get("rule_id", ""))
+                    deploy_details.append("Elastic")
+                if "splunk" in deploy_results:
+                    state_manager.update(tid, agent=AGENT_NAME,
+                                         splunk_saved_search=deploy_results["splunk"].get("search_name", ""))
+                    deploy_details.append("Splunk")
+
+                try:
+                    state_manager.transition(tid, "DEPLOYED", agent=AGENT_NAME,
+                                             details=f"Deployed to {' + '.join(deploy_details)}")
+                    state_manager.update(tid, agent=AGENT_NAME, deployed_date=_now_iso())
+                    print(f"    [blue-team] Transitioned {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
+                    deployed_count += 1
+                except ValueError as e:
+                    print(f"    [blue-team] DEPLOYED transition failed: {e}")
+
+        if deployed_count:
+            print(f"\n  [blue-team] Deployed {deployed_count} previously validated detections")
+
     # 2. Get SCENARIO_BUILT detections
     ready = state_manager.query_by_state("SCENARIO_BUILT")
-    if not ready:
+    if not ready and not deploy_pending:
         print("  [blue-team] No SCENARIO_BUILT detections. Nothing to do.")
         return {"summary": "No SCENARIO_BUILT detections", "detections_authored": 0}
+    if not ready:
+        summary = f"Deployed {deployed_count} previously validated detections"
+        print(f"\n  [blue-team] {summary}")
+        return {"summary": summary, "detections_deployed": deployed_count}
 
     priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     ready.sort(key=lambda r: priority_order.get(r.get("priority", "medium"), 2))

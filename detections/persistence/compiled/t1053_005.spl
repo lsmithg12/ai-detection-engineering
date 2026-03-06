@@ -1,0 +1,1 @@
+event.code="1" process.name="schtasks.exe" process.command_line="*RL HIGHEST*" process.parent.name="cmd.exe" user.name="clee"

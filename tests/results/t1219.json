@@ -1,0 +1,11 @@
+{
+  "technique_id": "T1219",
+  "date": "2026-03-06T23:04:11Z",
+  "sigma_rule": "detections\\initial_access\\t1219.yml",
+  "metrics": {
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0
+  },
+  "quality_tier": "auto_deploy"
+}

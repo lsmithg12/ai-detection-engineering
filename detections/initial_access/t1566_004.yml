@@ -1,0 +1,26 @@
+title: Spearphishing Voice (Vishing) [T1566.004]
+id: 835688fc-8ec0-47e2-95d4-06294cb5354c
+status: experimental
+description: "Detects spearphishing voice (vishing). Limited endpoint telemetry for vishing. Detection relies on correlation:\
+  \ MFA reset + immediate external login. Sysmon alone insufficient \u2014 needs identity provider logs."
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1566/004/
+tags:
+- attack.initial_access
+- attack.t1566.004
+logsource:
+  category: authentication
+  product: windows
+detection:
+  selection:
+    event.code: '4624'
+    source.ip: 203.0.113.42
+    winlog.logon.type: RemoteInteractive
+  condition: selection
+falsepositives:
+- "Limited endpoint telemetry for vishing. Detection relies on correlation: MFA reset + immediate external login. Sysmon alone\
+  \ insufficient \u2014 needs identity provider logs."
+level: high

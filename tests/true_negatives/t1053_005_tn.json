@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 44523,
+      "name": "schtasks.exe",
+      "executable": "C:\\Windows\\System32\\schtasks.exe",
+      "command_line": "schtasks.exe /Create /TN \"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag\" /TR \"C:\\Windows\\System32\\defrag.exe -c\" /SC WEEKLY /D SUN",
+      "parent": {
+        "pid": 4479,
+        "name": "mmc.exe",
+        "executable": "C:\\Windows\\System32\\mmc.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1053.005",
+      "description": "Windows defrag scheduled task \u2014 legitimate system maintenance"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 46952,
+      "name": "schtasks.exe",
+      "executable": "C:\\Windows\\System32\\schtasks.exe",
+      "command_line": "schtasks.exe /Create /TN \"GoogleUpdateTaskMachineUA\" /TR \"C:\\Program Files\\Google\\Update\\GoogleUpdate.exe /ua /installsource scheduler\" /SC HOURLY",
+      "parent": {
+        "pid": 24143,
+        "name": "GoogleUpdate.exe",
+        "executable": "C:\\Program Files\\Google\\Update\\GoogleUpdate.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1053.005",
+      "description": "Google Chrome update scheduled task \u2014 legitimate software update"
+    }
+  }
+]

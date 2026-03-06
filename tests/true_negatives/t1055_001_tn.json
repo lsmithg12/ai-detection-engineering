@@ -1,0 +1,80 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process accessed (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "name": "MsMpEng.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\MsMpEng.exe",
+      "pid": 24839
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+        "GrantedAccess": "0x1410"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1055.001",
+      "description": "Windows Defender scanning \u2014 legitimate process access"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+      "code": "8"
+    },
+    "process": {
+      "name": "csrss.exe",
+      "executable": "C:\\Windows\\System32\\csrss.exe",
+      "pid": 51445
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+        "StartAddress": "0x7ff681373072",
+        "StartModule": "C:\\Windows\\System32\\ntdll.dll",
+        "StartFunction": "RtlUserThreadStart"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1055.001",
+      "description": "csrss.exe creating thread in svchost \u2014 normal OS behavior"
+    }
+  }
+]

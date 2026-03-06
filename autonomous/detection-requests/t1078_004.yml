@@ -1,23 +1,71 @@
 technique_id: T1078.004
 title: Cloud Account Abuse
-status: REQUESTED
+status: DEPLOYED
 priority: medium
 requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
 intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
-scenario_file: ''
-sigma_rule: ''
-deployed_date: ''
+scenario_file: simulator\scenarios\t1078_004.json
+sigma_rule: detections\defense_evasion\t1078_004.yml
+deployed_date: '2026-03-06T23:10:00Z'
 last_quality_review: ''
-quality_score: 0.0
+quality_score: 1.0
 fp_rate: 0.0
-tp_rate: 0.0
+tp_rate: 1.0
 alert_volume_24h: 0
 cost_estimate: low
-auto_deploy_eligible: false
+auto_deploy_eligible: true
 changelog:
 - date: '2026-03-06T13:06:21Z'
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
+- date: '2026-03-06T23:04:01Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-06T23:04:01Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 1 attack, 1 benign events'
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl'
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: F1=1.0, FP_rate=0.0, tier=auto_deploy
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-06T23:10:51Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-06T23:10:51Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: deployed_date'
 mitre_tactic: defense_evasion
+compiled_lucene: detections\defense_evasion\compiled\t1078_004.lucene
+compiled_spl: detections\defense_evasion\compiled\t1078_004.spl
+elastic_rule_id: f05a5219-9d51-4722-9988-1691070b483e
+splunk_saved_search: Cloud Account Abuse T1078.004

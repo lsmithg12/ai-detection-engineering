@@ -1,0 +1,1 @@
+event.code:4624 AND source.ip:198.51.100.23 AND winlog.logon.type:NewCredentials AND user.name:mjones

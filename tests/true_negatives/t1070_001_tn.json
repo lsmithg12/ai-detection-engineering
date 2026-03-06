@@ -1,0 +1,40 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 12180,
+      "name": "wevtutil.exe",
+      "executable": "C:\\Windows\\System32\\wevtutil.exe",
+      "command_line": "wevtutil.exe qe Application /c:10 /rd:true /f:text",
+      "parent": {
+        "pid": 31952,
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    },
+    "user": {
+      "name": "admin",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1070.001",
+      "description": "wevtutil querying events \u2014 legitimate admin activity, not clearing"
+    }
+  }
+]

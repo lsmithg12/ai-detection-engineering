@@ -1,0 +1,11 @@
+{
+  "technique_id": "T1078.004",
+  "date": "2026-03-06T23:04:11Z",
+  "sigma_rule": "detections\\defense_evasion\\t1078_004.yml",
+  "metrics": {
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0
+  },
+  "quality_tier": "auto_deploy"
+}

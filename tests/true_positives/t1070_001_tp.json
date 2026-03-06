@@ -1,0 +1,82 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 55777,
+      "name": "wevtutil.exe",
+      "executable": "C:\\Windows\\System32\\wevtutil.exe",
+      "command_line": "wevtutil.exe cl Security",
+      "parent": {
+        "pid": 14494,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1070.001",
+      "sequence_order": 1,
+      "sequence_total": 2,
+      "description": "Clear Security event log via wevtutil"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 54290,
+      "name": "powershell.exe",
+      "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "command_line": "powershell.exe -Command \"Clear-EventLog -LogName Security\"",
+      "parent": {
+        "pid": 35227,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1070.001",
+      "sequence_order": 2,
+      "sequence_total": 2,
+      "description": "Clear Security event log via PowerShell Clear-EventLog"
+    }
+  }
+]

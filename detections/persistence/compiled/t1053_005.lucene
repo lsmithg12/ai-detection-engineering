@@ -1,0 +1,1 @@
+event.code:1 AND process.name:schtasks.exe AND process.command_line:*RL\ HIGHEST* AND process.parent.name:cmd.exe AND user.name:clee

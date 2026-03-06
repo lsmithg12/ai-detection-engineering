@@ -1,0 +1,29 @@
+title: Clear Windows Event Logs [T1070.001]
+id: cacac234-f62d-4134-b031-7f8e5355e208
+status: experimental
+description: Detects clear windows event logs. Detection should flag wevtutil cl and Clear-EventLog targeting Security/System
+  logs. Exclude wevtutil qe (query, not clear).
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1070/001/
+tags:
+- attack.defense_evasion
+- attack.t1070.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.code: '1'
+    process.name:
+    - powershell.exe
+    - wevtutil.exe
+    process.command_line|contains:
+    - powershell.exe -Command "Clear-EventLog -LogName Security"
+    - wevtutil.exe cl Security
+  condition: selection
+falsepositives:
+- Detection should flag wevtutil cl and Clear-EventLog targeting Security/System logs. Exclude wevtutil qe (query, not clear).
+level: high

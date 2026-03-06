@@ -1,6 +1,6 @@
 technique_id: T1055.001
 title: Process Injection via CreateRemoteThread
-status: SCENARIO_BUILT
+status: AUTHORED
 priority: critical
 mitre_tactic: privilege_escalation
 requested_by: intel_agent
@@ -28,3 +28,15 @@ changelog:
   action: created
   details: "Fawkes vanilla-injection maps to CreateRemoteThread injection. High priority \xE2\u20AC\u201D both Fawkes and\
     \ Scattered Spider use this."
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl'
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'

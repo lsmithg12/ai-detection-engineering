@@ -1,0 +1,39 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "authentication",
+      "type": "start",
+      "action": "logged-in",
+      "code": "4624",
+      "outcome": "success"
+    },
+    "winlog": {
+      "logon": {
+        "type": "Interactive",
+        "id": "0xa89aa"
+      }
+    },
+    "source": {
+      "ip": "10.10.1.50"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "winlogbeat"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1566.004",
+      "description": "Normal interactive logon from internal IP"
+    }
+  }
+]

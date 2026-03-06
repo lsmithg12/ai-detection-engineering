@@ -1,0 +1,41 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "authentication",
+      "type": "start",
+      "action": "logged-in",
+      "code": "4624",
+      "outcome": "success"
+    },
+    "winlog": {
+      "logon": {
+        "type": "NewCredentials",
+        "id": "0xf553c"
+      }
+    },
+    "source": {
+      "ip": "198.51.100.23"
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "winlogbeat"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1078.004",
+      "sequence_order": 1,
+      "sequence_total": 1,
+      "description": "NewCredentials logon from external IP \u2014 possible cloud credential abuse"
+    }
+  }
+]

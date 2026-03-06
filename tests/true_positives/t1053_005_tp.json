@@ -1,0 +1,42 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 29153,
+      "name": "schtasks.exe",
+      "executable": "C:\\Windows\\System32\\schtasks.exe",
+      "command_line": "schtasks.exe /Create /TN \"\\Microsoft\\Windows\\Maintenance\\SystemUpdate\" /TR \"C:\\Users\\clee\\AppData\\Local\\Temp\\update.exe\" /SC ONLOGON /RL HIGHEST",
+      "parent": {
+        "pid": 41749,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1053.005",
+      "sequence_order": 1,
+      "sequence_total": 1,
+      "description": "Scheduled task created for persistence with HIGHEST privileges"
+    }
+  }
+]

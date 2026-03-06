@@ -1,0 +1,104 @@
+{
+  "technique_id": "T1078.004",
+  "technique_name": "Cloud Account Abuse",
+  "description": "Simulates Cloud Account Abuse attack sequence",
+  "mitre_tactic": "defense_evasion",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "action": "logged-in",
+          "code": "4624",
+          "outcome": "success"
+        },
+        "winlog": {
+          "logon": {
+            "type": "NewCredentials",
+            "id": "0xf553c"
+          }
+        },
+        "source": {
+          "ip": "198.51.100.23"
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "winlogbeat"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1078.004",
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "NewCredentials logon from external IP — possible cloud credential abuse"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "action": "logged-in",
+          "code": "4624",
+          "outcome": "success"
+        },
+        "winlog": {
+          "logon": {
+            "type": "NewCredentials",
+            "id": "0xb37f9"
+          }
+        },
+        "source": {
+          "ip": "10.10.2.100"
+        },
+        "user": {
+          "name": "svc_backup",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "winlogbeat"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1078.004",
+          "description": "Service account NewCredentials logon from internal IP — normal backup operation"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "source.ip",
+      "winlog.logon.type",
+      "user.name"
+    ],
+    "notes": "Cloud account abuse is best detected via cloud provider logs (Azure AD, AWS CloudTrail). Endpoint telemetry limited to logon events. Correlate with impossible travel / new device signals."
+  },
+  "log_sources_used": [
+    "windows_security_4624"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
