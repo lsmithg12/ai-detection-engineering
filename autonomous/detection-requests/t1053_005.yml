@@ -1,0 +1,29 @@
+technique_id: T1053.005
+title: Scheduled Task Creation for Persistence
+status: REQUESTED
+priority: high
+mitre_tactic: persistence
+requested_by: intel_agent
+requested_date: '2026-03-06T00:00:00Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: ''
+sigma_rule: ''
+compiled_lucene: ''
+compiled_spl: ''
+deployed_date: ''
+elastic_rule_id: ''
+splunk_saved_search: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: false
+fawkes_commands:
+  - schtask
+changelog:
+  - date: '2026-03-06T00:00:00Z'
+    agent: intel_agent
+    action: created
+    details: Fawkes schtask command creates scheduled tasks. Both Fawkes and Scattered Spider use this technique.

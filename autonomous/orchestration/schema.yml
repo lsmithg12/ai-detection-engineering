@@ -1,0 +1,135 @@
+# Detection Lifecycle State Machine
+# Defines states, transitions, ownership, and artifact requirements
+# for autonomous detection engineering pipeline (Patronus)
+
+states:
+  REQUESTED:
+    description: "Detection request created from threat intel"
+    owner: intel_agent
+    entry_artifacts: []
+    exit_artifacts:
+      - detection_request_yaml
+    transitions:
+      - target: SCENARIO_BUILT
+        trigger: scenario_created
+        agent: red_team_agent
+
+  SCENARIO_BUILT:
+    description: "Attack/benign log scenarios generated"
+    owner: red_team_agent
+    entry_artifacts:
+      - detection_request_yaml
+    exit_artifacts:
+      - scenario_file
+    transitions:
+      - target: AUTHORED
+        trigger: sigma_rule_created
+        agent: blue_team_agent
+
+  AUTHORED:
+    description: "Sigma rule written and compiled"
+    owner: blue_team_agent
+    entry_artifacts:
+      - detection_request_yaml
+      - scenario_file
+    exit_artifacts:
+      - sigma_rule
+      - compiled_lucene
+      - compiled_spl
+    transitions:
+      - target: VALIDATED
+        trigger: validation_passed
+        agent: blue_team_agent
+
+  VALIDATED:
+    description: "Detection tested against scenarios with acceptable TP/FP rates"
+    owner: blue_team_agent
+    entry_artifacts:
+      - sigma_rule
+      - scenario_file
+    exit_artifacts:
+      - test_results
+    validation_criteria:
+      tp_rate_min: 0.90
+      fp_rate_max: 0.10
+    transitions:
+      - target: DEPLOYED
+        trigger: deployed_to_siem
+        agent: blue_team_agent
+
+  DEPLOYED:
+    description: "Detection rule active in Elastic and/or Splunk"
+    owner: blue_team_agent
+    entry_artifacts:
+      - sigma_rule
+      - compiled_lucene
+      - test_results
+    exit_artifacts:
+      - deployment_record
+    transitions:
+      - target: MONITORING
+        trigger: monitoring_period_started
+        agent: quality_agent
+
+  MONITORING:
+    description: "Detection under observation for alert volume and FP rates"
+    owner: quality_agent
+    entry_artifacts:
+      - deployment_record
+    exit_artifacts:
+      - monitoring_report
+    monitoring_period_days: 7
+    transitions:
+      - target: TUNED
+        trigger: quality_review_passed
+        agent: quality_agent
+      - target: AUTHORED
+        trigger: quality_review_failed
+        agent: blue_team_agent
+
+  TUNED:
+    description: "Detection reviewed, tuned if needed, and considered stable"
+    owner: quality_agent
+    entry_artifacts:
+      - monitoring_report
+    exit_artifacts:
+      - tuning_report
+    transitions:
+      - target: MONITORING
+        trigger: regression_detected
+        agent: quality_agent
+      - target: RETIRED
+        trigger: retired
+        agent: quality_agent
+
+  RETIRED:
+    description: "Detection disabled due to obsolescence, excessive FPs, or technique no longer relevant"
+    owner: quality_agent
+    entry_artifacts:
+      - retirement_reason
+    exit_artifacts: []
+    terminal: true
+
+# Artifact path conventions (relative to repo root)
+artifact_paths:
+  detection_request_yaml: "autonomous/detection-requests/{technique_id}.yml"
+  scenario_file: "simulator/scenarios/{technique_id}.json"
+  sigma_rule: "detections/{tactic}/{technique_id_underscored}.yml"
+  compiled_lucene: "detections/{tactic}/compiled/{technique_id_underscored}.lucene"
+  compiled_spl: "detections/{tactic}/compiled/{technique_id_underscored}.spl"
+  test_results: "tests/results/{technique_id_underscored}.json"
+  deployment_record: "autonomous/detection-requests/{technique_id}.yml"  # updated in-place
+  monitoring_report: "monitoring/{technique_id_underscored}.json"
+  tuning_report: "tuning/changelog/{technique_id_underscored}.md"
+  retirement_reason: "autonomous/detection-requests/{technique_id}.yml"  # status field
+
+# Valid state transitions (adjacency list for validation)
+valid_transitions:
+  REQUESTED: [SCENARIO_BUILT]
+  SCENARIO_BUILT: [AUTHORED]
+  AUTHORED: [VALIDATED]
+  VALIDATED: [DEPLOYED]
+  DEPLOYED: [MONITORING]
+  MONITORING: [TUNED, AUTHORED]
+  TUNED: [MONITORING, RETIRED]
+  RETIRED: []

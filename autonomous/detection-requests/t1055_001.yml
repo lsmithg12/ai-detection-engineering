@@ -1,0 +1,29 @@
+technique_id: T1055.001
+title: Process Injection via CreateRemoteThread
+status: REQUESTED
+priority: critical
+mitre_tactic: privilege_escalation
+requested_by: intel_agent
+requested_date: '2026-03-06T00:00:00Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: ''
+sigma_rule: ''
+compiled_lucene: ''
+compiled_spl: ''
+deployed_date: ''
+elastic_rule_id: ''
+splunk_saved_search: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: medium
+auto_deploy_eligible: false
+fawkes_commands:
+  - vanilla-injection
+changelog:
+  - date: '2026-03-06T00:00:00Z'
+    agent: intel_agent
+    action: created
+    details: Fawkes vanilla-injection maps to CreateRemoteThread injection. High priority — both Fawkes and Scattered Spider use this.
