@@ -1,0 +1,7 @@
+# Human must review all agent PRs
+* @lsmithg12
+
+# Agent-specific ownership
+orchestration/ @lsmithg12
+detections/ @lsmithg12
+autonomous/ @lsmithg12

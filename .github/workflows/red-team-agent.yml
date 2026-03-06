@@ -1,0 +1,61 @@
+name: Red Team Agent
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: red-team-agent
+  cancel-in-progress: true
+
+jobs:
+  red-team:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       (contains(github.event.pull_request.labels.*.name, 'agent-intel') ||
+        contains(github.event.pull_request.title, '[Intel]')))
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r autonomous/orchestration/requirements.txt
+
+      - name: Check for pending work
+        id: check
+        run: |
+          cd autonomous
+          PENDING=$(python -m orchestration.cli pending red-team 2>/dev/null | grep -c "technique_id" || true)
+          echo "pending=$PENDING" >> "$GITHUB_OUTPUT"
+          if [ "$PENDING" -eq 0 ]; then
+            echo "No REQUESTED detections pending — skipping"
+          fi
+
+      - name: Configure git
+        if: steps.check.outputs.pending != '0'
+        run: |
+          git config user.name "patronus-bot"
+          git config user.email "patronus-bot@users.noreply.github.com"
+
+      - name: Run Red Team Agent
+        if: steps.check.outputs.pending != '0'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd autonomous
+          python -m orchestration.agent_runner --agent red-team

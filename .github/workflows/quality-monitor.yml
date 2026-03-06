@@ -1,0 +1,55 @@
+name: Quality Monitor
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # Daily at 6 PM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: quality-monitor
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r autonomous/orchestration/requirements.txt
+
+      - name: Check for deployed detections
+        id: check
+        run: |
+          cd autonomous
+          DEPLOYED=$(python -m orchestration.cli status 2>/dev/null | grep -c "DEPLOYED\|MONITORING" || true)
+          echo "deployed=$DEPLOYED" >> "$GITHUB_OUTPUT"
+          if [ "$DEPLOYED" -eq 0 ]; then
+            echo "No DEPLOYED or MONITORING detections — skipping"
+          fi
+
+      - name: Configure git
+        if: steps.check.outputs.deployed != '0'
+        run: |
+          git config user.name "patronus-bot"
+          git config user.email "patronus-bot@users.noreply.github.com"
+
+      - name: Run Quality Monitor
+        if: steps.check.outputs.deployed != '0'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd autonomous
+          python -m orchestration.agent_runner --agent quality
