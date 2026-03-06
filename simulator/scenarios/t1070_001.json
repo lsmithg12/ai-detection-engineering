@@ -1,0 +1,145 @@
+{
+  "technique_id": "T1070.001",
+  "technique_name": "Clear Windows Event Logs",
+  "description": "Simulates Clear Windows Event Logs attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 55777,
+          "name": "wevtutil.exe",
+          "executable": "C:\\Windows\\System32\\wevtutil.exe",
+          "command_line": "wevtutil.exe cl Security",
+          "parent": {
+            "pid": 14494,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1070.001",
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "Clear Security event log via wevtutil"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 54290,
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "command_line": "powershell.exe -Command \"Clear-EventLog -LogName Security\"",
+          "parent": {
+            "pid": 35227,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1070.001",
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "Clear Security event log via PowerShell Clear-EventLog"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 12180,
+          "name": "wevtutil.exe",
+          "executable": "C:\\Windows\\System32\\wevtutil.exe",
+          "command_line": "wevtutil.exe qe Application /c:10 /rd:true /f:text",
+          "parent": {
+            "pid": 31952,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "user": {
+          "name": "admin",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1070.001",
+          "description": "wevtutil querying events — legitimate admin activity, not clearing"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line"
+    ],
+    "notes": "Detection should flag wevtutil cl and Clear-EventLog targeting Security/System logs. Exclude wevtutil qe (query, not clear)."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

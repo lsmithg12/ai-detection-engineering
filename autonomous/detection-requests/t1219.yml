@@ -1,0 +1,25 @@
+technique_id: T1219
+title: Remote Access Software
+status: SCENARIO_BUILT
+priority: high
+requested_by: intel
+requested_date: '2026-03-06T13:06:21Z'
+intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
+scenario_file: simulator\scenarios\t1219.json
+sigma_rule: detections\initial_access\t1219.yml
+deployed_date: ''
+last_quality_review: ''
+quality_score: 1.0
+fp_rate: 0.0
+tp_rate: 1.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: true
+changelog:
+- date: '2026-03-06T13:06:21Z'
+  agent: intel
+  action: created
+  details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
+compiled_lucene: detections\initial_access\compiled\t1219.lucene
+compiled_spl: detections\initial_access\compiled\t1219.spl
+mitre_tactic: initial_access

@@ -1,0 +1,51 @@
+title: "CISA Advisory: Scattered Spider Social Engineering and RMM Abuse"
+source: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a"
+date_published: "2026-03-01"
+date_ingested: "2026-03-06"
+threat_actors:
+  - Scattered Spider
+  - UNC3944
+platforms:
+  - windows
+  - linux
+  - macos
+techniques:
+  - id: T1566.004
+    name: Spearphishing Voice (Vishing)
+    description: "Scattered Spider calls IT help desks impersonating employees to reset MFA and gain initial access."
+    data_sources_needed:
+      - Identity provider logs
+      - Help desk ticket logs
+    detection_opportunity: "Monitor for password/MFA resets followed by immediate logins from new devices or IPs."
+    priority: high
+  - id: T1219
+    name: Remote Access Software
+    description: "Deploys legitimate RMM tools (AnyDesk, Splashtop, TeamViewer) for persistent access."
+    data_sources_needed:
+      - Sysmon EventID 1
+      - Sysmon EventID 3
+    detection_opportunity: "Detect unexpected RMM tool process creation (anydesk.exe, splashtop.exe) on endpoints without authorized RMM."
+    priority: high
+  - id: T1070.001
+    name: Clear Windows Event Logs
+    description: "Clears Security and System event logs to cover tracks after lateral movement."
+    data_sources_needed:
+      - Windows Security EventID 1102
+      - Sysmon EventID 1
+    detection_opportunity: "Alert on wevtutil.exe cl or Clear-EventLog commands targeting Security/System logs."
+    priority: high
+  - id: T1078.004
+    name: Cloud Account Abuse
+    description: "Uses compromised cloud credentials to access Azure AD, AWS, and GCP resources."
+    data_sources_needed:
+      - Azure AD sign-in logs
+      - AWS CloudTrail
+    detection_opportunity: "Monitor for impossible travel or new device logins to cloud admin consoles."
+    priority: medium
+iocs: []
+raw_summary: >
+  Scattered Spider (UNC3944) continues to target organizations through social
+  engineering of IT help desks, MFA fatigue attacks, and deployment of legitimate
+  remote management tools for persistent access. Post-compromise, the group
+  clears event logs and uses cloud credentials for lateral movement into
+  cloud infrastructure.

@@ -113,7 +113,7 @@ states:
 # Artifact path conventions (relative to repo root)
 artifact_paths:
   detection_request_yaml: "autonomous/detection-requests/{technique_id}.yml"
-  scenario_file: "simulator/scenarios/{technique_id}.json"
+  scenario_file: "simulator/scenarios/{technique_id_underscored}.json"
   sigma_rule: "detections/{tactic}/{technique_id_underscored}.yml"
   compiled_lucene: "detections/{tactic}/compiled/{technique_id_underscored}.lucene"
   compiled_spl: "detections/{tactic}/compiled/{technique_id_underscored}.spl"

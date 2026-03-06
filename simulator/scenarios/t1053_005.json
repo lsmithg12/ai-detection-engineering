@@ -1,0 +1,145 @@
+{
+  "technique_id": "T1053.005",
+  "technique_name": "Scheduled Task Creation for Persistence",
+  "description": "Simulates Scheduled Task Creation for Persistence attack sequence",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 29153,
+          "name": "schtasks.exe",
+          "executable": "C:\\Windows\\System32\\schtasks.exe",
+          "command_line": "schtasks.exe /Create /TN \"\\Microsoft\\Windows\\Maintenance\\SystemUpdate\" /TR \"C:\\Users\\clee\\AppData\\Local\\Temp\\update.exe\" /SC ONLOGON /RL HIGHEST",
+          "parent": {
+            "pid": 41749,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.005",
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "Scheduled task created for persistence with HIGHEST privileges"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 44523,
+          "name": "schtasks.exe",
+          "executable": "C:\\Windows\\System32\\schtasks.exe",
+          "command_line": "schtasks.exe /Create /TN \"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag\" /TR \"C:\\Windows\\System32\\defrag.exe -c\" /SC WEEKLY /D SUN",
+          "parent": {
+            "pid": 4479,
+            "name": "mmc.exe",
+            "executable": "C:\\Windows\\System32\\mmc.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1053.005",
+          "description": "Windows defrag scheduled task — legitimate system maintenance"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 46952,
+          "name": "schtasks.exe",
+          "executable": "C:\\Windows\\System32\\schtasks.exe",
+          "command_line": "schtasks.exe /Create /TN \"GoogleUpdateTaskMachineUA\" /TR \"C:\\Program Files\\Google\\Update\\GoogleUpdate.exe /ua /installsource scheduler\" /SC HOURLY",
+          "parent": {
+            "pid": 24143,
+            "name": "GoogleUpdate.exe",
+            "executable": "C:\\Program Files\\Google\\Update\\GoogleUpdate.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1053.005",
+          "description": "Google Chrome update scheduled task — legitimate software update"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "user.name"
+    ],
+    "notes": "Detection should flag schtasks /Create with executables in user-writable paths (AppData, Temp, ProgramData). Exclude known system/vendor tasks."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "technique_id": "T1219",
+  "technique_name": "Remote Access Software",
+  "description": "Simulates Remote Access Software attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 1328,
+          "name": "AnyDesk.exe",
+          "executable": "C:\\Users\\agarcia\\Downloads\\AnyDesk.exe",
+          "command_line": "C:\\Users\\agarcia\\Downloads\\AnyDesk.exe",
+          "parent": {
+            "pid": 29942,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1219",
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "Unauthorized RMM tool AnyDesk.exe launched from user directory"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 491,
+          "name": "splashtop.exe",
+          "executable": "C:\\Users\\agarcia\\AppData\\Local\\Temp\\splashtop.exe",
+          "command_line": "C:\\Users\\agarcia\\AppData\\Local\\Temp\\splashtop.exe",
+          "parent": {
+            "pid": 14557,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1219",
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "Unauthorized RMM tool splashtop.exe launched from user directory"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4534,
+          "name": "TeamViewer.exe",
+          "executable": "C:\\Program Files\\TeamViewer\\TeamViewer.exe",
+          "command_line": "C:\\Program Files\\TeamViewer\\TeamViewer.exe",
+          "parent": {
+            "pid": 19138,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1219",
+          "description": "TeamViewer installed in Program Files, running as service — legitimate IT support tool"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.executable",
+      "process.parent.name"
+    ],
+    "notes": "Detection should flag RMM tools (AnyDesk, Splashtop, TeamViewer, ScreenConnect) running from non-standard paths (Downloads, Temp, AppData). Exclude approved installations in Program Files."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
