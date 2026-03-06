@@ -1,0 +1,85 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process accessed (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "name": "sync_agent.exe",
+      "executable": "C:\\Users\\bwilson\\AppData\\Local\\Temp\\sync_agent.exe",
+      "pid": 26364
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\explorer.exe",
+        "GrantedAccess": "0x1F3FFF",
+        "SourceProcessGUID": "59b03f25-4b4a-4c4e-894f-421161dd2f9f"
+      }
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.001",
+      "sequence_order": 1,
+      "sequence_total": 2,
+      "description": "Source process opens target with PROCESS_ALL_ACCESS"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+      "code": "8"
+    },
+    "process": {
+      "name": "sync_agent.exe",
+      "executable": "C:\\Users\\bwilson\\AppData\\Local\\Temp\\sync_agent.exe",
+      "pid": 14066
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\explorer.exe",
+        "StartAddress": "0x7ff63d40f87c",
+        "StartModule": "",
+        "StartFunction": ""
+      }
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.001",
+      "sequence_order": 2,
+      "sequence_total": 2,
+      "description": "CreateRemoteThread into target process"
+    }
+  }
+]

@@ -1,6 +1,6 @@
 technique_id: T1053.005
 title: Scheduled Task Creation for Persistence
-status: SCENARIO_BUILT
+status: DEPLOYED
 priority: high
 mitre_tactic: persistence
 requested_by: intel_agent
@@ -10,9 +10,9 @@ scenario_file: simulator\scenarios\t1053_005.json
 sigma_rule: detections\persistence\t1053_005.yml
 compiled_lucene: detections\persistence\compiled\t1053_005.lucene
 compiled_spl: detections\persistence\compiled\t1053_005.spl
-deployed_date: ''
-elastic_rule_id: ''
-splunk_saved_search: ''
+deployed_date: '2026-03-06T23:10:00Z'
+elastic_rule_id: cf4b3969-5861-4a0d-bd17-785f829f691b
+splunk_saved_search: Scheduled Task Creation for Persistence T1053.005
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -27,3 +27,39 @@ changelog:
   agent: intel_agent
   action: created
   details: Fawkes schtask command creates scheduled tasks. Both Fawkes and Scattered Spider use this technique.
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl'
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: F1=1.0, FP_rate=0.0, tier=auto_deploy
+- date: '2026-03-06T23:04:09Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-06T23:10:43Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-06T23:10:43Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: deployed_date'

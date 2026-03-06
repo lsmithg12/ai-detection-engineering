@@ -1,13 +1,13 @@
 technique_id: T1566.004
 title: Spearphishing Voice (Vishing)
-status: SCENARIO_BUILT
+status: DEPLOYED
 priority: high
 requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
 intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1566_004.json
 sigma_rule: detections\initial_access\t1566_004.yml
-deployed_date: ''
+deployed_date: '2026-03-06T23:10:00Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -20,6 +20,44 @@ changelog:
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml'
+- date: '2026-03-06T23:04:11Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl'
+- date: '2026-03-06T23:04:11Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-06T23:04:11Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-06T23:04:11Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: F1=1.0, FP_rate=0.0, tier=auto_deploy
+- date: '2026-03-06T23:04:11Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-06T23:10:49Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-06T23:11:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: deployed_date'
 compiled_lucene: detections\initial_access\compiled\t1566_004.lucene
 compiled_spl: detections\initial_access\compiled\t1566_004.spl
 mitre_tactic: initial_access
+elastic_rule_id: 1369e748-4806-4c23-aced-766b561109a2
+splunk_saved_search: Spearphishing Voice (Vishing) T1566.004

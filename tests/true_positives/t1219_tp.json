@@ -1,0 +1,82 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 1328,
+      "name": "AnyDesk.exe",
+      "executable": "C:\\Users\\agarcia\\Downloads\\AnyDesk.exe",
+      "command_line": "C:\\Users\\agarcia\\Downloads\\AnyDesk.exe",
+      "parent": {
+        "pid": 29942,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1219",
+      "sequence_order": 1,
+      "sequence_total": 2,
+      "description": "Unauthorized RMM tool AnyDesk.exe launched from user directory"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 491,
+      "name": "splashtop.exe",
+      "executable": "C:\\Users\\agarcia\\AppData\\Local\\Temp\\splashtop.exe",
+      "command_line": "C:\\Users\\agarcia\\AppData\\Local\\Temp\\splashtop.exe",
+      "parent": {
+        "pid": 14557,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1219",
+      "sequence_order": 2,
+      "sequence_total": 2,
+      "description": "Unauthorized RMM tool splashtop.exe launched from user directory"
+    }
+  }
+]

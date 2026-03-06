@@ -1,0 +1,36 @@
+title: Process Injection via CreateRemoteThread [T1055.001]
+id: f63e752c-ad01-45a1-8679-70dfc87f737e
+status: experimental
+description: Detects process injection via createremotethread. Detection should flag CreateRemoteThread from non-system processes
+  in temp/user paths into system processes. Exclude known AV and OS internals.
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1055/001/
+- https://github.com/galoryber/fawkes
+tags:
+- attack.privilege_escalation
+- attack.t1055.001
+- detection.fawkes
+logsource:
+  category: create_remote_thread
+  product: windows
+detection:
+  selection:
+    event.code:
+    - '10'
+    - '8'
+    process.name: sync_agent.exe
+    process.executable|contains: sync_agent.exe
+    winlog.event_data.TargetImage: C:\Windows\System32\explorer.exe
+    winlog.event_data.GrantedAccess: '0x1F3FFF'
+  condition: selection and not filter_legitimate
+  filter_legitimate:
+    process.name:
+    - MsMpEng.exe
+    - csrss.exe
+falsepositives:
+- Detection should flag CreateRemoteThread from non-system processes in temp/user paths into system processes. Exclude known
+  AV and OS internals.
+level: high

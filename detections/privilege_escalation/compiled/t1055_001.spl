@@ -1,0 +1,1 @@
+event.code IN ("10", "8") process.name="sync_agent.exe" process.executable="*sync_agent.exe*" winlog.event_data.TargetImage="C:\\Windows\\System32\\explorer.exe" winlog.event_data.GrantedAccess="0x1F3FFF" NOT (process.name IN ("MsMpEng.exe", "csrss.exe"))

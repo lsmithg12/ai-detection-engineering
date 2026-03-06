@@ -1,0 +1,27 @@
+title: Cloud Account Abuse [T1078.004]
+id: efebad71-79bb-497c-b8b5-625b8ac3ac22
+status: experimental
+description: Detects cloud account abuse. Cloud account abuse is best detected via cloud provider logs (Azure AD, AWS CloudTrail).
+  Endpoint telemetry limited to logon events. Correlate with impossible travel / new device signals.
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1078/004/
+tags:
+- attack.defense_evasion
+- attack.t1078.004
+logsource:
+  category: authentication
+  product: windows
+detection:
+  selection:
+    event.code: '4624'
+    source.ip: 198.51.100.23
+    winlog.logon.type: NewCredentials
+    user.name: mjones
+  condition: selection
+falsepositives:
+- Cloud account abuse is best detected via cloud provider logs (Azure AD, AWS CloudTrail). Endpoint telemetry limited to logon
+  events. Correlate with impossible travel / new device signals.
+level: high

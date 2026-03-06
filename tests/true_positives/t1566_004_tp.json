@@ -1,0 +1,41 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "authentication",
+      "type": "start",
+      "action": "logged-in",
+      "code": "4624",
+      "outcome": "success"
+    },
+    "winlog": {
+      "logon": {
+        "type": "RemoteInteractive",
+        "id": "0x2e603"
+      }
+    },
+    "source": {
+      "ip": "203.0.113.42"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "winlogbeat"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1566.004",
+      "sequence_order": 1,
+      "sequence_total": 1,
+      "description": "Remote login from external IP immediately after MFA reset (vishing follow-up)"
+    }
+  }
+]

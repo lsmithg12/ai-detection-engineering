@@ -1,0 +1,40 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4534,
+      "name": "TeamViewer.exe",
+      "executable": "C:\\Program Files\\TeamViewer\\TeamViewer.exe",
+      "command_line": "C:\\Program Files\\TeamViewer\\TeamViewer.exe",
+      "parent": {
+        "pid": 19138,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1219",
+      "description": "TeamViewer installed in Program Files, running as service \u2014 legitimate IT support tool"
+    }
+  }
+]

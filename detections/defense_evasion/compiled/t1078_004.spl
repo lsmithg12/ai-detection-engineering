@@ -1,0 +1,1 @@
+event.code="4624" source.ip="198.51.100.23" winlog.logon.type="NewCredentials" user.name="mjones"

@@ -1,0 +1,30 @@
+title: Scheduled Task Creation for Persistence [T1053.005]
+id: f9c8dd06-6eb2-4dec-8c08-f795f9482cc3
+status: experimental
+description: Detects scheduled task creation for persistence. Detection should flag schtasks /Create with executables in user-writable
+  paths (AppData, Temp, ProgramData). Exclude known system/vendor tasks.
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1053/005/
+- https://github.com/galoryber/fawkes
+tags:
+- attack.persistence
+- attack.t1053.005
+- detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.code: '1'
+    process.name: schtasks.exe
+    process.command_line|contains: RL HIGHEST
+    process.parent.name: cmd.exe
+    user.name: clee
+  condition: selection
+falsepositives:
+- Detection should flag schtasks /Create with executables in user-writable paths (AppData, Temp, ProgramData). Exclude known
+  system/vendor tasks.
+level: high

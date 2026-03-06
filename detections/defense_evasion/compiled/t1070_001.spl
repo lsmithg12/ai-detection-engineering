@@ -1,0 +1,1 @@
+event.code="1" process.name IN ("powershell.exe", "wevtutil.exe") process.command_line IN ("*powershell.exe -Command \"Clear-EventLog -LogName Security\"*", "*wevtutil.exe cl Security*")

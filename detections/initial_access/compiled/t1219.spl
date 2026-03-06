@@ -1,0 +1,1 @@
+event.code="1" process.name IN ("AnyDesk.exe", "splashtop.exe") process.executable IN ("*splashtop.exe*", "*AnyDesk.exe*") process.parent.name="explorer.exe" NOT process.name="TeamViewer.exe"

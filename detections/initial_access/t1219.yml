@@ -1,0 +1,34 @@
+title: Remote Access Software [T1219]
+id: a5ca2fc8-529f-449f-8d3e-e2ecc03fb7e1
+status: experimental
+description: Detects remote access software. Detection should flag RMM tools (AnyDesk, Splashtop, TeamViewer, ScreenConnect)
+  running from non-standard paths (Downloads, Temp, AppData). Exclude approved installations in Program Files.
+author: blue-team-agent
+date: '2026-03-06'
+modified: '2026-03-06'
+references:
+- https://attack.mitre.org/techniques/T1219/
+tags:
+- attack.initial_access
+- attack.t1219
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.code: '1'
+    process.name:
+    - AnyDesk.exe
+    - splashtop.exe
+    process.executable|contains:
+    - splashtop.exe
+    - AnyDesk.exe
+    process.parent.name: explorer.exe
+  condition: selection and not filter_legitimate
+  filter_legitimate:
+    process.name:
+    - TeamViewer.exe
+falsepositives:
+- Detection should flag RMM tools (AnyDesk, Splashtop, TeamViewer, ScreenConnect) running from non-standard paths (Downloads,
+  Temp, AppData). Exclude approved installations in Program Files.
+level: high
