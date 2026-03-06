@@ -1,0 +1,61 @@
+# Patronus Agent Configuration
+# Optimized for Claude Pro plan token budget
+
+agents:
+  intel:
+    schedule: "daily"
+    model: "sonnet"
+    max_reports: 5
+    max_tokens_estimate: 50000
+
+  red-team:
+    trigger: "intel_merge"
+    model: "sonnet"
+    max_scenarios_per_run: 5
+    max_tokens_estimate: 30000
+
+  blue-team:
+    trigger: "intel_merge OR red_merge"
+    model: "opus"
+    max_detections_per_run: 5
+    max_tokens_estimate: 100000
+    auto_deploy_threshold: 0.90
+
+  quality:
+    schedule: "daily"
+    model: "sonnet"
+    max_tokens_estimate: 40000
+
+  security:
+    trigger: "every_agent_pr"
+    model: "sonnet"
+    max_tokens_estimate: 20000
+    block_on_critical: true
+    auto_fix_enabled: true
+    scan_patterns_file: "autonomous/security/scan-patterns.yml"
+
+# Infrastructure endpoints
+infrastructure:
+  elasticsearch:
+    url: "http://localhost:9200"
+    user: "elastic"
+    pass: "changeme"
+  kibana:
+    url: "http://localhost:5601"
+  splunk:
+    url: "https://localhost:8089"
+    user: "admin"
+    pass: "BlueTeamLab1!"
+  cribl:
+    url: "http://localhost:9000"
+
+# GitHub
+github:
+  repo: "lsmithg12/ai-detection-engineering"
+  base_branch: "main"
+
+# Budget tracking
+budget:
+  log_file: "autonomous/budget-log.jsonl"
+  daily_cap_tokens: 500000
+  warn_at_pct: 80

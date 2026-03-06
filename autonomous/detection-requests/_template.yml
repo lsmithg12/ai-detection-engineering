@@ -1,0 +1,45 @@
+# Detection Request Template
+# Copy this file and rename to <technique_id>.yml (e.g., t1055_001.yml)
+
+technique_id: "T1055.001"           # MITRE ATT&CK technique ID
+title: "Process Injection via CreateRemoteThread"
+status: "REQUESTED"                  # REQUESTED | SCENARIO_BUILT | AUTHORED | VALIDATED | DEPLOYED | MONITORING | TUNED | RETIRED
+priority: "medium"                   # critical | high | medium | low
+mitre_tactic: "privilege_escalation" # MITRE tactic (snake_case, used for file paths)
+
+# Origin
+requested_by: "intel_agent"
+requested_date: "2026-01-01T00:00:00Z"
+intel_report: ""                     # Path to intel report that triggered this request
+
+# Artifacts (populated as detection progresses)
+scenario_file: ""                    # Path to simulator scenario JSON
+sigma_rule: ""                       # Path to Sigma YAML rule
+compiled_lucene: ""                  # Path to compiled Lucene query
+compiled_spl: ""                     # Path to compiled SPL query
+
+# Deployment
+deployed_date: ""
+elastic_rule_id: ""
+splunk_saved_search: ""
+
+# Quality metrics
+last_quality_review: ""
+quality_score: 0.0                   # 0.0 to 1.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+
+# Cost / automation
+cost_estimate: "low"                 # low | medium | high (token cost to build)
+auto_deploy_eligible: false          # Set true when quality_score >= threshold
+
+# Fawkes mapping (if applicable)
+fawkes_commands: []                  # e.g., ["vanilla-injection", "apc-injection"]
+
+# Audit trail
+changelog:
+  - date: "2026-01-01T00:00:00Z"
+    agent: "intel_agent"
+    action: "created"
+    details: "Detection request created from intel report"
