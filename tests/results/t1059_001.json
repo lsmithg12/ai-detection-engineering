@@ -1,0 +1,15 @@
+{
+  "technique_id": "T1059.001",
+  "sigma_rule": "detections/execution/t1059_001_powershell_bypass.yml",
+  "metrics": {
+    "f1_score": 0.95,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "tn": 3
+  },
+  "quality_tier": "auto_deploy",
+  "date": "2026-02-28T23:00:00Z"
+}

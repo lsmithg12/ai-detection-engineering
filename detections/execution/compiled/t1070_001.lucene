@@ -1,1 +1,0 @@
-(event.code:1 AND (process.name:(powershell.exe OR wevtutil.exe)) AND (process.command_line:(powershell.exe\ \-Command\ \"Clear\-EventLog\ \-LogName\ Security\" OR wevtutil.exe\ cl\ Security))) AND (NOT process.name:wevtutil.exe)

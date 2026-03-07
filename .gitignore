@@ -36,6 +36,10 @@ simulator/data/
 *.ndjson
 *.json.gz
 
+# Autonomous pipeline runtime artifacts
+autonomous/budget-log.jsonl
+autonomous/security/audit-log.jsonl
+
 # Claude Code local settings
 .claude/settings.local.json
 .claude/projects/

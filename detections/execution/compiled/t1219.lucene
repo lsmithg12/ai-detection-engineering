@@ -1,1 +1,0 @@
-(event.code:1 AND (process.name:(AnyDesk.exe OR splashtop.exe)) AND (process.executable:(C\:\\Users\\agarcia\\AppData\\Local\\Temp\\splashtop.exe OR C\:\\Users\\agarcia\\Downloads\\AnyDesk.exe)) AND process.parent.name:explorer.exe) AND (NOT process.name:TeamViewer.exe)

@@ -1,0 +1,29 @@
+technique_id: T1134.001
+title: LSASS Process Access for Token Theft
+status: DEPLOYED
+priority: high
+mitre_tactic: credential_access
+requested_by: manual
+requested_date: '2026-03-01T00:00:00Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: ''
+sigma_rule: detections/credential_access/t1134_001_lsass_token_theft.yml
+compiled_lucene: ''
+compiled_spl: ''
+deployed_date: '2026-03-01T00:00:00Z'
+elastic_rule_id: 69c68ad8-ab9c-4e1b-9cba-47a4f87392a2
+splunk_saved_search: LSASS Token Theft T1134.001
+last_quality_review: ''
+quality_score: 1.0
+fp_rate: 0.0
+tp_rate: 1.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: true
+fawkes_commands:
+- steal-token
+changelog:
+- date: '2026-03-01T00:00:00Z'
+  agent: manual
+  action: created
+  details: Manually deployed before Patronus pipeline. TP 1/1, FP 0/6088. GrantedAccess 0x0040 (PROCESS_DUP_HANDLE).

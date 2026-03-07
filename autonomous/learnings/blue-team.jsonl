@@ -1,0 +1,1 @@
+{"timestamp": "2026-03-06T23:04:09Z", "agent": "blue-team", "run_id": "20260306-230408", "type": "improvement", "category": "detection", "title": "Low quality for T1055.001: F1=0.667", "description": "TP=1, FP=0, FN=1. Detection logic may need manual refinement.", "technique_id": "T1055.001", "resolved": false, "tags": []}
