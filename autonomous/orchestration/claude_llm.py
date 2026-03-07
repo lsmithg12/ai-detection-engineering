@@ -169,11 +169,13 @@ def ask(
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout_seconds,
             cwd=str(Path(__file__).resolve().parent.parent.parent),  # repo root
         )
 
-        response_text = result.stdout.strip()
+        response_text = (result.stdout or "").strip()
 
         if result.returncode != 0:
             error_text = result.stderr.strip()[:500] if result.stderr else "Unknown error"
