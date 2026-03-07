@@ -2,7 +2,7 @@
 
 **Created**: 2026-03-01
 **Source**: Scattered Spider intel analysis (https://research.splunk.com/stories/scattered_spider/)
-**Status**: All items BACKLOGGED — to be addressed in a future session
+**Status**: Items 1-5 DONE (simulator updated 2026-03-07). Items 6-7 remain backlogged.
 
 ---
 
@@ -16,7 +16,7 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 ## BACKLOGGED Items
 
-### 1. [BACKLOG] PowerShell Script Block Logging (EID 4104) — CRITICAL
+### 1. [DONE] PowerShell Script Block Logging (EID 4104) — CRITICAL
 
 **Impact**: Unlocks 5 Scattered Spider detections (Mimikatz PS, encoded commands, Exchange cmdlets, PS hunting, PS scheduled tasks)
 **What's needed**:
@@ -41,7 +41,7 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 ---
 
-### 2. [BACKLOG] Sysmon EID 11 — File Create — HIGH
+### 2. [DONE] Sysmon EID 11 — File Create — HIGH
 
 **Impact**: Unlocks 3 Scattered Spider detections (RAT file drops, tool staging, ingress transfer)
 **What's needed**:
@@ -62,7 +62,7 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 ---
 
-### 3. [BACKLOG] Sysmon EID 22 — DNS Query — HIGH
+### 3. [DONE] Sysmon EID 22 — DNS Query — HIGH
 
 **Impact**: Unlocks DNS-based RMM/RAT detection — most reliable remote access indicator
 **What's needed**:
@@ -81,7 +81,7 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 ---
 
-### 4. [BACKLOG] Sysmon EID 17/18 — Named Pipe Create/Connect — MEDIUM
+### 4. [DONE] Sysmon EID 17/18 — Named Pipe Create/Connect — MEDIUM
 
 **Impact**: Unlocks named pipe-based RMM and lateral movement detection
 **What's needed**:
@@ -99,7 +99,7 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 ---
 
-### 5. [BACKLOG] Windows System EID 7045 — Service Install — MEDIUM
+### 5. [DONE] Windows System EID 7045 — Service Install — MEDIUM
 
 **Impact**: Full coverage for service creation persistence (currently partial via sc.exe process detection)
 **What's needed**:
@@ -159,13 +159,13 @@ Onboarding these log sources unlocks detections for both Scattered Spider AND Fa
 
 | Priority | Log Source | EID | Detections Unlocked | Effort | Fawkes Overlap |
 |---|---|---|---|---|---|
-| 1 - CRITICAL | PowerShell Script Block | 4104 | 5 | Medium | Indirect |
-| 2 - HIGH | File Create | 11 | 3 + Fawkes startup | Medium | Yes |
-| 3 - HIGH | DNS Query | 22 | 2 + C2 enhanced | Medium | Yes (C2) |
-| 4 - MEDIUM | Named Pipe | 17/18 | 1 + lateral movement | Medium | No |
-| 5 - MEDIUM | Service Install | 7045 | 2 | Low | Yes |
-| 6 - LOW | File Delete | 23 | 2 (enhanced only) | Low | No |
-| 7 - LOW | WMI Events | 19/20/21 | 2 | High | Yes |
+| 1 - CRITICAL | PowerShell Script Block | 4104 | 5 | Medium | Indirect | **DONE** |
+| 2 - HIGH | File Create | 11 | 3 + Fawkes startup | Medium | Yes | **DONE** |
+| 3 - HIGH | DNS Query | 22 | 2 + C2 enhanced | Medium | Yes (C2) | **DONE** |
+| 4 - MEDIUM | Named Pipe | 17/18 | 1 + lateral movement | Medium | No | **DONE** |
+| 5 - MEDIUM | Service Install | 7045 | 2 | Low | Yes | **DONE** |
+| 6 - LOW | File Delete | 23 | 2 (enhanced only) | Low | No | Backlogged |
+| 7 - LOW | WMI Events | 19/20/21 | 2 | High | Yes | Backlogged |
 
 **Estimated effort**: All changes are to `simulator/simulator.py` + `sim-logs` index template.
 Items 1-3 should be tackled first — they unlock the most detections with moderate effort.

