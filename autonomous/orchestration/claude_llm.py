@@ -355,10 +355,11 @@ def ask_with_web_search(
     timeout_seconds: int = 180,
 ) -> dict:
     """
-    Ask Claude with WebSearch and WebFetch tools enabled.
+    Ask Claude with web access via Bash(curl:*).
 
-    Used by the intel agent to search the web for new threat intelligence.
-    Only works from a standalone terminal (not inside Claude Code).
+    In --print mode, Claude CLI only has built-in tools (Bash, Edit, Read,
+    etc.) — not WebSearch/WebFetch. We allow Bash restricted to curl commands
+    so Claude can fetch web pages for threat intel research.
 
     Returns {"success": bool, "response": str, "model": str, "error": str | None}
     """
@@ -366,7 +367,7 @@ def ask_with_web_search(
         prompt=prompt,
         agent_name=agent_name,
         system_prompt=system_prompt,
-        allowed_tools=["WebSearch", "WebFetch"],
+        allowed_tools=["Bash(curl:*)"],
         max_turns=8,
         timeout_seconds=timeout_seconds,
     )

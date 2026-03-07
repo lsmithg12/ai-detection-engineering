@@ -289,26 +289,36 @@ def search_web_for_intel(
     priority_sites = ", ".join(PRIORITY_SOURCES[:5])
 
     system_prompt = (
-        "You are a threat intelligence analyst. Search the web for recent "
-        "cybersecurity threat reports, advisories, and malware analysis. "
-        "Focus on reports that describe specific MITRE ATT&CK techniques. "
+        "You are a threat intelligence analyst. You have access to curl via "
+        "the Bash tool. Use curl to fetch web pages from threat intelligence "
+        "sources. Focus on reports that describe specific MITRE ATT&CK techniques. "
         "Prefer reports from reputable sources like CISA, Mandiant, CrowdStrike, "
         "Microsoft, Unit42, Red Canary, Elastic Security Labs, and The DFIR Report. "
-        "Return your findings as a JSON array — no markdown, no explanation."
+        "After fetching and reading reports, return your findings as a JSON array — "
+        "no markdown, no explanation."
     )
 
     # Build a combined prompt with all queries
     queries_block = "\n".join(f"- {q}" for q in queries[:3])
 
-    prompt = f"""Search the web for recent threat intelligence using these queries:
+    prompt = f"""Fetch recent threat intelligence reports using curl. Try these sources:
+- https://www.cisa.gov/news-events/cybersecurity-advisories
+- https://cloud.google.com/blog/topics/threat-intelligence
+- https://unit42.paloaltonetworks.com/category/threat-research/
+- https://www.microsoft.com/en-us/security/blog/
+- https://thedfirreport.com/
+
+Use curl to fetch pages and extract threat report content. For example:
+  curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | head -500
+
+Search context (topics of interest):
 {queries_block}
 
 Find up to {max_reports} recent threat reports (published in the last 60 days).
-Prioritize reports from: {priority_sites}
 
 We already have detections for these techniques (skip them): {already_covered}
 
-For each report found, read it and extract:
+For each report found, extract:
 1. The report title
 2. Source URL
 3. Date published
@@ -317,7 +327,7 @@ For each report found, read it and extract:
 6. MITRE ATT&CK techniques used (ID, name, brief description, priority)
 7. A 2-3 sentence summary
 
-Return ONLY a JSON array of objects with this exact schema:
+After gathering data, return ONLY a JSON array with this exact schema:
 [{{
   "title": "Report Title",
   "source": "https://...",
@@ -330,7 +340,7 @@ Return ONLY a JSON array of objects with this exact schema:
   "raw_summary": "Brief summary of the report..."
 }}]
 
-Return ONLY valid JSON. No markdown fences, no commentary."""
+Your FINAL output must be ONLY valid JSON. No markdown fences, no commentary."""
 
     print(f"  [intel] Sending web search request to Claude CLI...")
     result = claude_llm.ask_with_web_search(
