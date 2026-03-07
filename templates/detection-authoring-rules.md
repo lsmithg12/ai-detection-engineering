@@ -153,3 +153,5 @@ sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 | 2026-03-01 | All | Splunk `-d` flag fails with spaces/wildcards in values | Use `--data-urlencode` for name, search, cron, alert_type, alert_comparator |
 | 2026-03-01 | All | Splunk `alert_type` value has a space | Use `"number of events"` not `"number_of_events"` |
 | 2026-03-01 | All | `curl -sf` suppresses Splunk API error bodies | Use `-sk` during debugging, only add `-f` for scripted success checks |
+| 2026-03-07 | T1055.001 | Multi-EID detection (EID 8+10) can't use single Sigma selection | Split into separate rules per EID — each event type has different fields, no single event matches all conditions |
+| 2026-03-07 | T1055.001 | Hardcoded process names in detection logic | Use path-based patterns (`\|contains` with temp dirs) instead of specific executable names — attackers rename binaries |

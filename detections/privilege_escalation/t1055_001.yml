@@ -1,36 +1,47 @@
-title: Process Injection via CreateRemoteThread [T1055.001]
+title: CreateRemoteThread from Suspicious Process [T1055.001]
 id: f63e752c-ad01-45a1-8679-70dfc87f737e
 status: experimental
-description: Detects process injection via createremotethread. Detection should flag CreateRemoteThread from non-system processes
-  in temp/user paths into system processes. Exclude known AV and OS internals.
+description: >
+  Detects CreateRemoteThread (Sysmon EID 8) where the source process is in a
+  user-writable path (AppData, Temp, ProgramData, Downloads). This is a strong
+  indicator of process injection — legitimate software rarely creates remote
+  threads from temp directories. Covers Fawkes vanilla-injection command.
 author: blue-team-agent
 date: '2026-03-06'
-modified: '2026-03-06'
+modified: '2026-03-07'
 references:
-- https://attack.mitre.org/techniques/T1055/001/
-- https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1055/001/
+  - https://github.com/galoryber/fawkes
 tags:
-- attack.privilege_escalation
-- attack.t1055.001
-- detection.fawkes
+  - attack.privilege_escalation
+  - attack.defense_evasion
+  - attack.t1055.001
+  - detection.fawkes
 logsource:
   category: create_remote_thread
   product: windows
 detection:
   selection:
-    event.code:
-    - '10'
-    - '8'
-    process.name: sync_agent.exe
-    process.executable|contains: sync_agent.exe
-    winlog.event_data.TargetImage: C:\Windows\System32\explorer.exe
-    winlog.event_data.GrantedAccess: '0x1F3FFF'
-  condition: selection and not filter_legitimate
+    event.code: '8'
+  filter_source_path:
+    process.executable|contains:
+      - '\AppData\Local\Temp\'
+      - '\AppData\Roaming\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+      - '\Downloads\'
+      - '\Temp\'
   filter_legitimate:
     process.name:
-    - MsMpEng.exe
-    - csrss.exe
+      - MsMpEng.exe
+      - csrss.exe
+      - services.exe
+      - lsass.exe
+      - svchost.exe
+      - WmiPrvSE.exe
+      - SearchIndexer.exe
+  condition: selection and filter_source_path and not filter_legitimate
 falsepositives:
-- Detection should flag CreateRemoteThread from non-system processes in temp/user paths into system processes. Exclude known
-  AV and OS internals.
+  - Legitimate installers running from temp directories
+  - Auto-update agents in user AppData paths
 level: high
