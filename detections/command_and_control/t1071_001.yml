@@ -1,0 +1,33 @@
+title: C2 Beaconing via HTTP/HTTPS from Unusual Process [T1071.001]
+id: 965a0fc5-4784-4031-9803-3d4f00c546b3
+status: experimental
+description: Detects c2 beaconing via http/https from unusual process. Detection should flag outbound HTTPS from processes
+  in temp/user paths. Exclude known browsers, system processes, and approved software.
+author: blue-team-agent
+date: '2026-03-07'
+modified: '2026-03-07'
+references:
+- https://attack.mitre.org/techniques/T1071/001/
+tags:
+- attack.execution
+- attack.t1071.001
+logsource:
+  category: network_connection
+  product: windows
+detection:
+  selection:
+    event.code: '3'
+    process.name: svc_updater.exe
+    process.executable|contains: svc_updater.exe
+    destination.ip: 185.125.12.217
+    destination.port: '443'
+    network.direction: outbound
+  condition: selection and not filter_legitimate
+  filter_legitimate:
+    process.name:
+    - chrome.exe
+    - svchost.exe
+falsepositives:
+- Detection should flag outbound HTTPS from processes in temp/user paths. Exclude known browsers, system processes, and approved
+  software.
+level: high

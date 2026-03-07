@@ -1,0 +1,1 @@
+event.code="7" file.name IN ("amsi.dll", "clr.dll") process.name="update_helper.exe" process.executable="*update_helper.exe*" NOT (process.name IN ("devenv.exe", "powershell.exe"))

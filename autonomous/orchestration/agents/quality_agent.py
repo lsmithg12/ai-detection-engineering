@@ -306,6 +306,8 @@ def run(state_manager: StateManager) -> dict:
         if llm_result["success"]:
             llm_insights = [f"[Claude] {llm_result['response']}"]
             print(f"  [quality] Claude analysis received")
+        else:
+            print(f"  [quality] Claude analysis skipped: {llm_result.get('error', 'unknown')}")
 
     all_insights = cross_agent_insights + llm_insights
 

@@ -1,0 +1,140 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "pid": 11221
+    },
+    "source": {
+      "ip": "10.10.1.50",
+      "port": 49328
+    },
+    "destination": {
+      "ip": "185.125.12.217",
+      "port": 443
+    },
+    "network": {
+      "direction": "outbound",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1071.001",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "C2 beacon #1 \u2014 outbound HTTPS from temp-path process"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "pid": 64558
+    },
+    "source": {
+      "ip": "10.10.1.50",
+      "port": 57724
+    },
+    "destination": {
+      "ip": "185.125.12.217",
+      "port": 443
+    },
+    "network": {
+      "direction": "outbound",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1071.001",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "C2 beacon #2 \u2014 outbound HTTPS from temp-path process"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "pid": 58470
+    },
+    "source": {
+      "ip": "10.10.1.50",
+      "port": 63995
+    },
+    "destination": {
+      "ip": "185.125.12.217",
+      "port": 443
+    },
+    "network": {
+      "direction": "outbound",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1071.001",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "C2 beacon #3 \u2014 outbound HTTPS from temp-path process"
+    }
+  }
+]

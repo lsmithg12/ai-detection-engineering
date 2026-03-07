@@ -1,0 +1,1 @@
+(event.code:7 AND (file.name:(amsi.dll OR clr.dll)) AND process.name:update_helper.exe AND process.executable:*update_helper.exe*) AND (NOT (process.name:(devenv.exe OR powershell.exe)))

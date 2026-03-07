@@ -1,6 +1,6 @@
 technique_id: T1078.004
 title: Cloud Account Abuse
-status: DEPLOYED
+status: MONITORING
 priority: medium
 requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1078_004.json
 sigma_rule: detections\defense_evasion\t1078_004.yml
 deployed_date: '2026-03-06T23:10:00Z'
-last_quality_review: ''
+last_quality_review: '2026-03-07T23:21:41Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -64,6 +64,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-03-07T23:21:41Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-07T23:21:41Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 mitre_tactic: defense_evasion
 compiled_lucene: detections\defense_evasion\compiled\t1078_004.lucene
 compiled_spl: detections\defense_evasion\compiled\t1078_004.spl

@@ -1,0 +1,33 @@
+title: AMSI Bypass via CLR Load in Unsigned Process [T1562.001]
+id: dcddb389-1d5b-49a4-aa76-0c96431124f5
+status: experimental
+description: Detects amsi bypass via clr load in unsigned process. Detection should flag clr.dll or amsi.dll loaded by processes
+  in temp/user paths. Exclude known .NET hosts (powershell, dotnet, devenv, msbuild).
+author: blue-team-agent
+date: '2026-03-07'
+modified: '2026-03-07'
+references:
+- https://attack.mitre.org/techniques/T1562/001/
+tags:
+- attack.execution
+- attack.t1562.001
+logsource:
+  category: image_load
+  product: windows
+detection:
+  selection:
+    event.code: '7'
+    file.name:
+    - amsi.dll
+    - clr.dll
+    process.name: update_helper.exe
+    process.executable|contains: update_helper.exe
+  condition: selection and not filter_legitimate
+  filter_legitimate:
+    process.name:
+    - devenv.exe
+    - powershell.exe
+falsepositives:
+- Detection should flag clr.dll or amsi.dll loaded by processes in temp/user paths. Exclude known .NET hosts (powershell,
+  dotnet, devenv, msbuild).
+level: high

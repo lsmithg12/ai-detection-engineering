@@ -1,0 +1,1 @@
+(event.code:3 AND process.name:svc_updater.exe AND process.executable:*svc_updater.exe* AND destination.ip:185.125.12.217 AND destination.port:443 AND network.direction:outbound) AND (NOT (process.name:(chrome.exe OR svchost.exe)))

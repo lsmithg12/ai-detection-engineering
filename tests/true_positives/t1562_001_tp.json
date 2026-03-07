@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "Image loaded (rule: ImageLoad)",
+      "code": "7"
+    },
+    "file": {
+      "name": "clr.dll",
+      "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"
+    },
+    "process": {
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+      "pid": 32753
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.001",
+      "sequence_order": 1,
+      "sequence_total": 2,
+      "description": "CLR loaded by unsigned process in temp directory"
+    }
+  },
+  {
+    "@timestamp": "{{now}}",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "Image loaded (rule: ImageLoad)",
+      "code": "7"
+    },
+    "file": {
+      "name": "amsi.dll",
+      "path": "C:\\Windows\\System32\\amsi.dll"
+    },
+    "process": {
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+      "pid": 43132
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.001",
+      "sequence_order": 2,
+      "sequence_total": 2,
+      "description": "AMSI.dll loaded by same process \u2014 precedes AMSI patch"
+    }
+  }
+]
