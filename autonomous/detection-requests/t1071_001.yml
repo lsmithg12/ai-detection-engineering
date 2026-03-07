@@ -1,13 +1,13 @@
 technique_id: T1071.001
 title: C2 Beaconing via HTTP/HTTPS from Unusual Process
-status: DEPLOYED
+status: MONITORING
 priority: high
 requested_by: intel_agent
 requested_date: '2026-03-07T23:23:27Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1071_001.json
 deployed_date: '2026-03-07T23:25:59Z'
-last_quality_review: ''
+last_quality_review: '2026-03-07T23:36:41Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -75,6 +75,18 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-03-07T23:34:59Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-07T23:34:59Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
+- date: '2026-03-07T23:36:41Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 sigma_rule: detections\command_and_control\t1071_001.yml
 compiled_lucene: detections\command_and_control\compiled\t1071_001.lucene
 compiled_spl: detections\command_and_control\compiled\t1071_001.spl

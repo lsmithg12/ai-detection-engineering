@@ -15,7 +15,10 @@ agents:
     model: "sonnet"                # Fast model for report parsing
     max_reports: 5
     max_tokens_estimate: 50000
+    web_search: true               # Enable web search when Claude CLI available
+    web_search_max_reports: 3      # Max reports to fetch per run
     claude_tasks:
+      - "Search web for new threat reports (WebSearch/WebFetch)"
       - "Extract MITRE techniques from raw report summaries"
 
   red-team:
