@@ -6,8 +6,8 @@
 - **Detections tracked**: 9
 - **Detections deployed**: 8
 - **Detections in monitoring**: 1 (T1059.001)
-- **Detections in progress**: 1 (T1055.001 — F1=0.667, needs rework)
-- **Coverage**: 8/21 techniques (38%)
+- **Detections validated**: 1 (T1055.001 — F1=1.0, awaiting SIEM deploy)
+- **Coverage**: 9/21 techniques (43%)
 
 ## Agent Summary
 
@@ -31,13 +31,37 @@
 | T1078.004 | Cloud Account Abuse | DEPLOYED | Elastic + Splunk |
 | T1219 | Remote Access Software | DEPLOYED | Elastic + Splunk |
 | T1566.004 | Spearphishing Voice | DEPLOYED | Elastic + Splunk |
-| T1055.001 | CreateRemoteThread | AUTHORED | — (needs rework) |
+| T1055.001 | CreateRemoteThread | VALIDATED (F1=1.0) | — (awaiting deploy) |
+
+## Simulator Log Sources
+
+| EID | Type | Baseline Events | Attack Events | Added |
+|-----|------|-----------------|---------------|-------|
+| 1 | Process Create | Yes | Yes | v1 |
+| 3 | Network Connect | Yes | Yes | v1 |
+| 7 | Image Load | Yes | Yes | v1 |
+| 8 | CreateRemoteThread | Yes | Yes | v1 |
+| 10 | Process Access | Yes | Yes | v1 |
+| 13 | Registry Event | Yes | Yes | v1 |
+| 4624 | Windows Logon | Yes | No | v1 |
+| 4104 | PowerShell ScriptBlock | Yes | Yes | PR #17 |
+| 11 | File Create | Yes | Yes | PR #17 |
+| 22 | DNS Query | Yes | Yes | PR #17 |
+| 17/18 | Named Pipe | Yes | Yes | PR #17 |
+| 7045 | Service Install | Yes | Yes | PR #17 |
 
 ## Token Budget
 
 - **Daily cap**: 500,000 tokens
 - **Warning threshold**: 80%
 - **Budget log**: `autonomous/budget-log.jsonl`
+
+## Recent Changes
+
+- **PR #18**: `setup.sh` auto-rebuilds simulator on lab restart + synced index template
+- **PR #17**: 5 new log sources (EID 4104, 11, 22, 17/18, 7045) + CI workflow fixes
+- **PR #16**: T1055.001 rework — F1 improved from 0.667 to 1.0
+- **PR #15**: Repo consolidation — deduplicated detections, extracted SIEM module
 
 ---
 *Updated 2026-03-07. See `autonomous/orchestration/config.yml` for agent configuration.*
