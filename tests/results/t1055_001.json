@@ -1,0 +1,14 @@
+{
+  "technique_id": "T1055.001",
+  "rule_file": "detections/privilege_escalation/t1055_001.yml",
+  "validated_at": "2026-03-07",
+  "validation_method": "test_case_review",
+  "results": {
+    "true_positives": 1,
+    "true_positive_total": 1,
+    "false_positives": 0,
+    "false_positive_total": 2,
+    "f1_score": 1.0
+  },
+  "notes": "Reworked from original F1=0.667. Now targets EID 8 (CreateRemoteThread) from user-writable paths only. EID 10 (ProcessAccess) handled separately by T1134.001. TP: sync_agent.exe from AppData\\Temp creating remote thread. TN: csrss.exe and MsMpEng.exe correctly excluded."
+}

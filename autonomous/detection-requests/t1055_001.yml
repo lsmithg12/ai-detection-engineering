@@ -1,6 +1,6 @@
 technique_id: T1055.001
 title: Process Injection via CreateRemoteThread
-status: AUTHORED
+status: VALIDATED
 priority: critical
 mitre_tactic: privilege_escalation
 requested_by: intel_agent
@@ -40,3 +40,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-07T13:32:02Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: 'Reworked detection: EID 8 from suspicious paths, F1=1.0'
