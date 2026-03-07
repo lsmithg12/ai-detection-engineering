@@ -4,15 +4,17 @@ and creates structured detection requests.
 
 Called by agent_runner.py. Implements run(state_manager) interface.
 
-Design: This agent is meant to be run by Claude in a session. The Python
-code provides the workflow skeleton and helper functions. Claude uses its
-web search and analysis capabilities to fill in the actual intel data.
+When Claude CLI is available (standalone terminal, not CI or nested session):
+  1. Uses WebSearch/WebFetch tools to find new threat reports
+  2. Extracts MITRE ATT&CK techniques from report content
+  3. Creates structured YAML reports and detection requests
 
-For autonomous (non-interactive) mode, the agent can also process
-pre-downloaded reports from threat-intel/reports/.
+Fallback (CI, nested session, or CLI unavailable):
+  Processes pre-downloaded reports from threat-intel/reports/.
 """
 
 import datetime
+import json
 import re
 from pathlib import Path
 
@@ -265,19 +267,118 @@ def update_digest(reports_processed: list[dict], run_stats: dict):
     DIGEST_PATH.write_text(content, encoding="utf-8")
 
 
+def search_web_for_intel(
+    queries: list[str],
+    existing_techniques: set[str],
+    max_reports: int = 3,
+) -> list[dict]:
+    """
+    Use Claude CLI with WebSearch/WebFetch to find new threat intel.
+
+    Sends search queries to Claude, which searches the web, reads reports,
+    and returns structured technique data as JSON.
+
+    Returns a list of report dicts, each with keys:
+      title, source, date_published, threat_actors, platforms, techniques, raw_summary
+    """
+    if not claude_llm.is_available():
+        print("  [intel] Claude CLI not available — skipping web search")
+        return []
+
+    already_covered = ", ".join(sorted(existing_techniques)[:20])
+    priority_sites = ", ".join(PRIORITY_SOURCES[:5])
+
+    system_prompt = (
+        "You are a threat intelligence analyst. Search the web for recent "
+        "cybersecurity threat reports, advisories, and malware analysis. "
+        "Focus on reports that describe specific MITRE ATT&CK techniques. "
+        "Prefer reports from reputable sources like CISA, Mandiant, CrowdStrike, "
+        "Microsoft, Unit42, Red Canary, Elastic Security Labs, and The DFIR Report. "
+        "Return your findings as a JSON array — no markdown, no explanation."
+    )
+
+    # Build a combined prompt with all queries
+    queries_block = "\n".join(f"- {q}" for q in queries[:3])
+
+    prompt = f"""Search the web for recent threat intelligence using these queries:
+{queries_block}
+
+Find up to {max_reports} recent threat reports (published in the last 60 days).
+Prioritize reports from: {priority_sites}
+
+We already have detections for these techniques (skip them): {already_covered}
+
+For each report found, read it and extract:
+1. The report title
+2. Source URL
+3. Date published
+4. Threat actors mentioned
+5. Target platforms (Windows, Linux, macOS, Cloud)
+6. MITRE ATT&CK techniques used (ID, name, brief description, priority)
+7. A 2-3 sentence summary
+
+Return ONLY a JSON array of objects with this exact schema:
+[{{
+  "title": "Report Title",
+  "source": "https://...",
+  "date_published": "2026-03-01",
+  "threat_actors": ["Actor Name"],
+  "platforms": ["Windows"],
+  "techniques": [
+    {{"id": "T1059.001", "name": "PowerShell", "description": "Used PowerShell for execution", "priority": "high"}}
+  ],
+  "raw_summary": "Brief summary of the report..."
+}}]
+
+Return ONLY valid JSON. No markdown fences, no commentary."""
+
+    print(f"  [intel] Sending web search request to Claude CLI...")
+    result = claude_llm.ask_with_web_search(
+        prompt=prompt,
+        agent_name="intel",
+        system_prompt=system_prompt,
+        timeout_seconds=180,
+    )
+
+    if not result["success"]:
+        print(f"  [intel] Web search failed: {result.get('error', 'unknown')}")
+        return []
+
+    # Parse response
+    response = result["response"].strip()
+    # Strip markdown fences if present
+    if response.startswith("```"):
+        lines = response.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        response = "\n".join(lines)
+
+    try:
+        reports = json.loads(response)
+        if not isinstance(reports, list):
+            print(f"  [intel] Claude returned non-array JSON, wrapping")
+            reports = [reports]
+        print(f"  [intel] Claude found {len(reports)} reports via web search")
+        return reports[:max_reports]
+    except json.JSONDecodeError as e:
+        print(f"  [intel] Failed to parse Claude web search response: {e}")
+        print(f"  [intel] Raw response (first 500 chars): {response[:500]}")
+        return []
+
+
 def run(state_manager: StateManager) -> dict:
     """
     Main entry point for the intel agent.
 
-    When run by Claude in a session, Claude will:
-    1. Call get_search_queries() to get the search terms
-    2. Use WebSearch/WebFetch to find and read reports
-    3. Call create_intel_report() for each report
-    4. Call process_techniques() to create detection requests
-    5. Call update_digest() to update the running digest
-
-    When run standalone (no web search), processes any reports
-    already in threat-intel/reports/ that haven't been ingested.
+    Flow:
+    1. Load briefing, lessons, Fawkes mappings, existing coverage
+    2. Generate search queries for current month
+    3. If Claude CLI available: search web for new threat reports
+    4. Save web reports as YAML files in threat-intel/reports/
+    5. Process all reports (existing + new) — create detection requests
+    6. Update digest
     """
     run_id = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
     print(f"  [intel] Starting intel agent run {run_id}")
@@ -308,7 +409,7 @@ def run(state_manager: StateManager) -> dict:
     for q in queries:
         print(f"    - {q}")
 
-    # 5. Process any existing unprocessed reports
+    # 5. Web search for new intel (if Claude CLI available)
     reports_processed = []
     total_stats = {
         "total_new": 0,
@@ -317,6 +418,31 @@ def run(state_manager: StateManager) -> dict:
         "total_fawkes": 0,
     }
 
+    web_reports = search_web_for_intel(queries, existing, max_reports=3)
+    for web_report in web_reports:
+        try:
+            title = web_report.get("title", "Untitled Report")
+            print(f"\n  [intel] Saving web report: {title}")
+            report_path = create_intel_report(
+                title=title,
+                source_url=web_report.get("source", ""),
+                date_published=web_report.get("date_published", _today()),
+                threat_actors=web_report.get("threat_actors", []),
+                platforms=web_report.get("platforms", []),
+                techniques=web_report.get("techniques", []),
+                iocs=web_report.get("iocs", []),
+                raw_summary=web_report.get("raw_summary", ""),
+            )
+            print(f"    [intel] Saved to {report_path.name}")
+        except Exception as e:
+            print(f"  [intel] Error saving web report: {e}")
+            learnings.record(
+                AGENT_NAME, run_id, "error", "web_search",
+                f"Failed to save web report: {web_report.get('title', '?')}",
+                str(e),
+            )
+
+    # 6. Process all reports (existing + newly downloaded)
     existing_reports = sorted(REPORTS_DIR.glob("*.yml"))
     for report_path in existing_reports[:MAX_REPORTS]:
         try:
@@ -376,14 +502,15 @@ def run(state_manager: StateManager) -> dict:
                 str(e),
             )
 
-    # 6. Update digest
+    # 7. Update digest
     if reports_processed:
         update_digest(reports_processed, total_stats)
         print(f"\n  [intel] Updated digest at {DIGEST_PATH}")
 
-    # 7. Summary
+    # 8. Summary
     summary = (
-        f"Processed {len(reports_processed)} reports, "
+        f"Processed {len(reports_processed)} reports "
+        f"({len(web_reports)} from web search), "
         f"created {total_stats['total_requests']} detection requests, "
         f"found {total_stats['total_fawkes']} Fawkes overlaps"
     )
@@ -392,6 +519,7 @@ def run(state_manager: StateManager) -> dict:
     return {
         "summary": summary,
         "reports_processed": len(reports_processed),
+        "web_reports_found": len(web_reports),
         "techniques_found": total_stats["total_new"],
         "requests_created": total_stats["total_requests"],
         "requests_list": [],

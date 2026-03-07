@@ -344,3 +344,27 @@ def ask_for_analysis(
         max_turns=3,
         timeout_seconds=90,
     )
+
+
+def ask_with_web_search(
+    prompt: str,
+    agent_name: str = "intel",
+    system_prompt: str | None = None,
+    timeout_seconds: int = 180,
+) -> dict:
+    """
+    Ask Claude with WebSearch and WebFetch tools enabled.
+
+    Used by the intel agent to search the web for new threat intelligence.
+    Only works from a standalone terminal (not inside Claude Code).
+
+    Returns {"success": bool, "response": str, "model": str, "error": str | None}
+    """
+    return ask(
+        prompt=prompt,
+        agent_name=agent_name,
+        system_prompt=system_prompt,
+        allowed_tools=["WebSearch", "WebFetch"],
+        max_turns=8,
+        timeout_seconds=timeout_seconds,
+    )
