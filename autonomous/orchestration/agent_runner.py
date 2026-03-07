@@ -47,6 +47,15 @@ AGENT_MODULES = {
 }
 
 
+def _sanitize_git_output(text: str) -> str:
+    """Remove tokens/credentials from git output before logging."""
+    import re
+    # Redact Basic auth headers and token URLs
+    text = re.sub(r'(https?://)[^@\s]+@', r'\1***@', text)
+    text = re.sub(r'Authorization: basic \S+', 'Authorization: basic ***', text, flags=re.IGNORECASE)
+    return text
+
+
 def _run_git(args: list[str], cwd: str = None) -> str:
     result = subprocess.run(
         ["git"] + args,
@@ -54,7 +63,8 @@ def _run_git(args: list[str], cwd: str = None) -> str:
         cwd=cwd or str(REPO_ROOT),
     )
     if result.returncode != 0:
-        raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+        safe_err = _sanitize_git_output(result.stderr.strip())
+        raise RuntimeError(f"git {' '.join(args)} failed: {safe_err}")
     return result.stdout.strip()
 
 
@@ -92,23 +102,29 @@ def _commit_and_push(branch: str, agent_name: str, summary: str):
 
 
 def _create_pr(branch: str, agent_name: str, title: str, body: str):
-    """Create a PR via GitHub REST API using the PAT from .mcp.json."""
-    mcp_path = REPO_ROOT / ".mcp.json"
-    if not mcp_path.exists():
-        print(f"  [{agent_name}] Warning: .mcp.json not found, skipping PR creation.")
-        return None
+    """Create a PR via GitHub REST API.
 
-    with open(mcp_path) as f:
-        mcp = json.load(f)
+    Token resolution order:
+    1. GITHUB_TOKEN env var (set by GitHub Actions or manually)
+    2. PAT from .mcp.json (local development)
+    """
+    token = os.environ.get("GITHUB_TOKEN", "")
 
-    token = (mcp.get("mcpServers", {})
-             .get("github", {})
-             .get("env", {})
-             .get("GITHUB_PERSONAL_ACCESS_TOKEN", ""))
     if not token:
-        print(f"  [{agent_name}] Warning: No GitHub PAT found, skipping PR creation.")
+        mcp_path = REPO_ROOT / ".mcp.json"
+        if mcp_path.exists():
+            with open(mcp_path) as f:
+                mcp = json.load(f)
+            token = (mcp.get("mcpServers", {})
+                     .get("github", {})
+                     .get("env", {})
+                     .get("GITHUB_PERSONAL_ACCESS_TOKEN", ""))
+
+    if not token:
+        print(f"  [{agent_name}] Warning: No GitHub token found, skipping PR creation.")
         return None
 
+    import urllib.error
     import urllib.request
 
     url = "https://api.github.com/repos/lsmithg12/ai-detection-engineering/pulls"
@@ -132,8 +148,12 @@ def _create_pr(branch: str, agent_name: str, title: str, body: str):
             pr_url = pr_data.get("html_url", "")
             print(f"  [{agent_name}] PR created: {pr_url}")
             return pr_url
+    except urllib.error.HTTPError as e:
+        # Log status code and reason only — avoid leaking headers/body
+        print(f"  [{agent_name}] PR creation failed: HTTP {e.code} {e.reason}")
+        return None
     except Exception as e:
-        print(f"  [{agent_name}] PR creation failed: {e}")
+        print(f"  [{agent_name}] PR creation failed: {type(e).__name__}")
         return None
 
 
@@ -230,7 +250,11 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     # 7. Commit, push, PR (skip in dry-run)
     if not dry_run and branch:
         summary = result.get("summary", "completed") if isinstance(result, dict) else "completed"
-        pushed = _commit_and_push(branch, agent_name, summary)
+        try:
+            pushed = _commit_and_push(branch, agent_name, summary)
+        except RuntimeError as e:
+            print(f"  [{agent_name}] Git push failed: {e}")
+            pushed = False
 
         if pushed:
             pr_title = f"[{agent_name.replace('-',' ').title()}] {summary}"
