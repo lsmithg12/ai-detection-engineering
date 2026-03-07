@@ -1,0 +1,1 @@
+event.code="3" process.name="svc_updater.exe" process.executable="*svc_updater.exe*" destination.ip="185.125.12.217" destination.port="443" network.direction="outbound" NOT (process.name IN ("chrome.exe", "svchost.exe"))

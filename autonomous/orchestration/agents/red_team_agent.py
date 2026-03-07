@@ -435,6 +435,142 @@ def scenario_t1078_004():
     }
 
 
+def scenario_t1071_001():
+    """T1071.001 — C2 Beaconing via HTTP/HTTPS (Fawkes: sleep/callback loop)"""
+    host = random.choice(HOSTNAMES)
+    user, domain = random.choice(USERS)
+    mal_proc = random.choice(MALICIOUS_PROCS)
+    temp = random.choice(TEMP_PATHS).format(user=user)
+    c2_ip = f"185.{random.randint(100,255)}.{random.randint(1,254)}.{random.randint(1,254)}"
+
+    attack_events = [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "network", "type": "connection", "action": "Network connection detected (rule: NetworkConnect)", "code": "3"},
+            "process": {"name": mal_proc, "executable": f"{temp}\\{mal_proc}", "pid": _random_pid()},
+            "source": {"ip": "10.10.1.50", "port": random.randint(49152, 65535)},
+            "destination": {"ip": c2_ip, "port": 443},
+            "network": {"direction": "outbound", "transport": "tcp"},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {
+                "type": "attack", "technique": "T1071.001",
+                "sequence_order": i, "sequence_total": 3,
+                "description": f"C2 beacon #{i} — outbound HTTPS from temp-path process"
+            },
+        }
+        for i in range(1, 4)
+    ]
+
+    benign_events = [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "network", "type": "connection", "action": "Network connection detected (rule: NetworkConnect)", "code": "3"},
+            "process": {"name": "chrome.exe", "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "pid": _random_pid()},
+            "source": {"ip": "10.10.1.50", "port": random.randint(49152, 65535)},
+            "destination": {"ip": "142.250.80.46", "port": 443},
+            "network": {"direction": "outbound", "transport": "tcp"},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "benign_similar", "technique": "T1071.001",
+                            "description": "Chrome browsing to Google — legitimate HTTPS traffic"},
+        },
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "network", "type": "connection", "action": "Network connection detected (rule: NetworkConnect)", "code": "3"},
+            "process": {"name": "svchost.exe", "executable": "C:\\Windows\\System32\\svchost.exe", "pid": _random_pid()},
+            "source": {"ip": "10.10.1.50", "port": random.randint(49152, 65535)},
+            "destination": {"ip": "20.190.159.2", "port": 443},
+            "network": {"direction": "outbound", "transport": "tcp"},
+            "user": {"name": "SYSTEM", "domain": "NT AUTHORITY"},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "benign_similar", "technique": "T1071.001",
+                            "description": "svchost HTTPS to Microsoft update servers — normal Windows telemetry"},
+        },
+    ]
+
+    return attack_events, benign_events, {
+        "key_fields": ["process.name", "process.executable", "destination.ip", "destination.port", "network.direction"],
+        "notes": "Detection should flag outbound HTTPS from processes in temp/user paths. Exclude known browsers, system processes, and approved software.",
+        "log_sources_used": ["sysmon_3"],
+        "platforms": ["windows"],
+    }
+
+
+def scenario_t1562_001():
+    """T1562.001 — AMSI Bypass via CLR Load (Fawkes: start-clr, autopatch)"""
+    host = random.choice(HOSTNAMES)
+    user, domain = random.choice(USERS)
+    mal_proc = random.choice(MALICIOUS_PROCS)
+    temp = random.choice(TEMP_PATHS).format(user=user)
+
+    attack_events = [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "change", "action": "Image loaded (rule: ImageLoad)", "code": "7"},
+            "file": {"name": "clr.dll", "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"},
+            "process": {"name": mal_proc, "executable": f"{temp}\\{mal_proc}", "pid": _random_pid()},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {
+                "type": "attack", "technique": "T1562.001",
+                "sequence_order": 1, "sequence_total": 2,
+                "description": "CLR loaded by unsigned process in temp directory"
+            },
+        },
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "change", "action": "Image loaded (rule: ImageLoad)", "code": "7"},
+            "file": {"name": "amsi.dll", "path": "C:\\Windows\\System32\\amsi.dll"},
+            "process": {"name": mal_proc, "executable": f"{temp}\\{mal_proc}", "pid": _random_pid()},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {
+                "type": "attack", "technique": "T1562.001",
+                "sequence_order": 2, "sequence_total": 2,
+                "description": "AMSI.dll loaded by same process — precedes AMSI patch"
+            },
+        },
+    ]
+
+    benign_events = [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "change", "action": "Image loaded (rule: ImageLoad)", "code": "7"},
+            "file": {"name": "clr.dll", "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"},
+            "process": {"name": "powershell.exe", "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "pid": _random_pid()},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "benign_similar", "technique": "T1562.001",
+                            "description": "PowerShell loading CLR — normal .NET host"},
+        },
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "change", "action": "Image loaded (rule: ImageLoad)", "code": "7"},
+            "file": {"name": "clr.dll", "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"},
+            "process": {"name": "devenv.exe", "executable": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\devenv.exe", "pid": _random_pid()},
+            "user": {"name": user, "domain": domain},
+            "host": {"name": host, "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "benign_similar", "technique": "T1562.001",
+                            "description": "Visual Studio loading CLR — legitimate .NET IDE"},
+        },
+    ]
+
+    return attack_events, benign_events, {
+        "key_fields": ["file.name", "process.name", "process.executable"],
+        "notes": "Detection should flag clr.dll or amsi.dll loaded by processes in temp/user paths. Exclude known .NET hosts (powershell, dotnet, devenv, msbuild).",
+        "log_sources_used": ["sysmon_7"],
+        "platforms": ["windows"],
+    }
+
+
 # ─── Scenario Registry ─────────────────────────────────────────────
 SCENARIO_GENERATORS = {
     "T1055.001": scenario_t1055_001,
@@ -443,6 +579,8 @@ SCENARIO_GENERATORS = {
     "T1219": scenario_t1219,
     "T1566.004": scenario_t1566_004,
     "T1078.004": scenario_t1078_004,
+    "T1071.001": scenario_t1071_001,
+    "T1562.001": scenario_t1562_001,
 }
 
 

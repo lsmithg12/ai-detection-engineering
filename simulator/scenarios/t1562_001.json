@@ -1,0 +1,176 @@
+{
+  "technique_id": "T1562.001",
+  "technique_name": "AMSI Bypass via CLR Load in Unsigned Process",
+  "description": "Simulates AMSI Bypass via CLR Load in Unsigned Process attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "file": {
+          "name": "clr.dll",
+          "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"
+        },
+        "process": {
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "pid": 32753
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.001",
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "CLR loaded by unsigned process in temp directory"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "file": {
+          "name": "amsi.dll",
+          "path": "C:\\Windows\\System32\\amsi.dll"
+        },
+        "process": {
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "pid": 43132
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.001",
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "AMSI.dll loaded by same process — precedes AMSI patch"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "file": {
+          "name": "clr.dll",
+          "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"
+        },
+        "process": {
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "pid": 17842
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.001",
+          "description": "PowerShell loading CLR — normal .NET host"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "file": {
+          "name": "clr.dll",
+          "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\clr.dll"
+        },
+        "process": {
+          "name": "devenv.exe",
+          "executable": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\devenv.exe",
+          "pid": 39188
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.001",
+          "description": "Visual Studio loading CLR — legitimate .NET IDE"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "file.name",
+      "process.name",
+      "process.executable"
+    ],
+    "notes": "Detection should flag clr.dll or amsi.dll loaded by processes in temp/user paths. Exclude known .NET hosts (powershell, dotnet, devenv, msbuild)."
+  },
+  "log_sources_used": [
+    "sysmon_7"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

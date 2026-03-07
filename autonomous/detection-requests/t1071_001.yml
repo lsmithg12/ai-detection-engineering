@@ -1,0 +1,83 @@
+technique_id: T1071.001
+title: C2 Beaconing via HTTP/HTTPS from Unusual Process
+status: DEPLOYED
+priority: high
+requested_by: intel_agent
+requested_date: '2026-03-07T23:23:27Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: simulator\scenarios\t1071_001.json
+deployed_date: '2026-03-07T23:25:59Z'
+last_quality_review: ''
+quality_score: 1.0
+fp_rate: 0.0
+tp_rate: 1.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: true
+changelog:
+- date: '2026-03-07T23:23:27Z'
+  agent: intel_agent
+  action: created
+  details: 'Detection request created from intel: threat-intel/fawkes/fawkes-ttp-mapping.md'
+- date: '2026-03-07T23:24:07Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-07T23:24:07Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
+- date: '2026-03-07T23:24:12Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl'
+- date: '2026-03-07T23:24:12Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-07T23:24:12Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-07T23:25:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl, mitre_tactic'
+- date: '2026-03-07T23:25:56Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-07T23:25:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-07T23:25:56Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: F1=1.0, FP_rate=0.0, tier=auto_deploy
+- date: '2026-03-07T23:25:56Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-07T23:25:59Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-07T23:25:59Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-07T23:25:59Z'
+  agent: blue-team
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk. F1=1.0, FP_rate=0.0
+- date: '2026-03-07T23:25:59Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: deployed_date'
+sigma_rule: detections\command_and_control\t1071_001.yml
+compiled_lucene: detections\command_and_control\compiled\t1071_001.lucene
+compiled_spl: detections\command_and_control\compiled\t1071_001.spl
+mitre_tactic: command_and_control
+elastic_rule_id: 8ccf514f-1d62-4329-b5bc-7895da3f0bc0
+splunk_saved_search: C2 Beaconing via HTTP/HTTPS from Unusual Process T1071.001
