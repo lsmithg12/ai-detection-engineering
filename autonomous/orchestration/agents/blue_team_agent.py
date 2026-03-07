@@ -33,6 +33,27 @@ MAX_DETECTIONS = 5
 AUTO_DEPLOY_THRESHOLD = 0.90
 MAX_FP_RATE_AUTO_DEPLOY = 0.05
 
+# Map MITRE technique prefixes to tactic directories
+TECHNIQUE_TACTIC_MAP = {
+    "T1055": "privilege_escalation",
+    "T1134": "credential_access",
+    "T1059": "execution",
+    "T1053": "persistence",
+    "T1547": "persistence",
+    "T1543": "persistence",
+    "T1070": "defense_evasion",
+    "T1562": "defense_evasion",
+    "T1027": "defense_evasion",
+    "T1197": "defense_evasion",
+    "T1071": "command_and_control",
+    "T1219": "command_and_control",
+    "T1078": "initial_access",
+    "T1566": "initial_access",
+    "T1087": "discovery",
+    "T1047": "execution",
+    "T1003": "credential_access",
+}
+
 
 def _load_agent_model() -> str:
     """Get the model name configured for this agent."""
@@ -395,7 +416,8 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
     """
     tid = request["technique_id"]
     tid_under = tid.lower().replace(".", "_")
-    tactic = request.get("mitre_tactic", "execution")
+    # Resolve tactic from request, technique map, or default
+    tactic = request.get("mitre_tactic") or TECHNIQUE_TACTIC_MAP.get(tid.split(".")[0], "execution")
 
     result = {"technique_id": tid, "title": request.get("title", ""), "status": "failed"}
 
@@ -460,12 +482,13 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
     # Save test cases
     tp_path, tn_path = save_test_cases(tid_under, scenario)
 
-    # Update request with artifact paths
+    # Update request with artifact paths and tactic (used by state machine for path resolution)
     state_manager.update(
         tid, agent=AGENT_NAME,
         sigma_rule=str(rule_path.relative_to(REPO_ROOT)),
         compiled_lucene=str(lucene_path.relative_to(REPO_ROOT)) if lucene else "",
         compiled_spl=str(spl_path.relative_to(REPO_ROOT)) if spl else "",
+        mitre_tactic=tactic,
     )
 
     # Transition to AUTHORED

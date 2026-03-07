@@ -180,12 +180,25 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
 
     sm = StateManager()
 
-    # 1. Check for pending work (security agent uses pr_number instead)
+    # 1. Check for pending work
+    # Scheduled agents (intel, quality) always run — they create work or review fleet.
+    # Triggered agents (red-team, blue-team) need pending items.
+    # Security agent requires a PR number.
+    SCHEDULED_AGENTS = {"intel", "quality"}
+
     if agent_name == "security":
         if not pr_number:
             print(f"  [{agent_name}] No PR number provided. Nothing to do.")
             return
         print(f"  [{agent_name}] Reviewing PR #{pr_number}")
+    elif agent_name in SCHEDULED_AGENTS:
+        pending = sm.query_pending(agent_name)
+        if pending:
+            print(f"  [{agent_name}] Found {len(pending)} pending items:")
+            for p in pending:
+                print(f"    [{p['status']}] {p['technique_id']} — {p.get('title','')}")
+        else:
+            print(f"  [{agent_name}] No pending items — running scheduled tasks.")
     else:
         pending = sm.query_pending(agent_name)
         if not pending:

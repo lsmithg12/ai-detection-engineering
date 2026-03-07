@@ -74,6 +74,10 @@ def is_available() -> bool:
     if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
         return False
 
+    # Nested session detection — can't invoke claude -p from inside Claude Code
+    if os.environ.get("CLAUDECODE"):
+        return False
+
     cli = _find_claude_cli()
     if not cli:
         return False
