@@ -15,6 +15,7 @@ import yaml
 
 from orchestration.state import StateManager
 from orchestration import learnings
+from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -283,9 +284,34 @@ def run(state_manager: StateManager) -> dict:
             except ValueError:
                 pass  # May lack required artifacts, skip silently
 
-    # 4. Generate daily report
+    # 4. Ask Claude for fleet analysis (if available)
+    llm_insights = []
+    if claude_llm.is_available() and results:
+        print(f"  [quality] Asking Claude (sonnet) for fleet analysis...")
+        health_summary = "\n".join(
+            f"- {r['technique_id']}: health={r['health']['health_score']}, "
+            f"action={r['action']}, FP={r['health']['fp_rate']}, TP={r['health']['tp_rate']}"
+            for r in results
+        )
+        llm_result = claude_llm.ask_for_analysis(
+            question=(
+                "Based on this detection fleet health data, provide 2-3 brief, "
+                "actionable recommendations. Focus on: detections that need tuning, "
+                "coverage gaps to prioritize, and any concerning trends. "
+                "Be concise — 1-2 sentences per recommendation."
+            ),
+            context=f"Detection fleet health:\n{health_summary}",
+            agent_name="quality",
+        )
+        if llm_result["success"]:
+            llm_insights = [f"[Claude] {llm_result['response']}"]
+            print(f"  [quality] Claude analysis received")
+
+    all_insights = cross_agent_insights + llm_insights
+
+    # 5. Generate daily report
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    report = generate_daily_report(results, fleet_stats, cross_agent_insights)
+    report = generate_daily_report(results, fleet_stats, all_insights)
     report_path = REPORTS_DIR / f"{_today()}.md"
     report_path.write_text(report, encoding="utf-8")
     print(f"\n  [quality] Report saved: {report_path.relative_to(REPO_ROOT)}")
