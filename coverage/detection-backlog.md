@@ -1,7 +1,7 @@
 # Detection Backlog — Prioritized Top 10
 
 **Created**: 2026-02-23
-**Last updated**: 2026-03-01
+**Last updated**: 2026-03-07
 **Scoring method**: Intel overlap (3pts) + Data source availability (3pts) + Impact (3pts) + Coverage urgency (1pt)
 **SIEM status**: Elasticsearch 8.17.0 ONLINE | Splunk 9.3.9 ONLINE — lab profile `--both`
 **Intel sources**: Fawkes C2 (primary), Scattered Spider / UNC3944 (2026-03-01)
@@ -21,10 +21,11 @@
 
 ## Backlog
 
-### Rank 1 — T1055.001: CreateRemoteThread Process Injection
+### Rank 1 — T1055.001: CreateRemoteThread Process Injection 🔨 IN PROGRESS (F1=0.667)
 
 **Score**: 10/10
 **Fawkes command**: `vanilla-injection`
+**Status**: AUTHORED — F1=0.667, needs multi-EID correlation logic rework
 **MITRE**: Privilege Escalation / Defense Evasion → T1055.001
 **ATT&CK description**: Adversary injects code into another process using VirtualAllocEx + WriteProcessMemory + CreateRemoteThread
 
@@ -183,10 +184,11 @@ process.executable: (*\\AppData\\Local\\Temp* OR *\\ProgramData*)
 
 ---
 
-### Rank 6 — T1053.005: Scheduled Task Persistence
+### ~~Rank 6 — T1053.005: Scheduled Task Persistence~~ ✅ DEPLOYED
 
 **Score**: 8/10
 **Fawkes command**: `schtask -action create`
+**Status**: DEPLOYED — `t1053_005.yml` deployed to both SIEMs by Patronus pipeline
 **MITRE**: Persistence / Execution → T1053.005
 **ATT&CK description**: Adversary creates a scheduled task to execute malicious code at a set time or trigger
 
@@ -340,15 +342,15 @@ A process with an anomalous executable path accesses another process requesting 
 
 | Rank | Technique | Intel Source(s) | Score | Data | Rule File |
 |---|---|---|---|---|---|
-| 1 | T1055.001 CreateRemoteThread | Fawkes, Scattered Spider | 10/10 | Available | `privilege_escalation/t1055_001_create_remote_thread.yml` |
-| 2 | T1053.005 Scheduled Task | Fawkes, Scattered Spider | 9/10 | Available | `persistence/t1053_005_scheduled_task_persistence.yml` |
+| 1 | ~~T1055.001 CreateRemoteThread~~ | Fawkes, Scattered Spider | 10/10 | 🔨 In progress | `privilege_escalation/t1055_001.yml` |
+| 2 | ~~T1053.005 Scheduled Task~~ | Fawkes, Scattered Spider | 9/10 | ✅ Deployed | `persistence/t1053_005.yml` |
 | 3 | T1071.001 C2 Beaconing | Fawkes | 8/10 | Available | `command_and_control/t1071_001_c2_beaconing_unusual_process.yml` |
 | 4 | T1562.001 AMSI Bypass CLR | Fawkes | 7/10 | Available | `defense_evasion/t1562_001_amsi_bypass_clr_load.yml` |
 | 5 | T1087.002 Discovery Burst | Fawkes, Scattered Spider | 7/10 | Available | `discovery/t1087_002_discovery_command_burst.yml` |
-| 6 | T1070.001 Event Log Clearing | Scattered Spider | 7/10 | Available | `defense_evasion/t1070_001_event_log_clearing.yml` |
+| 6 | ~~T1070.001 Event Log Clearing~~ | Scattered Spider | 7/10 | ✅ Deployed | `defense_evasion/t1070_001.yml` |
 | 7 | T1197 BITS Jobs Download | Scattered Spider | 6/10 | Available | `defense_evasion/t1197_bitsadmin_download.yml` |
 | 8 | T1070.004 Anti-Forensics (cipher/sdelete) | Scattered Spider | 6/10 | Available | `defense_evasion/t1070_004_file_deletion_tools.yml` |
-| 9 | T1219 Remote Access Software (process) | Scattered Spider | 6/10 | Available | `command_and_control/t1219_remote_access_software_process.yml` |
+| 9 | ~~T1219 Remote Access Software~~ | Scattered Spider | 6/10 | ✅ Deployed | `initial_access/t1219.yml` |
 | 10 | T1047 WMI Execution (process) | Fawkes, Scattered Spider | 6/10 | Available | `execution/t1047_wmi_execution_process.yml` |
 | 11 | T1543.003 Windows Service (sc.exe) | Fawkes, Scattered Spider | 5/10 | Available | `persistence/t1543_003_windows_service_creation.yml` |
 | 12 | T1027 Encoded PowerShell | Scattered Spider | 5/10 | Available | `defense_evasion/t1027_encoded_powershell.yml` |
@@ -372,20 +374,24 @@ A process with an anomalous executable path accesses another process requesting 
 
 ## Next Action
 
-### Deployed (3 detections)
-- ~~T1059.001~~ PowerShell Bypass — deployed to both SIEMs
+### Deployed (8 detections)
+- ~~T1059.001~~ PowerShell Bypass — deployed to both SIEMs (now MONITORING)
 - ~~T1547.001~~ Registry Run Keys — deployed to both SIEMs
 - ~~T1134.001~~ LSASS Token Theft — deployed to both SIEMs
+- ~~T1053.005~~ Scheduled Task — deployed to both SIEMs (Patronus)
+- ~~T1070.001~~ Event Log Clearing — deployed to both SIEMs (Patronus)
+- ~~T1219~~ Remote Access Software — deployed to both SIEMs (Patronus)
+- ~~T1566.004~~ Spearphishing Voice — deployed to both SIEMs (Patronus)
+- ~~T1078.004~~ Cloud Account Abuse — deployed to both SIEMs (Patronus)
+
+### In Progress (1 detection)
+- **T1055.001** CreateRemoteThread — AUTHORED, F1=0.667, needs multi-EID rework
 
 ### Build Next (Tier 1 — data available)
-1. **T1055.001** CreateRemoteThread — highest signal, Fawkes + Scattered Spider overlap
-2. **T1053.005** Scheduled Task — Fawkes + Scattered Spider overlap
-3. **T1071.001** C2 Beaconing — Fawkes priority
-4. **T1562.001** AMSI Bypass — Fawkes priority
-5. **T1070.001** Event Log Clearing — Scattered Spider priority, very low FP
-6. **T1197** BITS Jobs — Scattered Spider, low FP
-7. **T1219** Remote Access Software (process) — Scattered Spider, 7 detections in one
-8. **T1027** Encoded PowerShell — extends our T1059.001 coverage for Scattered Spider variant
+1. **T1071.001** C2 Beaconing — Fawkes priority
+2. **T1562.001** AMSI Bypass — Fawkes priority
+3. **T1197** BITS Jobs — Scattered Spider, low FP
+4. **T1027** Encoded PowerShell — extends T1059.001 coverage for Scattered Spider variant
 
 ### Onboard Logs First (Tier 2)
 See `TODO-log-onboarding.md` for detailed log onboarding plan.

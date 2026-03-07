@@ -1,0 +1,15 @@
+{
+  "technique_id": "T1134.001",
+  "sigma_rule": "detections/credential_access/t1134_001_lsass_token_theft.yml",
+  "metrics": {
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "tn": 6088
+  },
+  "quality_tier": "auto_deploy",
+  "date": "2026-03-01T00:00:00Z"
+}

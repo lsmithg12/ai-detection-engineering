@@ -1,9 +1,8 @@
 # Data Source Inventory — Blue Team Detection Lab
 
-**Last updated**: _run setup.sh to populate_
-**SIEM status**: _not yet started_
+**Last updated**: 2026-03-07
+**SIEM status**: Elasticsearch 8.17.0 ONLINE | Splunk 9.3.9 ONLINE
 **Cluster**: blue-team-lab (single node)
-**Note**: Run `./setup.sh` then use the first-run prompt from PROMPTS.md to validate data sources
 
 ---
 
@@ -16,7 +15,7 @@
 | Splunk | ONLINE | http://localhost:8000 | v9.3.9, REST on 8089, HEC on 8288 |
 | Cribl Stream | NOT STARTED | http://localhost:9000 | Available via `--cribl` profile |
 | Log Simulator | RUNNING | — | mixed mode, 5 EPS baseline + attack bursts every 300s |
-| GitHub MCP | NOT CONFIGURED | — | Set PAT in .mcp.json (copy from mcp-config.example.json) |
+| GitHub MCP | CONFIGURED | — | PAT in .mcp.json (gitignored) |
 
 **Index template**: `sim-logs` (priority 500) applied to `sim-*`
 **Note**: Renamed from `logs-simulation-*` to `sim-*` to avoid Elastic 8.x data stream auto-creation.
@@ -205,10 +204,8 @@ _simulation.label             (keyword) — short human label
 
 ## Next Steps
 
-1. ~~Start lab~~ — DONE (--both: Elastic + Splunk + simulator)
-2. ~~Verify indices~~ — DONE (sim-baseline + sim-attack confirmed)
-3. ~~Fix field mappings~~ — DONE (sim-logs template)
-4. ~~Configure GitHub MCP~~ — DONE (PAT in .mcp.json, gitignored; mcp-config.example.json committed)
-5. **Start building detections** — see `coverage/detection-backlog.md` rank 1 (T1055.001)
-6. **(Optional)** Load Attack Range data: `./pipeline/fetch-attack-range-data.sh samples`
-7. **(Optional)** Enable Cribl: `./setup.sh --cribl` then `./pipeline/configure-cribl.sh`
+All foundational setup is complete. 8 detections deployed, 1 in monitoring, 1 in progress.
+- See `coverage/detection-backlog.md` for prioritized build list
+- See `coverage/attack-matrix.md` for MITRE ATT&CK coverage
+- **(Optional)** Load Attack Range data: `./pipeline/fetch-attack-range-data.sh samples`
+- **(Optional)** Enable Cribl: `./setup.sh --cribl` then `./pipeline/configure-cribl.sh`

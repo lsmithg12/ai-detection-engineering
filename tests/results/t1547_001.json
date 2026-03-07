@@ -1,0 +1,15 @@
+{
+  "technique_id": "T1547.001",
+  "sigma_rule": "detections/persistence/t1547_001_registry_run_key.yml",
+  "metrics": {
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0,
+    "tn": 6088
+  },
+  "quality_tier": "auto_deploy",
+  "date": "2026-03-01T00:00:00Z"
+}
