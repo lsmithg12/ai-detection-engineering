@@ -1,6 +1,6 @@
 technique_id: T1219
 title: Remote Access Software
-status: DEPLOYED
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-06T13:06:21Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1219.json
 sigma_rule: detections\initial_access\t1219.yml
 deployed_date: '2026-03-06T23:10:00Z'
-last_quality_review: ''
+last_quality_review: '2026-03-07T23:21:41Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -56,6 +56,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-03-07T23:21:41Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-07T23:21:41Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 compiled_lucene: detections\initial_access\compiled\t1219.lucene
 compiled_spl: detections\initial_access\compiled\t1219.spl
 mitre_tactic: initial_access
