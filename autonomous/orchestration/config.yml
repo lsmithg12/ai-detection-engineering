@@ -1,12 +1,22 @@
 # Patronus Agent Configuration
 # Optimized for Claude Pro plan token budget
+#
+# Claude LLM integration:
+#   Agents invoke Claude Code CLI (claude -p) for reasoning tasks.
+#   - Locally: uses Pro subscription OAuth (auto-detected from ~/.claude/)
+#   - In CI: Claude CLI is not authenticated — agents fall back to
+#     deterministic Python logic automatically. No credentials needed.
+#   - Model aliases: "opus" -> claude-opus-4-6, "sonnet" -> claude-sonnet-4-6
+#   - All invocations use --tools "" (no file/shell access, pure reasoning)
 
 agents:
   intel:
     schedule: "daily"
-    model: "sonnet"
+    model: "sonnet"                # Fast model for report parsing
     max_reports: 5
     max_tokens_estimate: 50000
+    claude_tasks:
+      - "Extract MITRE techniques from raw report summaries"
 
   red-team:
     trigger: "intel_merge"
@@ -16,15 +26,20 @@ agents:
 
   blue-team:
     trigger: "intel_merge OR red_merge"
-    model: "opus"
+    model: "opus"                  # Best model for detection authoring
     max_detections_per_run: 5
     max_tokens_estimate: 100000
     auto_deploy_threshold: 0.90
+    claude_tasks:
+      - "Author Sigma detection rules from attack/benign event data"
+      - "Improve rules that fail validation (F1 < threshold)"
 
   quality:
     schedule: "daily"
-    model: "sonnet"
+    model: "sonnet"                # Fast model for fleet analysis
     max_tokens_estimate: 40000
+    claude_tasks:
+      - "Analyze fleet health and recommend tuning actions"
 
   security:
     trigger: "every_agent_pr"

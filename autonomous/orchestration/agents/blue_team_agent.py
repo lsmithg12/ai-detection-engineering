@@ -20,6 +20,7 @@ import yaml
 from orchestration.state import StateManager
 from orchestration import learnings
 from orchestration.siem import deploy_to_siems, TACTIC_MAP, SEVERITY_MAP
+from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -31,6 +32,12 @@ AGENT_NAME = "blue-team"
 MAX_DETECTIONS = 5
 AUTO_DEPLOY_THRESHOLD = 0.90
 MAX_FP_RATE_AUTO_DEPLOY = 0.05
+
+
+def _load_agent_model() -> str:
+    """Get the model name configured for this agent."""
+    cfg = claude_llm._load_agent_config(AGENT_NAME)
+    return cfg.get("model", "opus")
 
 
 def _now_iso() -> str:
@@ -406,7 +413,38 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
     # ─── AUTHOR ─────────────────────────────────────────────────
     print(f"    [blue-team] Authoring Sigma rule for {tid}")
 
-    sigma_yaml = generate_sigma_rule(request, scenario)
+    # Try Claude for rule generation (falls back to deterministic if unavailable)
+    sigma_yaml = None
+    if claude_llm.is_available():
+        print(f"    [blue-team] Using Claude ({_load_agent_model()}) for rule authoring")
+        attack_events = scenario.get("events", {}).get("attack_sequence", [])
+        benign_events = scenario.get("events", {}).get("benign_similar", [])
+        detection_lessons = [
+            e["description"] for e in
+            learnings.get_relevant_lessons(AGENT_NAME, "detection", max_entries=5)
+        ]
+        llm_result = claude_llm.ask_for_sigma_rule(
+            technique_id=tid,
+            technique_name=request.get("title", tid),
+            attack_events=attack_events,
+            benign_events=benign_events,
+            lessons=detection_lessons if detection_lessons else None,
+        )
+        if llm_result["success"]:
+            # Validate YAML is parseable before accepting
+            try:
+                yaml.safe_load(llm_result["sigma_yaml"])
+                sigma_yaml = llm_result["sigma_yaml"]
+                print(f"    [blue-team] Claude authored rule ({len(sigma_yaml)} chars)")
+            except yaml.YAMLError:
+                print(f"    [blue-team] Claude output was not valid YAML, falling back")
+                sigma_yaml = None
+        else:
+            print(f"    [blue-team] Claude unavailable: {llm_result.get('error', '?')}, using deterministic")
+
+    if sigma_yaml is None:
+        sigma_yaml = generate_sigma_rule(request, scenario)
+
     rule_path = save_sigma_rule(tactic, tid_under, sigma_yaml)
     print(f"    [blue-team] Saved: {rule_path.relative_to(REPO_ROOT)}")
 

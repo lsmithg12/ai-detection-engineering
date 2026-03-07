@@ -93,11 +93,11 @@ Or use `make setup` for the same interactive experience.
 | `sim-baseline` | `sysmon` | Normal enterprise Windows/Linux activity |
 | `sim-attack` | `attack_simulation` | Fawkes C2 TTP simulations |
 
-Event types generated: Sysmon EID 1, 3, 7, 8, 10, 13 + WinEvent 4624
+Event types generated: Sysmon EID 1, 3, 7, 8, 10, 11, 13, 17/18, 22 + WinEvent 4624, 4104, 7045
 
 ### Attack Scenarios
 
-The simulator generates 8 attack scenarios matching Fawkes C2 capabilities:
+The simulator generates 13 attack scenarios matching Fawkes C2 + Scattered Spider capabilities:
 - Process injection (vanilla-injection) — EID 8 + 10
 - Registry persistence — EID 13
 - PowerShell with bypass flags — EID 1
@@ -106,6 +106,11 @@ The simulator generates 8 attack scenarios matching Fawkes C2 capabilities:
 - LSASS token theft — EID 10
 - C2 beaconing — EID 3
 - AMSI/CLR bypass — EID 7
+- Encoded PowerShell / Mimikatz via Script Block — EID 4104
+- RMM tool binary drops (AnyDesk, TeamViewer, ScreenConnect) — EID 11
+- RMM tool DNS resolution — EID 22
+- C2 named pipe communication — EID 17/18
+- Malicious service persistence — EID 7045
 
 ## Primary Threat: Fawkes C2 Agent
 
@@ -133,19 +138,57 @@ ai-detection-engineering/
 ├── docker-compose.yml           # Lab infrastructure (Elastic, Splunk, Cribl, Simulator)
 ├── setup.sh                     # One-command interactive setup
 ├── Makefile                     # Quick commands (make setup, make agent, etc.)
-├── simulator/                   # Log generator (Fawkes TTPs + baseline)
+├── simulator/                   # Log generator (13 attack + 10 baseline scenarios)
+├── autonomous/                  # Patronus multi-agent pipeline
+│   ├── orchestration/           # Agent runner, state machine, budget, learnings
+│   └── detection-requests/      # Detection lifecycle tracking (YAML per technique)
+├── .github/workflows/           # CI/CD — daily agent runs + PR security gate
 ├── cribl/                       # Cribl Stream MCP server + config
 ├── pipeline/                    # Deployment & automation scripts
 ├── detections/                  # Detection-as-Code (Sigma rules by MITRE tactic)
 │   └── <tactic>/compiled/       # Transpiled KQL/SPL
 ├── tests/                       # True positive & true negative test cases
-├── templates/                   # Sigma rule template
-├── threat-intel/fawkes/         # Fawkes C2 → ATT&CK TTP mapping
+├── templates/                   # Sigma rule template + authoring lessons
+├── threat-intel/                # Threat intelligence inputs
+│   ├── fawkes/                  # Fawkes C2 → ATT&CK TTP mapping
+│   └── analysis/                # Scattered Spider / UNC3944 intel
 ├── coverage/                    # ATT&CK coverage matrix & detection backlog
 ├── gaps/                        # Data source and detection gaps
 ├── tuning/                      # Exclusion lists & tuning changelog
 └── mcp-config.example.json      # MCP server config template
 ```
+
+## Autonomous Agent Pipeline (Patronus)
+
+Five specialized AI agents run the detection lifecycle end-to-end, triggered by GitHub Actions on a daily schedule or manually:
+
+| Agent | Role | Trigger |
+|-------|------|---------|
+| Intel | Ingests threat reports, creates detection requests | Daily |
+| Red Team | Generates attack + benign scenarios per technique | On intel merge |
+| Blue Team | Authors Sigma rules, validates, deploys to SIEMs | On intel/red-team merge |
+| Quality | Health scoring, daily monitoring reports | Daily |
+| Security | PR gate — secrets scanning, rule quality checks | Every PR to main |
+
+Each agent creates a feature branch, commits its work, pushes, and opens a PR for human review. See [STATUS.md](STATUS.md) for current pipeline state.
+
+### Claude LLM Integration
+
+Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision points:
+
+| Agent | Claude Task | Model | Fallback |
+|-------|------------|-------|----------|
+| Blue Team | Author Sigma rules from attack/benign event data | Opus | Deterministic field extraction |
+| Quality | Analyze fleet health, recommend tuning actions | Sonnet | Fixed threshold scoring |
+| Intel | Extract MITRE techniques from raw report text | Sonnet | Regex table parsing |
+
+- **Locally**: Uses your Claude Pro subscription (OAuth session in `~/.claude/`)
+- **In CI**: Falls back to deterministic Python logic automatically (no credentials needed)
+- **Security**: All invocations use `--tools ""` (pure reasoning, no file/shell access)
+
+### Current Detection Coverage
+
+9 detections deployed across 2 SIEMs, covering 9/21 Fawkes techniques (43%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
 
 ## MCP Configuration
 

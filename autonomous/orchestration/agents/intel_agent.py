@@ -20,6 +20,7 @@ import yaml
 
 from orchestration.state import StateManager
 from orchestration import learnings
+from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -325,6 +326,34 @@ def run(state_manager: StateManager) -> dict:
                 continue
 
             print(f"\n  [intel] Processing: {report.get('title', report_path.name)}")
+
+            # If report has raw_summary but few techniques, ask Claude to extract more
+            raw_summary = report.get("raw_summary", "")
+            if claude_llm.is_available() and raw_summary and len(report.get("techniques", [])) < 3:
+                print(f"    [intel] Asking Claude (sonnet) to extract techniques from report...")
+                llm_result = claude_llm.ask_for_analysis(
+                    question=(
+                        "Extract MITRE ATT&CK technique IDs from this threat report summary. "
+                        "Return ONLY a JSON array of objects with keys: id, name, description, priority. "
+                        "Example: [{\"id\": \"T1059.001\", \"name\": \"PowerShell\", "
+                        "\"description\": \"Uses PowerShell for execution\", \"priority\": \"high\"}]"
+                    ),
+                    context=raw_summary[:3000],
+                    agent_name="intel",
+                )
+                if llm_result["success"]:
+                    try:
+                        extracted = json.loads(llm_result["response"])
+                        if isinstance(extracted, list):
+                            # Merge with existing, dedup by ID
+                            existing_ids = {t["id"] for t in report.get("techniques", []) if "id" in t}
+                            new_techs = [t for t in extracted if t.get("id") and t["id"] not in existing_ids]
+                            report["techniques"].extend(new_techs)
+                            if new_techs:
+                                print(f"    [intel] Claude extracted {len(new_techs)} additional techniques")
+                    except (json.JSONDecodeError, TypeError):
+                        print(f"    [intel] Claude response was not valid JSON, skipping")
+
             stats = process_techniques(
                 state_manager,
                 report["techniques"],
