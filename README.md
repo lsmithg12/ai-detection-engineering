@@ -172,6 +172,20 @@ Five specialized AI agents run the detection lifecycle end-to-end, triggered by 
 
 Each agent creates a feature branch, commits its work, pushes, and opens a PR for human review. See [STATUS.md](STATUS.md) for current pipeline state.
 
+### Claude LLM Integration
+
+Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision points:
+
+| Agent | Claude Task | Model | Fallback |
+|-------|------------|-------|----------|
+| Blue Team | Author Sigma rules from attack/benign event data | Opus | Deterministic field extraction |
+| Quality | Analyze fleet health, recommend tuning actions | Sonnet | Fixed threshold scoring |
+| Intel | Extract MITRE techniques from raw report text | Sonnet | Regex table parsing |
+
+- **Locally**: Uses your Claude Pro subscription (OAuth session in `~/.claude/`)
+- **In CI**: Falls back to deterministic Python logic automatically (no credentials needed)
+- **Security**: All invocations use `--tools ""` (pure reasoning, no file/shell access)
+
 ### Current Detection Coverage
 
 9 detections deployed across 2 SIEMs, covering 9/21 Fawkes techniques (43%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
