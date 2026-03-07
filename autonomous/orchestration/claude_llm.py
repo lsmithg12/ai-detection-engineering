@@ -156,7 +156,15 @@ def ask(
         if not allowed_tools:
             cmd += ["--tools", ""]  # Disable all tools — pure reasoning
         else:
-            cmd += ["--tools", ",".join(allowed_tools)]
+            # --tools takes plain names: "Bash,Edit,Read"
+            # --allowed-tools takes restriction patterns: "Bash(curl:*) Edit"
+            # Split: patterns with parens go to --allowed-tools, plain go to --tools
+            plain = [t for t in allowed_tools if "(" not in t]
+            restricted = [t for t in allowed_tools if "(" in t]
+            if plain:
+                cmd += ["--tools", ",".join(plain)]
+            if restricted:
+                cmd += ["--allowed-tools"] + restricted
 
     if max_turns:
         cmd += ["--max-turns", str(max_turns)]
