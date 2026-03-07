@@ -240,9 +240,6 @@ if [ "$INCLUDE_SIMULATOR" = true ]; then
     PROFILES+=("--profile" "simulator")
 fi
 
-log_info "Building containers (first run downloads images — may take a few minutes)..."
-docker compose "${PROFILES[@]}" build 2>&1 | tail -5
-
 # When Cribl is active, start everything EXCEPT the simulator first.
 # Cribl's HEC input must be configured (via configure-cribl.sh) before the
 # simulator can route through it.  The simulator is started after Cribl setup.
@@ -264,10 +261,10 @@ if [ "$INCLUDE_CRIBL" = true ] && [ "$INCLUDE_SIMULATOR" = true ]; then
         fi
     done
     log_info "Starting SIEM + Cribl services (simulator deferred until Cribl is configured)..."
-    docker compose "${PROFILES_NO_SIM[@]}" up -d
+    docker compose "${PROFILES_NO_SIM[@]}" up -d --build
 else
     log_info "Starting services..."
-    docker compose "${PROFILES[@]}" up -d
+    docker compose "${PROFILES[@]}" up -d --build
 fi
 
 # ─── Wait for Services ──────────────────────────────────────────
@@ -341,7 +338,7 @@ if [ "$INCLUDE_CRIBL" = true ]; then
     # Now that Cribl HEC is configured, start the simulator
     if [ "$INCLUDE_SIMULATOR" = true ]; then
         log_info "Starting log simulator (Cribl HEC is now configured)..."
-        docker compose --profile simulator up -d log-simulator
+        docker compose --profile simulator up -d --build log-simulator
     fi
 fi
 
@@ -389,6 +386,23 @@ if [[ "$SIEM_MODE" == "elastic" || "$SIEM_MODE" == "both" ]] && [ "$INCLUDE_SIMU
             "winlog.logon.type":        {"type": "keyword"},
             "winlog.event_data.TargetUserName": {"type": "keyword"},
             "winlog.event_data.LogonType":      {"type": "keyword"},
+            "winlog.event_data.TargetImage":     {"type": "keyword"},
+            "winlog.event_data.GrantedAccess":   {"type": "keyword"},
+            "winlog.event_data.StartAddress":    {"type": "keyword"},
+            "winlog.event_data.StartModule":     {"type": "keyword"},
+            "winlog.event_data.StartFunction":   {"type": "keyword"},
+            "winlog.event_data.SourceProcessGUID":{"type": "keyword"},
+            "winlog.event_data.ScriptBlockText": {"type": "text"},
+            "winlog.event_data.ServiceName":     {"type": "keyword"},
+            "winlog.event_data.ImagePath":       {"type": "keyword"},
+            "winlog.event_data.ServiceType":     {"type": "keyword"},
+            "winlog.event_data.StartType":       {"type": "keyword"},
+            "winlog.event_data.AccountName":     {"type": "keyword"},
+            "powershell.file.script_block_text": {"type": "text"},
+            "powershell.file.script_block_id":   {"type": "keyword"},
+            "dns.question.name":                 {"type": "keyword"},
+            "dns.question.type":                 {"type": "keyword"},
+            "file.directory":                    {"type": "keyword"},
             "_simulation.type":         {"type": "keyword"},
             "_simulation.technique":    {"type": "keyword"},
             "_simulation.fawkes_command":{"type": "keyword"},
