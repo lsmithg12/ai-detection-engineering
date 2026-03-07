@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1566_004.json
 sigma_rule: detections\initial_access\t1566_004.yml
 deployed_date: '2026-03-06T23:10:00Z'
-last_quality_review: '2026-03-07T23:21:41Z'
+last_quality_review: '2026-03-07T23:36:41Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -64,6 +64,14 @@ changelog:
   agent: quality
   action: transition:DEPLOYED->MONITORING
   details: "Health score 0.915 \u2014 healthy"
+- date: '2026-03-07T23:34:59Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-07T23:36:41Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections\initial_access\compiled\t1566_004.lucene
 compiled_spl: detections\initial_access\compiled\t1566_004.spl
 mitre_tactic: initial_access

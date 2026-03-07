@@ -47,16 +47,20 @@ def _load_agent_config(agent_name: str) -> dict:
 
 
 def _find_claude_cli() -> str | None:
-    """Find the claude CLI executable."""
+    """Find the claude CLI executable.
+
+    On Windows, shutil.which resolves .cmd/.bat extensions, but
+    subprocess.run needs the full path to avoid FileNotFoundError.
+    """
     # Direct path first
     claude = shutil.which("claude")
     if claude:
         return claude
 
-    # Try npx as fallback
+    # Try npx as fallback — return full resolved path for Windows .cmd compat
     npx = shutil.which("npx")
     if npx:
-        return "npx"
+        return npx  # Returns full path like "C:\\Program Files\\nodejs\\npx.CMD"
 
     return None
 
@@ -133,8 +137,8 @@ def ask(
             "error": "Claude CLI not found. Install: npm install -g @anthropic-ai/claude-code",
         }
 
-    if cli == "npx":
-        cmd = ["npx", "--yes", "@anthropic-ai/claude-code"]
+    if "npx" in cli.lower():
+        cmd = [cli, "--yes", "@anthropic-ai/claude-code"]
     else:
         cmd = [cli]
 
@@ -337,6 +341,6 @@ def ask_for_analysis(
         prompt=prompt,
         agent_name=agent_name,
         allowed_tools=[],  # Pure reasoning
-        max_turns=1,
-        timeout_seconds=60,
+        max_turns=3,
+        timeout_seconds=90,
     )
