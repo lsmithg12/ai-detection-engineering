@@ -8,6 +8,7 @@ Called by agent_runner.py. Implements run(state_manager, pr_number) interface.
 
 import datetime
 import json
+import os
 import re
 import urllib.request
 import urllib.error
@@ -41,18 +42,32 @@ def _load_scan_patterns() -> dict:
 
 
 def _load_github_config() -> tuple[str, str]:
-    """Load GitHub PAT and repo from .mcp.json."""
+    """Load GitHub PAT from environment or .mcp.json.
+
+    Token lookup order:
+    1. GITHUB_TOKEN env var (set by GitHub Actions automatically)
+    2. .mcp.json (local development, gitignored)
+    """
+    repo = "lsmithg12/ai-detection-engineering"
+
+    # 1. Environment variable (GitHub Actions provides this)
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if token:
+        return token, repo
+
+    # 2. .mcp.json (local dev — file is gitignored)
     mcp_path = REPO_ROOT / ".mcp.json"
     if mcp_path.exists():
         with open(mcp_path) as f:
             mcp = json.load(f)
-        # Extract PAT from github MCP server env
         for key, server in mcp.get("mcpServers", {}).items():
             if "github" in key.lower():
                 env = server.get("env", {})
                 token = env.get("GITHUB_PERSONAL_ACCESS_TOKEN", "")
-                return token, "lsmithg12/ai-detection-engineering"
-    return "", "lsmithg12/ai-detection-engineering"
+                if token:
+                    return token, repo
+
+    return "", repo
 
 
 # ─── Secret Scanning Patterns ────────────────────────────────────
