@@ -288,15 +288,11 @@ def search_web_for_intel(
     already_covered = ", ".join(sorted(existing_techniques)[:20])
     priority_sites = ", ".join(PRIORITY_SOURCES[:5])
 
+    # Keep system prompt simple — no special chars that cmd.exe could mangle.
+    # Technical instructions (sed patterns, URLs) go in the prompt via stdin.
     system_prompt = (
         "You are a threat intelligence analyst. You have curl via the Bash tool. "
-        "Be FAST: fetch ONE index page, pick the most recent report, fetch it, "
-        "extract techniques, and return JSON immediately. Do not fetch more than "
-        "2 pages total. Return results as a JSON array — no markdown, no explanation.\n\n"
-        "IMPORTANT: When using curl, ALWAYS strip HTML tags and script content to "
-        "avoid saving malicious code samples to disk. Use this pattern:\n"
-        "  curl -sL <url> | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300\n"
-        "This removes all HTML tags and script blocks, keeping only readable text."
+        "Be FAST and return results as a JSON array. No markdown, no explanation."
     )
 
     # Build a combined prompt with all queries
