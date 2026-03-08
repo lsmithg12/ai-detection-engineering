@@ -21,6 +21,7 @@ Budget tracking integrates with the existing budget.py module.
 """
 
 import json
+import os
 import subprocess
 import shutil
 from pathlib import Path
@@ -164,17 +165,22 @@ def ask(
             if plain:
                 cmd += ["--tools", ",".join(plain)]
             if restricted:
-                cmd += ["--allowed-tools"] + restricted
+                cmd += ["--allowed-tools", " ".join(restricted)]
 
     if max_turns:
         cmd += ["--max-turns", str(max_turns)]
 
-    # Add the prompt as the positional argument
-    cmd.append(prompt)
+    # On Windows, .CMD wrappers re-parse args through cmd.exe which
+    # mangles parentheses, backslashes, semicolons, etc. Pass the
+    # prompt via stdin to avoid all arg-parsing issues.
+    use_stdin = os.name == "nt"
+    if not use_stdin:
+        cmd.append(prompt)
 
     try:
         result = subprocess.run(
             cmd,
+            input=prompt if use_stdin else None,
             capture_output=True,
             text=True,
             encoding="utf-8",
