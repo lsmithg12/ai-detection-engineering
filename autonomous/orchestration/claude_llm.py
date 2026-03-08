@@ -360,7 +360,7 @@ def ask_with_web_search(
     prompt: str,
     agent_name: str = "intel",
     system_prompt: str | None = None,
-    timeout_seconds: int = 180,
+    timeout_seconds: int = 300,
 ) -> dict:
     """
     Ask Claude with web access via Bash(curl:*).
@@ -369,6 +369,8 @@ def ask_with_web_search(
     etc.) — not WebSearch/WebFetch. We allow Bash restricted to curl commands
     so Claude can fetch web pages for threat intel research.
 
+    Timeout is 300s (5 min) because fetching + parsing HTML pages takes time.
+
     Returns {"success": bool, "response": str, "model": str, "error": str | None}
     """
     return ask(
@@ -376,6 +378,6 @@ def ask_with_web_search(
         agent_name=agent_name,
         system_prompt=system_prompt,
         allowed_tools=["Bash(curl:*)"],
-        max_turns=8,
+        max_turns=6,
         timeout_seconds=timeout_seconds,
     )

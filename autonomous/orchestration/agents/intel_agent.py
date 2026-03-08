@@ -289,45 +289,41 @@ def search_web_for_intel(
     priority_sites = ", ".join(PRIORITY_SOURCES[:5])
 
     system_prompt = (
-        "You are a threat intelligence analyst. You have access to curl via "
-        "the Bash tool. Use curl to fetch web pages from threat intelligence "
-        "sources. Focus on reports that describe specific MITRE ATT&CK techniques. "
-        "Prefer reports from reputable sources like CISA, Mandiant, CrowdStrike, "
-        "Microsoft, Unit42, Red Canary, Elastic Security Labs, and The DFIR Report. "
-        "After fetching and reading reports, return your findings as a JSON array — "
-        "no markdown, no explanation."
+        "You are a threat intelligence analyst. You have curl via the Bash tool. "
+        "Be FAST: fetch ONE index page, pick the most recent report, fetch it, "
+        "extract techniques, and return JSON immediately. Do not fetch more than "
+        "2 pages total. Return results as a JSON array — no markdown, no explanation.\n\n"
+        "IMPORTANT: When using curl, ALWAYS strip HTML tags and script content to "
+        "avoid saving malicious code samples to disk. Use this pattern:\n"
+        "  curl -sL <url> | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300\n"
+        "This removes all HTML tags and script blocks, keeping only readable text."
     )
 
     # Build a combined prompt with all queries
     queries_block = "\n".join(f"- {q}" for q in queries[:3])
 
-    prompt = f"""Fetch recent threat intelligence reports using curl. Try these sources:
-- https://www.cisa.gov/news-events/cybersecurity-advisories
-- https://cloud.google.com/blog/topics/threat-intelligence
-- https://unit42.paloaltonetworks.com/category/threat-research/
-- https://www.microsoft.com/en-us/security/blog/
-- https://thedfirreport.com/
+    prompt = f"""You have curl access. Find {max_reports} recent threat reports with MITRE ATT&CK techniques.
 
-Use curl to fetch pages and extract threat report content. For example:
-  curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | head -500
+IMPORTANT SECURITY NOTE: Always strip HTML/script tags from curl output to avoid
+triggering antivirus on malicious code samples in reports. Use this pattern:
+  curl -sL "<url>" | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300
 
-Search context (topics of interest):
+INSTRUCTIONS — be fast, limit to 2-3 curl calls total:
+1. Fetch ONE of these index pages to find recent report URLs:
+   curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | sed 's/<[^>]*>//g' | head -200
+   curl -sL "https://elastic.co/security-labs" | sed 's/<[^>]*>//g' | head -200
+   curl -sL "https://thedfirreport.com/" | sed 's/<[^>]*>//g' | head -200
+2. Pick the 1-2 most recent report links from the index page
+3. Fetch each report with HTML stripped (see pattern above)
+4. Extract MITRE ATT&CK technique IDs from the text content
+5. Return JSON immediately — do NOT fetch additional pages
+
+Topics of interest:
 {queries_block}
 
-Find up to {max_reports} recent threat reports (published in the last 60 days).
+Skip these techniques (already covered): {already_covered}
 
-We already have detections for these techniques (skip them): {already_covered}
-
-For each report found, extract:
-1. The report title
-2. Source URL
-3. Date published
-4. Threat actors mentioned
-5. Target platforms (Windows, Linux, macOS, Cloud)
-6. MITRE ATT&CK techniques used (ID, name, brief description, priority)
-7. A 2-3 sentence summary
-
-After gathering data, return ONLY a JSON array with this exact schema:
+Return ONLY a JSON array (no markdown fences, no commentary):
 [{{
   "title": "Report Title",
   "source": "https://...",
@@ -337,10 +333,8 @@ After gathering data, return ONLY a JSON array with this exact schema:
   "techniques": [
     {{"id": "T1059.001", "name": "PowerShell", "description": "Used PowerShell for execution", "priority": "high"}}
   ],
-  "raw_summary": "Brief summary of the report..."
-}}]
-
-Your FINAL output must be ONLY valid JSON. No markdown fences, no commentary."""
+  "raw_summary": "Brief 2-3 sentence summary"
+}}]"""
 
     print(f"  [intel] Sending web search request to Claude CLI...")
     result = claude_llm.ask_with_web_search(
