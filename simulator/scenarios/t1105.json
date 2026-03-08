@@ -1,0 +1,251 @@
+{
+  "technique_id": "T1105",
+  "technique_name": "Ingress Tool Transfer",
+  "description": "Simulates Ingress Tool Transfer attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T14:22:11.403Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "runtime_host.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe --pull-stage2"
+        },
+        "destination": {
+          "ip": "185.220.101.47",
+          "port": 443,
+          "domain": "cdn-update-delivery.net"
+        },
+        "source": {
+          "ip": "10.10.5.22",
+          "port": 51834
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1105",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes runtime_host.exe initiates outbound TLS connection to C2 infrastructure to pull a second-stage payload"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:14.817Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "runtime_host.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe --pull-stage2"
+        },
+        "file": {
+          "name": "svcutil32.exe",
+          "path": "C:\\ProgramData\\WindowsUpdate\\svcutil32.exe",
+          "extension": "exe"
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1105",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes drops downloaded second-stage executable into writable ProgramData subdirectory using a system-service-lookalike filename"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:16.091Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6104,
+          "name": "svcutil32.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\svcutil32.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\svcutil32.exe -i",
+          "hash": {
+            "sha256": "a3f1c82e9b7d4051f6c390e22a5b8d71cc48fa9301e7b2d84c6a05f39e1d7802"
+          },
+          "parent": {
+            "pid": 4872,
+            "name": "runtime_host.exe",
+            "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1105",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Downloaded second-stage payload executed immediately after write, spawned by the Fawkes C2 agent — classic ingress tool transfer followed by execution"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T14:05:33.214Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 2288,
+          "name": "MicrosoftEdgeUpdate.exe",
+          "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+          "command_line": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /ua /installsource scheduler"
+        },
+        "destination": {
+          "ip": "13.107.42.14",
+          "port": 443,
+          "domain": "msedge.api.cdp.microsoft.com"
+        },
+        "source": {
+          "ip": "10.10.5.22",
+          "port": 50291
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1105",
+          "description": "Legitimate Microsoft Edge auto-updater making outbound TLS connection to Microsoft CDN — similar network pattern to tool transfer but from a trusted signed binary to a known Microsoft IP"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:11:58.772Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "process": {
+          "pid": 2288,
+          "name": "MicrosoftEdgeUpdate.exe",
+          "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+          "command_line": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /ua /installsource scheduler"
+        },
+        "file": {
+          "name": "MicrosoftEdge_X64_122.0.2365.92_122.0.2365.80.exe",
+          "path": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\Download\\{56EB18F8-B008-4CBD-B6D2-8C97FE7E9062}\\122.0.2365.92\\MicrosoftEdge_X64_122.0.2365.92_122.0.2365.80.exe",
+          "extension": "exe"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1105",
+          "description": "Legitimate software updater writing a downloaded executable to disk — superficially identical artifact pattern (network write of .exe) but process is signed, path is vendor-specific, and parent is a scheduled task spawned by SYSTEM"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "file.path",
+      "destination.ip",
+      "destination.domain",
+      "process.parent.name",
+      "user.name",
+      "network.direction"
+    ],
+    "notes": "High-fidelity signals for T1105: (1) executable write to non-standard writable path (ProgramData subdirectory not under a vendor folder) by a non-system process, (2) parent-child chain where the writing process immediately spawns the written file, (3) outbound TLS from a process resident in ProgramData to a non-Microsoft/CDN IP. Differentiate from benign by checking process.executable path against allowlisted installer directories and validating the signing certificate of both parent and child. Correlate EID 3 + EID 11 + EID 1 within a short time window (~5s) from the same PID as a high-confidence composite signal."
+  },
+  "log_sources_used": [
+    "sysmon_3",
+    "sysmon_11",
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

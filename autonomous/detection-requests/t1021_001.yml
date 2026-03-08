@@ -1,11 +1,11 @@
 technique_id: T1021.001
 title: 'Remote Services: Remote Desktop Protocol'
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: high
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
-scenario_file: ''
+scenario_file: simulator\scenarios\t1021_001.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
@@ -20,3 +20,11 @@ changelog:
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml'
+- date: '2026-03-08T22:22:30Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-08T22:22:30Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
