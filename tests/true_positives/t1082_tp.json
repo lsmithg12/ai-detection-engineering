@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:14:22.341Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe",
+      "command_line": "runtime_host.exe",
+      "parent": {
+        "pid": 4412,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1082",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent runtime_host.exe spawned from explorer \u2014 initial execution prior to discovery burst"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:23.887Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 9104,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c systeminfo & whoami & hostname & net config workstation & ipconfig /all & wmic os get Caption,Version,BuildNumber,OSArchitecture /format:list",
+      "parent": {
+        "pid": 7832,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1082",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "runtime_host.exe spawns cmd.exe chaining systeminfo, whoami, hostname, net config, ipconfig, and wmic \u2014 classic Fawkes discovery burst mapped to T1082/T1016/T1033"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:25.112Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 9388,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic os get Caption,Version,BuildNumber,OSArchitecture,TotalVisibleMemorySize,NumberOfProcessors /format:list",
+      "parent": {
+        "pid": 9104,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1082",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "wmic.exe querying OS build, architecture, memory, and CPU count \u2014 consistent with Fawkes av-detect / env commands gathering host fingerprint for C2 operator"
+    }
+  }
+]

@@ -1,0 +1,92 @@
+title: Ransomware File Extension Modification Indicating Data Encryption for Impact
+id: 8a3c1d4e-5f6b-7c8d-9e0a-1b2c3d4e5f6a
+status: experimental
+description: >
+  Detects file creation events where files are written with known ransomware
+  extensions by processes executing from non-standard directories. This targets
+  the behavioral pattern of ransomware encrypting user files and appending
+  custom extensions, especially when the writing process runs from suspicious
+  paths such as ProgramData, Temp, or AppData.
+author: Detection Engineering Agent
+date: 2026/03/08
+references:
+  - https://attack.mitre.org/techniques/T1486/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.impact
+  - attack.t1486
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_extension:
+    file.extension:
+      - locked
+      - encrypted
+      - enc
+      - crypt
+      - crypto
+      - ransom
+      - rnsmw
+      - pay
+      - cerber
+      - locky
+      - zepto
+      - odin
+      - thor
+      - aesir
+      - zzzzz
+      - dharma
+      - wallet
+      - onion
+      - wncry
+      - wcry
+      - crab
+      - lock
+      - venus
+      - hive
+      - royal
+      - basta
+      - akira
+      - blacksuit
+  selection_suspicious_path:
+    process.executable|contains:
+      - \ProgramData\
+      - \AppData\Local\Temp\
+      - \AppData\Roaming\
+      - \Users\Public\
+      - \Windows\Temp\
+      - \Recycle
+  filter_trusted_processes:
+    process.executable|contains:
+      - \Microsoft\OneDrive\
+      - \Microsoft\Edge\
+      - \Google\Chrome\
+      - \Windows Defender\
+      - \Microsoft Office\
+      - \7-Zip\
+      - \WinRAR\
+      - \WinZip\
+      - \VeraCrypt\
+      - \BitLocker\
+  filter_backup_extensions:
+    file.extension:
+      - bak
+      - tmp
+      - temp
+  condition: selection_extension and selection_suspicious_path and not filter_trusted_processes and not filter_backup_extensions
+fields:
+  - process.executable
+  - process.name
+  - process.pid
+  - process.parent.name
+  - file.path
+  - file.extension
+  - user.name
+  - host.name
+falsepositives:
+  - Legitimate encryption software running from user-writable directories
+  - Security tools that quarantine files with custom extensions
+  - Backup software writing encrypted archives to temp paths
+  - File sync tools creating conflict copies with unusual extensions
+level: high

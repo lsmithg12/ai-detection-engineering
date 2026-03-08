@@ -1,0 +1,125 @@
+[
+  {
+    "@timestamp": "2026-03-08T14:22:11.304Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "update_helper.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe",
+      "command_line": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe --silent --key 3f9a1b2c4d5e6f78",
+      "hash": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "parent": {
+        "pid": 4412,
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1486",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Ransomware dropper update_helper.exe launched by PowerShell with embedded encryption key argument"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T14:22:19.871Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "path": "C:\\Users\\bwilson\\Documents\\Q1_Budget_Final.xlsx.locked",
+      "name": "Q1_Budget_Final.xlsx.locked",
+      "extension": "locked",
+      "directory": "C:\\Users\\bwilson\\Documents"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "update_helper.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1486",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Ransomware writing encrypted output file with .locked extension, replacing original document"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T14:22:21.053Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "path": "C:\\Users\\bwilson\\Documents\\HOW_TO_RESTORE_FILES.txt",
+      "name": "HOW_TO_RESTORE_FILES.txt",
+      "extension": "txt",
+      "directory": "C:\\Users\\bwilson\\Documents"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "update_helper.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1486",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Ransomware dropping ransom note HOW_TO_RESTORE_FILES.txt into victim document directory"
+    }
+  }
+]

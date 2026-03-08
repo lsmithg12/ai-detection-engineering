@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1003.001",
+  "date": "2026-03-08T14:30:30Z",
+  "sigma_rule": "detections\\credential_access\\t1003_001.yml",
+  "metrics": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 3,
+    "tn": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "fp_rate": 0.0,
+    "tp_rate": 0.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "needs_rework"
+}

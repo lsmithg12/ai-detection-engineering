@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:02:11.553Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 2244,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c ipconfig /all",
+      "parent": {
+        "pid": 1876,
+        "name": "helpdesk_tool.exe",
+        "executable": "C:\\Program Files\\Corp IT\\HelpDeskTool\\helpdesk_tool.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1059.003",
+      "description": "IT helpdesk diagnostics tool legitimately spawning cmd.exe to run ipconfig \u2014 similar parent-child pattern but from a signed, installed application in Program Files"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:07:45.882Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3308,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c net use Z: \\\\CORP-FS01\\SharedDrive /persistent:yes",
+      "parent": {
+        "pid": 2960,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1059.003",
+      "description": "User-initiated cmd.exe from explorer.exe to map a network drive \u2014 common enterprise workflow, benign parent and expected command"
+    }
+  }
+]

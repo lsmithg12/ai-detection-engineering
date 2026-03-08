@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-08T08:45:10.554Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6120,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c systeminfo > C:\\Users\\jsmith\\Desktop\\sysinfo_report.txt",
+      "parent": {
+        "pid": 5800,
+        "name": "devenv.exe",
+        "executable": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\devenv.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1082",
+      "description": "Developer running systeminfo to capture environment details for a bug report \u2014 spawned from Visual Studio, output redirected to Desktop file, single targeted command rather than chained discovery burst"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T08:52:33.779Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3340,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic os get Version /format:list",
+      "parent": {
+        "pid": 2988,
+        "name": "MsMpEng.exe",
+        "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.24010.12\\MsMpEng.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1082",
+      "description": "Windows Defender querying OS version via wmic for compatibility check \u2014 SYSTEM context, trusted signed parent, single narrow query with no chained discovery activity"
+    }
+  }
+]
