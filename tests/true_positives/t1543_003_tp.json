@@ -1,0 +1,128 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:14:33.412Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "sc.exe",
+      "executable": "C:\\Windows\\System32\\sc.exe",
+      "command_line": "sc.exe create SyncAgentSvc binPath= \"C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe\" start= auto DisplayName= \"Windows Sync Agent Service\"",
+      "parent": {
+        "pid": 3340,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe"
+      }
+    },
+    "user": {
+      "name": "agarcia",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1543.003",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Attacker uses sc.exe to register a new Windows service pointing to a user-space malicious binary under AppData\\Roaming"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:35.887Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SyncAgentSvc\\ImagePath",
+      "value": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+      "hive": "HKLM",
+      "key": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SyncAgentSvc",
+      "data": {
+        "type": "SZ",
+        "strings": [
+          "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe"
+        ]
+      }
+    },
+    "process": {
+      "pid": 664,
+      "name": "services.exe",
+      "executable": "C:\\Windows\\System32\\services.exe"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1543.003",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "SCM writes the malicious ImagePath into the registry under HKLM\\Services \u2014 binary path resolves to user-writable AppData location, not a system directory"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:38.201Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5104,
+      "name": "sync_agent.exe",
+      "executable": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+      "command_line": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+      "parent": {
+        "pid": 664,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1543.003",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "services.exe launches the malicious binary as a service \u2014 high-privilege SYSTEM execution from a user-writable AppData path is a strong indicator of persistence via service abuse"
+    }
+  }
+]

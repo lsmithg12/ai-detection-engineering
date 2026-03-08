@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-08T08:55:12.304Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 2988,
+      "name": "sc.exe",
+      "executable": "C:\\Windows\\System32\\sc.exe",
+      "command_line": "sc.exe create CrowdStrikeFalconSensor binPath= \"C:\\Program Files\\CrowdStrike\\CSFalconService.exe\" start= auto DisplayName= \"CrowdStrike Falcon Sensor Service\"",
+      "parent": {
+        "pid": 7340,
+        "name": "msiexec.exe",
+        "executable": "C:\\Windows\\System32\\msiexec.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1543.003",
+      "description": "Legitimate software installer (msiexec) registers a service via sc.exe \u2014 binary path is under Program Files (not user-writable), parent is the Windows installer, and caller is SYSTEM not a user account"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T08:57:44.118Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 1948,
+      "name": "CrowdStrikeFalconSensor.exe",
+      "executable": "C:\\Program Files\\CrowdStrike\\CSFalconService.exe",
+      "command_line": "C:\\Program Files\\CrowdStrike\\CSFalconService.exe",
+      "parent": {
+        "pid": 664,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1543.003",
+      "description": "Legitimate security agent started by services.exe \u2014 same services.exe parent and SYSTEM context as attack, but binary path is under Program Files and matches a known signed vendor executable"
+    }
+  }
+]

@@ -1,0 +1,58 @@
+title: Suspicious Windows Service Creation via Sc.exe with User-Writable Binary Path
+id: 8a7b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+status: experimental
+description: |
+  Detects sc.exe creating or modifying a Windows service where the binary path points to
+  a user-writable directory (AppData, Temp, Public, ProgramData, Downloads). This is a
+  common pattern for Fawkes C2 service persistence and other malware that registers
+  services pointing to attacker-controlled executables outside of Program Files.
+references:
+  - https://attack.mitre.org/techniques/T1543/003/
+  - https://github.com/galoryber/fawkes
+author: Blue Team Detection Engineering Agent
+date: 2026-03-08
+modified: 2026-03-08
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1543.003
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    process.name: sc.exe
+    process.command_line|contains: create
+  selection_suspicious_path:
+    process.command_line|contains:
+      - \AppData\
+      - \Users\Public\
+      - \Temp\
+      - \ProgramData\
+      - \Downloads\
+      - \Desktop\
+      - \Documents\
+      - '%APPDATA%'
+      - '%TEMP%'
+      - '%USERPROFILE%'
+  filter_parent_installer:
+    process.parent.name:
+      - msiexec.exe
+      - setup.exe
+      - TiWorker.exe
+      - TrustedInstaller.exe
+    user.name: SYSTEM
+  filter_sccm:
+    process.parent.executable|contains: \ccmexec
+  condition: selection_process and selection_suspicious_path and not 1 of filter_*
+fields:
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name
+falsepositives:
+  - Legitimate software installers that place service binaries in ProgramData
+  - Enterprise management agents with non-standard install paths
+  - Developer tools that register services from user directories during testing
+level: high

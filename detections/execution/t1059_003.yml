@@ -1,0 +1,79 @@
+title: Suspicious CMD.exe Execution with Chained Reconnaissance Commands
+id: 8f3a2c1e-5d47-4b9a-a1e6-7c8d9f0e2b3a
+status: experimental
+description: >
+  Detects cmd.exe spawned with chained command execution containing
+  reconnaissance commands (whoami, net user, ipconfig, net localgroup),
+  especially when the parent process runs from non-standard paths such as
+  ProgramData, Temp, or AppData. This pattern is consistent with C2 agents
+  like Fawkes executing discovery commands via the Windows command shell.
+author: Blue Team Detection Engineering Agent
+date: 2026/03/08
+references:
+  - https://attack.mitre.org/techniques/T1059/003/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.execution
+  - attack.t1059.003
+  - attack.discovery
+  - attack.t1016
+  - attack.t1033
+  - attack.t1087.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_cmd:
+    Image|endswith: '\cmd.exe'
+  selection_chained_recon:
+    CommandLine|contains|all:
+      - '/c'
+      - '&'
+    CommandLine|contains:
+      - 'whoami'
+      - 'net user'
+      - 'net localgroup'
+      - 'nltest'
+      - 'net group'
+      - 'systeminfo'
+      - 'tasklist'
+      - 'query user'
+      - 'net view'
+      - 'netstat'
+      - 'reg query'
+      - 'wmic'
+  selection_suspicious_parent:
+    ParentImage|contains:
+      - '\ProgramData\'
+      - '\AppData\'
+      - '\Temp\'
+      - '\Users\Public\'
+      - '\Windows\Temp\'
+      - '\Downloads\'
+      - '\Recycle'
+  filter_programfiles:
+    ParentImage|startswith:
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  filter_windows_system:
+    ParentImage|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Windows\explorer.exe'
+  filter_known_tools:
+    ParentImage|endswith:
+      - '\explorer.exe'
+      - '\msiexec.exe'
+      - '\services.exe'
+  condition: selection_cmd and ((selection_chained_recon and not filter_programfiles) or (selection_suspicious_parent and not filter_windows_system and not filter_known_tools))
+fields:
+  - CommandLine
+  - ParentImage
+  - ParentCommandLine
+  - User
+  - Image
+falsepositives:
+  - Legitimate IT administration scripts running chained commands from Program Files
+  - Software installers using cmd.exe for post-install configuration from temp directories
+  - Enterprise deployment tools spawning cmd.exe from ProgramData
+level: medium

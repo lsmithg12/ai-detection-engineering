@@ -1,0 +1,128 @@
+[
+  {
+    "@timestamp": "2026-03-08T14:22:11.443Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe",
+      "command_line": "task_scheduler.exe --dump lsass",
+      "parent": {
+        "pid": 4412,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1003.001",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Masqueraded task_scheduler.exe launched from user AppData \u2014 precursor to LSASS access"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T14:22:13.817Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+    },
+    "target": {
+      "process": {
+        "pid": 660,
+        "name": "lsass.exe",
+        "executable": "C:\\Windows\\System32\\lsass.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1410",
+        "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+9e1d4|C:\\Windows\\System32\\KERNELBASE.dll+2b01e|C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe+31a7c"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1003.001",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "task_scheduler.exe opens lsass.exe with PROCESS_VM_READ | PROCESS_QUERY_INFORMATION access (0x1410) \u2014 classic credential dump pattern"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T14:22:15.092Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "name": "lsass.dmp",
+      "path": "C:\\Users\\dkim\\AppData\\Local\\Temp\\lsass.dmp",
+      "extension": "dmp"
+    },
+    "process": {
+      "pid": 7824,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1003.001",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "LSASS minidump file written to Temp directory by masqueraded process \u2014 confirms successful MiniDumpWriteDump call"
+    }
+  }
+]

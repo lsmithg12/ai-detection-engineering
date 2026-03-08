@@ -1,0 +1,81 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:15:44.210Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "path": "C:\\Users\\bwilson\\Documents\\Q1_Budget_Final.xlsx.bak",
+      "name": "Q1_Budget_Final.xlsx.bak",
+      "extension": "bak",
+      "directory": "C:\\Users\\bwilson\\Documents"
+    },
+    "process": {
+      "pid": 3360,
+      "name": "OneDrive.exe",
+      "executable": "C:\\Users\\bwilson\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1486",
+      "description": "OneDrive creating a .bak temporary file during sync conflict resolution \u2014 similar file extension pattern to ransomware but from a trusted, signed parent process in a known software path"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T11:03:58.774Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6104,
+      "name": "MpCmdRun.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MpCmdRun.exe",
+      "command_line": "\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MpCmdRun.exe\" -Scan -ScanType 1 -File \"C:\\Users\\bwilson\\Documents\"",
+      "hash": {
+        "sha256": "a6785db47ae8a0c5a4e8ad70c49a0adbc5e2c2f6cc5e2d0b1e84a7f3b9c1d22f"
+      },
+      "parent": {
+        "pid": 1120,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1486",
+      "description": "Windows Defender MpCmdRun.exe scanning the Documents folder \u2014 runs from C:\\ProgramData like the malicious process but is a signed Microsoft binary spawned by services.exe"
+    }
+  }
+]
