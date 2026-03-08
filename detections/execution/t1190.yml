@@ -1,0 +1,64 @@
+title: Suspicious Child Process Spawned by Web Server Application
+id: 8a3b2c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+status: experimental
+description: >
+  Detects a web server process (IIS w3wp.exe, Apache httpd, Nginx, Tomcat) spawning
+  a suspicious child process from a writable or uncommon directory. This behavior
+  indicates successful exploitation of a public-facing web application (T1190),
+  where the attacker achieves code execution through the web server worker process.
+  Fawkes C2 and similar implants may be dropped to ProgramData, Temp, or user-writable
+  paths and executed by the compromised web application process.
+author: Blue Team Detection Engineering Agent
+date: 2026/03/08
+modified: 2026/03/08
+references:
+  - https://attack.mitre.org/techniques/T1190/
+  - https://github.com/galoryber/fawkes
+  - https://www.microsoft.com/en-us/security/blog/2022/07/26/malicious-iis-extensions-quietly-open-persistent-backdoors-into-servers/
+tags:
+  - attack.initial_access
+  - attack.t1190
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_parent:
+    ParentImage|endswith:
+      - '\w3wp.exe'
+      - '\httpd.exe'
+      - '\nginx.exe'
+      - '\tomcat*.exe'
+      - '\php-cgi.exe'
+      - '\java.exe'
+      - '\node.exe'
+  selection_child_path:
+    Image|contains:
+      - '\ProgramData\'
+      - '\Temp\'
+      - '\tmp\'
+      - '\AppData\'
+      - '\Public\'
+      - '\Downloads\'
+      - '\Recycle'
+      - '\Windows\Tasks\'
+      - '\perflogs\'
+  filter_legitimate_iis:
+    Image|endswith:
+      - '\csc.exe'
+      - '\conhost.exe'
+      - '\WerFault.exe'
+    ParentImage|endswith: '\w3wp.exe'
+  filter_dotnet_compilation:
+    Image|endswith:
+      - '\vbc.exe'
+      - '\csc.exe'
+    Image|startswith: 'C:\Windows\Microsoft.NET\'
+  filter_azure_guest_agent:
+    Image|startswith: 'C:\WindowsAzure\'
+    ParentImage|endswith: '\services.exe'
+  condition: selection_parent and selection_child_path and not 1 of filter_*
+falsepositives:
+  - Legitimate web application frameworks that compile code at runtime via csc.exe or vbc.exe
+  - Web-deployed update utilities that stage binaries in ProgramData before installation
+  - Custom IIS modules that spawn helper processes in non-standard paths
+level: high

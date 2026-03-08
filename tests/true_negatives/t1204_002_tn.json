@@ -1,0 +1,88 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:02:11.774Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6104,
+      "name": "WUAHandler.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows\\WUAHandler\\WUAHandler.exe",
+      "command_line": "\"C:\\ProgramData\\Microsoft\\Windows\\WUAHandler\\WUAHandler.exe\" /scan",
+      "hash": {
+        "md5": "7d2f8a1b3c4e9f0d6a5b8c2e1f4d3a7b",
+        "sha256": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
+      },
+      "parent": {
+        "pid": 788,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe",
+        "command_line": "C:\\Windows\\system32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1204.002",
+      "description": "Legitimate Windows Update Agent handler running from ProgramData under SYSTEM via services.exe \u2014 similar directory path but trusted parent and account"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T08:47:55.003Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 9340,
+      "name": "OneDriveSetup.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\OneDrive\\setup\\19.232.1124.0010\\OneDriveSetup.exe",
+      "command_line": "\"C:\\ProgramData\\Microsoft\\OneDrive\\setup\\19.232.1124.0010\\OneDriveSetup.exe\" /update /silent",
+      "hash": {
+        "md5": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+        "sha256": "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e"
+      },
+      "parent": {
+        "pid": 4912,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe",
+        "command_line": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p -s Schedule"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1204.002",
+      "description": "Legitimate OneDrive silent update running from ProgramData under jsmith context via scheduled task svchost \u2014 same user and base directory class but legitimate signed binary with versioned path"
+    }
+  }
+]

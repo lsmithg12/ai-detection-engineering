@@ -1,0 +1,85 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:05:47.331Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4512,
+      "name": "mstsc.exe",
+      "executable": "C:\\Windows\\System32\\mstsc.exe",
+      "command_line": "mstsc.exe /v:10.10.20.11:3389",
+      "parent": {
+        "pid": 3108,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1021.001",
+      "description": "Legitimate user-initiated RDP session from explorer.exe \u2014 finance analyst connecting to a shared report server via RDP as part of normal workflow"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T10:44:02.119Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 4512,
+      "name": "mstsc.exe",
+      "executable": "C:\\Windows\\System32\\mstsc.exe"
+    },
+    "source": {
+      "ip": "10.10.10.88",
+      "port": 51204
+    },
+    "destination": {
+      "ip": "10.10.20.11",
+      "port": 3389
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "rdp"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1021.001",
+      "description": "Legitimate outbound RDP connection from user-spawned mstsc.exe \u2014 same port and protocol as attack but parent process is explorer.exe, not a temp-path executable"
+    }
+  }
+]

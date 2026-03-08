@@ -1,0 +1,71 @@
+title: Suspicious Remote Service Binary Launched From User Directory
+id: 8f3a2c61-d4e7-4b19-a3c5-6e1f9d8b4a72
+status: experimental
+description: >
+  Detects execution of binaries from user-writable directories (AppData, Temp, Downloads)
+  that contain command-line arguments indicative of external remote service tooling, such as
+  connect/tunnel parameters with external IP addresses and credential flags. This pattern is
+  consistent with masqueraded remote access binaries used for T1133 External Remote Services,
+  including Fawkes C2 and similar implants that impersonate legitimate Windows process names.
+author: Detection Engineering Agent
+date: 2026/03/08
+modified: 2026/03/08
+references:
+  - https://attack.mitre.org/techniques/T1133/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.persistence
+  - attack.initial_access
+  - attack.t1133
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_path:
+    process.executable|contains:
+      - '\AppData\Roaming\'
+      - '\AppData\Local\'
+      - '\AppData\Local\Temp\'
+      - '\Users\Public\'
+      - '\ProgramData\'
+      - '\Downloads\'
+      - '\Desktop\'
+  selection_cmdline:
+    process.command_line|contains:
+      - '-connect '
+      - '--connect '
+      - '-tunnel '
+      - '--tunnel '
+      - '-relay '
+      - '--relay '
+      - '-server '
+      - '--server '
+      - '-remotehost '
+      - '--remotehost '
+      - '-target '
+  filter_known_tools:
+    process.executable|endswith:
+      - '\OneDrive.exe'
+      - '\Teams.exe'
+      - '\Slack.exe'
+      - '\Code.exe'
+      - '\GitHubDesktop.exe'
+      - '\chrome.exe'
+      - '\msedge.exe'
+      - '\firefox.exe'
+      - '\zoom.exe'
+  filter_system_user:
+    user.name: 'SYSTEM'
+  condition: selection_path and selection_cmdline and not filter_known_tools and not filter_system_user
+fields:
+  - process.executable
+  - process.command_line
+  - process.parent.executable
+  - user.name
+  - host.name
+  - destination.ip
+falsepositives:
+  - Legitimate remote administration tools installed to user profile directories
+  - Developer tools or VPN clients with connect-style CLI arguments in non-standard paths
+  - Portable applications launched from Downloads or Desktop folders
+level: high

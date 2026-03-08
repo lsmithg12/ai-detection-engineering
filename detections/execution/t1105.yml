@@ -1,0 +1,71 @@
+title: Executable Dropped by Process in Suspicious Directory - Ingress Tool Transfer
+id: 8c3e2f1a-4d7b-4e9a-b5c6-1a2d3e4f5a6b
+status: experimental
+description: >
+  Detects a process running from a suspicious writable directory (ProgramData, Temp,
+  AppData, Users\Public) creating an executable file in a similarly suspicious location.
+  This pattern is consistent with C2 agents such as Fawkes pulling second-stage payloads
+  or transferring tools to disk after initial access (T1105).
+author: Detection Engineering
+date: 2026/03/08
+references:
+  - https://attack.mitre.org/techniques/T1105/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.command_and_control
+  - attack.t1105
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection:
+    event.code: '11'
+    file.extension:
+      - exe
+      - dll
+      - scr
+      - cpl
+  selection_process_path:
+    process.executable|contains:
+      - '\ProgramData\'
+      - '\AppData\Local\Temp\'
+      - '\AppData\Roaming\'
+      - '\Users\Public\'
+      - '\Windows\Temp\'
+      - '\Temp\'
+  selection_file_path:
+    file.path|contains:
+      - '\ProgramData\'
+      - '\AppData\Local\Temp\'
+      - '\AppData\Roaming\'
+      - '\Users\Public\'
+      - '\Windows\Temp\'
+      - '\Temp\'
+  filter_legitimate_updaters:
+    process.executable|contains:
+      - '\Program Files\'
+      - '\Program Files (x86)\'
+  filter_windows_modules:
+    process.executable|contains:
+      - '\Windows\System32\'
+      - '\Windows\SysWOW64\'
+      - '\Windows\WinSxS\'
+  filter_installer:
+    process.name:
+      - msiexec.exe
+      - TiWorker.exe
+      - TrustedInstaller.exe
+  condition: selection and selection_process_path and selection_file_path and not filter_legitimate_updaters and not filter_windows_modules and not filter_installer
+fields:
+  - process.executable
+  - process.command_line
+  - file.path
+  - file.name
+  - user.name
+  - host.name
+  - destination.ip
+falsepositives:
+  - Portable applications self-updating from ProgramData
+  - Enterprise software with non-standard install locations in ProgramData
+  - IT deployment tools staging executables in ProgramData or Temp
+level: high
