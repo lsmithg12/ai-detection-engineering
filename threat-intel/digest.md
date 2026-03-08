@@ -55,3 +55,20 @@
 - [CISA Advisory: Scattered Spider Social Engineering and RMM Abuse](https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a) — 4 techniques
 
 ---
+
+
+## Intel Run — 2026-03-08
+
+**Reports processed**: 4
+**New techniques found**: 17
+**Detection requests created**: 17
+**Techniques skipped (existing)**: 9
+**Fawkes overlap**: 3
+
+### Reports
+- [CISA Advisory: Scattered Spider Social Engineering and RMM Abuse](https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a) — 4 techniques
+- [Apache ActiveMQ Exploit Leads to LockBit Ransomware](https://thedfirreport.com/2026/02/23/apache-activemq-exploit-leads-to-lockbit-ransomware/) — 11 techniques
+- [Cat's Got Your Files: Lynx Ransomware](https://thedfirreport.com/2025/12/17/cats-got-your-files-lynx-ransomware/) — 5 techniques
+- [From Bing Search to Ransomware: Bumblebee and AdaptixC2 Deliver Akira](https://thedfirreport.com/2025/11/04/from-bing-search-to-ransomware-bumblebee-and-adaptixc2-deliver-akira/) — 6 techniques
+
+---
