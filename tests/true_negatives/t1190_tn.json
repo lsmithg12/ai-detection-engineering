@@ -1,0 +1,86 @@
+[
+  {
+    "@timestamp": "2026-03-08T08:45:11.204Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3620,
+      "name": "WaAppAgent.exe",
+      "executable": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe",
+      "command_line": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe -update -silent",
+      "parent": {
+        "pid": 832,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1190",
+      "description": "Legitimate Windows Azure Guest Agent update \u2014 similar naming convention and update flags to the malicious implant, but spawns from services.exe with SYSTEM context and resides in a signed Azure path"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T08:52:39.557Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 3620,
+      "name": "WaAppAgent.exe",
+      "executable": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe"
+    },
+    "destination": {
+      "ip": "168.63.129.16",
+      "port": 443,
+      "domain": "md-hdd-5c44fv4mz4b5.blob.core.windows.net"
+    },
+    "source": {
+      "ip": "10.10.20.15",
+      "port": 49801
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "tls"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1190",
+      "description": "Legitimate Azure Guest Agent contacting Microsoft infrastructure on 168.63.129.16 (Azure IMDS/RDFE reserved range) \u2014 similar outbound TLS 443 pattern to attack event but destination is a known-good Microsoft IP"
+    }
+  }
+]

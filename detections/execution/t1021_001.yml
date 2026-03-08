@@ -1,0 +1,51 @@
+title: RDP Client Spawned by Suspicious Parent Process
+id: 8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c
+status: experimental
+description: Detects mstsc.exe (Remote Desktop Client) being launched by an unusual parent process, which may indicate programmatic RDP lateral movement by malware or a C2 agent such as Fawkes. Legitimate RDP usage typically originates from explorer.exe or mmc.exe.
+references:
+    - https://attack.mitre.org/techniques/T1021/001/
+    - https://github.com/galoryber/fawkes
+author: Blue Team Detection Engineering Agent
+date: 2026-03-08
+modified: 2026-03-08
+tags:
+    - attack.lateral_movement
+    - attack.t1021.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        event.code: '1'
+        process.name: mstsc.exe
+    filter_legitimate_parents:
+        process.parent.name:
+            - explorer.exe
+            - mmc.exe
+            - RuntimeBroker.exe
+            - ServerManager.exe
+            - mstsc.exe
+            - rdcman.exe
+            - WindowsTerminal.exe
+            - cmd.exe
+            - powershell.exe
+            - pwsh.exe
+    filter_parent_system_paths:
+        process.parent.executable|startswith:
+            - C:\Windows\System32\
+            - C:\Windows\SysWOW64\
+            - C:\Program Files\
+            - C:\Program Files (x86)\
+    condition: selection and not filter_legitimate_parents and not filter_parent_system_paths
+falsepositives:
+    - IT administration tools or remote management agents that programmatically launch mstsc.exe from non-standard paths
+    - Custom scripts run from user profile directories that legitimately invoke RDP connections
+    - Software deployment tools spawning mstsc.exe for remote configuration
+level: high
+fields:
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - user.name
+    - host.name
+    - destination.ip

@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1190",
+  "date": "2026-03-08T22:30:57Z",
+  "sigma_rule": "detections\\execution\\t1190.yml",
+  "metrics": {
+    "tp": 3,
+    "fp": 2,
+    "fn": 0,
+    "tn": 0,
+    "precision": 0.6,
+    "recall": 1.0,
+    "f1_score": 0.75,
+    "fp_rate": 1.0,
+    "tp_rate": 1.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "human_review"
+}

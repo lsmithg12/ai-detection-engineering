@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1105",
+  "date": "2026-03-08T22:30:13Z",
+  "sigma_rule": "detections\\execution\\t1105.yml",
+  "metrics": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 2,
+    "tn": 2,
+    "precision": 1.0,
+    "recall": 0.333,
+    "f1_score": 0.5,
+    "fp_rate": 0.0,
+    "tp_rate": 0.333,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "needs_rework"
+}

@@ -1,0 +1,129 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "command_line": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe -s -k HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "parent": {
+        "pid": 1284,
+        "name": "w3wp.exe",
+        "executable": "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+      }
+    },
+    "user": {
+      "name": "IUSR",
+      "domain": "IIS APPPOOL"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1190",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "IIS worker process (w3wp.exe) spawns suspicious binary dropped to ProgramData \u2014 indicates successful web application exploitation leading to implant execution"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:45.817Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe"
+    },
+    "destination": {
+      "ip": "185.220.101.47",
+      "port": 443,
+      "domain": "update-cdn.windowsazure-cdn.net"
+    },
+    "source": {
+      "ip": "10.10.20.15",
+      "port": 49832
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "tls"
+    },
+    "user": {
+      "name": "IUSR",
+      "domain": "IIS APPPOOL"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1190",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Implant initiates outbound C2 beacon over TLS 443 to typosquatted Azure-lookalike domain shortly after process creation \u2014 classic post-exploitation callback"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:15:02.093Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "name": "svc_updater.exe",
+      "path": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "extension": "exe"
+    },
+    "process": {
+      "pid": 1284,
+      "name": "w3wp.exe",
+      "executable": "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+    },
+    "user": {
+      "name": "IUSR",
+      "domain": "IIS APPPOOL"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1190",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Web application process writes an executable to ProgramData \u2014 web shell or deserialization RCE used to drop implant to disk prior to execution"
+    }
+  }
+]

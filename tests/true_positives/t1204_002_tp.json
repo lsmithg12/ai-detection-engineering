@@ -1,0 +1,137 @@
+[
+  {
+    "@timestamp": "2026-03-08T09:14:33.412Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7284,
+      "name": "runtime_host.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+      "command_line": "\"C:\\ProgramData\\WindowsUpdate\\runtime_host.exe\" -s",
+      "hash": {
+        "md5": "a3f1c9e02b847d6e5f2109c3d4a87b21",
+        "sha256": "4f3a1b9c2d8e7f0a5c6b3e2d1f9a8b7c6d5e4f3a2b1c9d8e7f6a5b4c3d2e1f0"
+      },
+      "parent": {
+        "pid": 3812,
+        "name": "OUTLOOK.EXE",
+        "executable": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+        "command_line": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE\""
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1204.002",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "User double-clicked malicious attachment; Outlook spawned runtime_host.exe from ProgramData staging directory"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:35.881Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "name": "runtime_host.exe",
+      "path": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+      "extension": "exe",
+      "size": 3276800
+    },
+    "process": {
+      "pid": 7284,
+      "name": "runtime_host.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1204.002",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Malicious payload drops secondary file into ProgramData subdirectory mimicking a Windows update component"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T09:14:38.204Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 7284,
+      "name": "runtime_host.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe"
+    },
+    "destination": {
+      "ip": "185.220.101.47",
+      "port": 443,
+      "geo": {
+        "country_iso_code": "NL"
+      }
+    },
+    "source": {
+      "ip": "10.10.5.21",
+      "port": 49823
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "tls"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1204.002",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Malicious payload establishes C2 callback over TLS to known Tor exit node shortly after execution"
+    }
+  }
+]

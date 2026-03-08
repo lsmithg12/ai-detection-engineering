@@ -1,0 +1,88 @@
+[
+  {
+    "@timestamp": "2026-03-08T07:09:11.204Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3360,
+      "name": "taskschd.exe",
+      "executable": "C:\\Windows\\System32\\taskschd.exe",
+      "command_line": "C:\\Windows\\System32\\taskschd.exe /s SRV-DC-01",
+      "parent": {
+        "pid": 716,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1133",
+      "description": "Legitimate Windows Task Scheduler binary launched by svchost from System32 \u2014 superficially similar name to malicious task_scheduler.exe but signed, system-path resident, and SYSTEM-owned"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T07:11:48.557Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 3812,
+      "name": "mstsc.exe",
+      "executable": "C:\\Windows\\System32\\mstsc.exe"
+    },
+    "destination": {
+      "ip": "10.10.1.20",
+      "port": 3389,
+      "geo": {
+        "country_iso_code": "US"
+      }
+    },
+    "source": {
+      "ip": "10.10.1.5",
+      "port": 49201
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "rdp"
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1133",
+      "description": "Legitimate RDP session initiated by clee to internal host via mstsc.exe \u2014 same user as attacker, external remote service pattern, but to RFC1918 address via signed binary"
+    }
+  }
+]

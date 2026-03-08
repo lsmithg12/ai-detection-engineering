@@ -1,0 +1,87 @@
+[
+  {
+    "@timestamp": "2026-03-08T14:05:33.214Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 2288,
+      "name": "MicrosoftEdgeUpdate.exe",
+      "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+      "command_line": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /ua /installsource scheduler"
+    },
+    "destination": {
+      "ip": "13.107.42.14",
+      "port": 443,
+      "domain": "msedge.api.cdp.microsoft.com"
+    },
+    "source": {
+      "ip": "10.10.5.22",
+      "port": 50291
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp",
+      "protocol": "tls"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1105",
+      "description": "Legitimate Microsoft Edge auto-updater making outbound TLS connection to Microsoft CDN \u2014 similar network pattern to tool transfer but from a trusted signed binary to a known Microsoft IP"
+    }
+  },
+  {
+    "@timestamp": "2026-03-08T14:11:58.772Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "process": {
+      "pid": 2288,
+      "name": "MicrosoftEdgeUpdate.exe",
+      "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+      "command_line": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /ua /installsource scheduler"
+    },
+    "file": {
+      "name": "MicrosoftEdge_X64_122.0.2365.92_122.0.2365.80.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\Download\\{56EB18F8-B008-4CBD-B6D2-8C97FE7E9062}\\122.0.2365.92\\MicrosoftEdge_X64_122.0.2365.92_122.0.2365.80.exe",
+      "extension": "exe"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1105",
+      "description": "Legitimate software updater writing a downloaded executable to disk \u2014 superficially identical artifact pattern (network write of .exe) but process is signed, path is vendor-specific, and parent is a scheduled task spawned by SYSTEM"
+    }
+  }
+]

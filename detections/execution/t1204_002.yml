@@ -1,0 +1,70 @@
+title: Office Application Spawning Process from Suspicious Directory
+id: 8c3a1f2e-4d5b-6e7f-9a0b-1c2d3e4f5a6b
+status: experimental
+description: |
+  Detects an Office application (Outlook, Word, Excel, PowerPoint) spawning a child process
+  from a suspicious writeable directory such as ProgramData, AppData, Temp, Downloads, or Public.
+  This is a strong indicator of malicious file execution (T1204.002) where a user opens a weaponized
+  document or email attachment that drops and executes a payload. Fawkes C2 payloads commonly stage
+  in ProgramData subdirectories disguised as Windows services.
+references:
+  - https://attack.mitre.org/techniques/T1204/002/
+  - https://github.com/galoryber/fawkes
+author: Blue Team Detection Engineering Agent
+date: 2026-03-08
+modified: 2026-03-08
+tags:
+  - attack.execution
+  - attack.t1204.002
+  - attack.initial_access
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_parent:
+    ParentImage|endswith:
+      - '\OUTLOOK.EXE'
+      - '\WINWORD.EXE'
+      - '\EXCEL.EXE'
+      - '\POWERPNT.EXE'
+      - '\MSPUB.EXE'
+      - '\MSACCESS.EXE'
+      - '\ONENOTE.EXE'
+      - '\ONENOTEM.EXE'
+  selection_child_path:
+    Image|contains:
+      - '\ProgramData\'
+      - '\AppData\Local\Temp\'
+      - '\AppData\Roaming\'
+      - '\Users\Public\'
+      - '\Downloads\'
+      - '\Temp\'
+  filter_system_account:
+    User|contains:
+      - 'SYSTEM'
+      - 'LOCAL SERVICE'
+      - 'NETWORK SERVICE'
+  filter_legitimate_children:
+    Image|endswith:
+      - '\MicrosoftEdgeUpdate.exe'
+      - '\Teams.exe'
+      - '\OneDrive.exe'
+      - '\msoia.exe'
+      - '\ai.exe'
+      - '\splwow64.exe'
+  filter_microsoft_signed_paths:
+    Image|contains:
+      - '\ProgramData\Microsoft\'
+  condition: selection_parent and selection_child_path and not filter_system_account and not filter_legitimate_children and not filter_microsoft_signed_paths
+fields:
+  - Image
+  - ParentImage
+  - CommandLine
+  - User
+  - host.name
+  - process.hash.sha256
+falsepositives:
+  - Legitimate Office add-ins or plugins that spawn helper processes from AppData
+  - IT-managed software deployment triggered via Outlook links
+  - Custom Office macros used in business workflows that launch approved tools
+level: high
