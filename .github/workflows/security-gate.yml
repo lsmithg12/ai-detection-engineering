@@ -9,6 +9,10 @@ concurrency:
   group: security-gate-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   security-review:
     runs-on: ubuntu-latest
@@ -18,7 +22,8 @@ jobs:
       startsWith(github.head_ref, 'agent/') ||
       startsWith(github.head_ref, 'orchestration/') ||
       startsWith(github.head_ref, 'detection/') ||
-      startsWith(github.head_ref, 'tuning/')
+      startsWith(github.head_ref, 'tuning/') ||
+      startsWith(github.head_ref, 'infra/')
 
     steps:
       - name: Checkout PR branch
