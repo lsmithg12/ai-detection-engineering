@@ -1,0 +1,35 @@
+title: 'Cat''s Got Your Files: Lynx Ransomware'
+source: https://thedfirreport.com/2025/12/17/cats-got-your-files-lynx-ransomware/
+date_published: '2025-12-17'
+date_ingested: '2026-03-08'
+threat_actors:
+- Lynx Ransomware
+platforms:
+- Windows
+techniques:
+- id: T1021.001
+  name: 'Remote Services: Remote Desktop Protocol'
+  description: RDP used as primary lateral movement and initial access vector based on DFIR report tagging and Lynx group
+    TTPs
+  priority: high
+- id: T1486
+  name: Data Encrypted for Impact
+  description: Lynx ransomware deployed to encrypt files across compromised environment
+  priority: critical
+- id: T1490
+  name: Inhibit System Recovery
+  description: Lynx ransomware operators commonly delete VSS shadow copies and disable recovery mechanisms prior to encryption
+  priority: high
+- id: T1083
+  name: File and Directory Discovery
+  description: File system enumeration performed prior to ransomware deployment to identify high-value data directories
+  priority: medium
+- id: T1082
+  name: System Information Discovery
+  description: Host and environment enumeration performed during intrusion to identify targets for encryption
+  priority: medium
+iocs: []
+raw_summary: 'Lynx ransomware group conducted an intrusion leveraging RDP for lateral movement culminating in ransomware deployment
+  across the environment. Lynx is an active ransomware-as-a-service operation targeting enterprise environments with file
+  encryption and double-extortion tactics. Note: full technique detail derived from DFIR index metadata; fetch full report
+  at source URL for complete ATT&CK mapping.'

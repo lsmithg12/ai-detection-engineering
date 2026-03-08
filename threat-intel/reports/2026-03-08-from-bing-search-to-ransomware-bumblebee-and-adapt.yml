@@ -1,0 +1,39 @@
+title: 'From Bing Search to Ransomware: Bumblebee and AdaptixC2 Deliver Akira'
+source: https://thedfirreport.com/2025/11/04/from-bing-search-to-ransomware-bumblebee-and-adaptixc2-deliver-akira/
+date_published: '2025-11-04'
+date_ingested: '2026-03-08'
+threat_actors:
+- Akira Ransomware
+- Bumblebee Loader operators
+platforms:
+- Windows
+techniques:
+- id: T1204.002
+  name: 'User Execution: Malicious File'
+  description: Victim lured via Bing search result to download and execute Bumblebee loader disguised as legitimate software
+  priority: high
+- id: T1105
+  name: Ingress Tool Transfer
+  description: Bumblebee loader used to pull down AdaptixC2 agent and additional tooling from attacker infrastructure
+  priority: high
+- id: T1059.003
+  name: 'Command and Scripting Interpreter: Windows Command Shell'
+  description: cmd.exe used for post-exploitation command execution via Bumblebee/AdaptixC2 agent
+  priority: medium
+- id: T1486
+  name: Data Encrypted for Impact
+  description: Akira ransomware deployed as final-stage payload encrypting victim files with double-extortion pressure
+  priority: critical
+- id: T1490
+  name: Inhibit System Recovery
+  description: Akira operators routinely delete volume shadow copies prior to encryption to prevent recovery
+  priority: high
+- id: T1133
+  name: External Remote Services
+  description: AdaptixC2 framework used as command-and-control channel for post-exploitation activity throughout intrusion
+  priority: high
+iocs: []
+raw_summary: 'A threat actor distributed Bumblebee loader via malicious Bing search results (SEO poisoning or malvertising),
+  leading victims to download trojanized software. Bumblebee staged AdaptixC2 as the post-exploitation framework, enabling
+  lateral movement and reconnaissance before final deployment of Akira ransomware. Note: full technique detail derived from
+  DFIR index metadata; fetch full report at source URL for complete ATT&CK mapping.'
