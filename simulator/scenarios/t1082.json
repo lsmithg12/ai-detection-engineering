@@ -1,0 +1,227 @@
+{
+  "technique_id": "T1082",
+  "technique_name": "System Information Discovery",
+  "description": "Simulates System Information Discovery attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T09:14:22.341Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "runtime_host.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe",
+          "command_line": "runtime_host.exe",
+          "parent": {
+            "pid": 4412,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1082",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent runtime_host.exe spawned from explorer — initial execution prior to discovery burst"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:23.887Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 9104,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c systeminfo & whoami & hostname & net config workstation & ipconfig /all & wmic os get Caption,Version,BuildNumber,OSArchitecture /format:list",
+          "parent": {
+            "pid": 7832,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1082",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "runtime_host.exe spawns cmd.exe chaining systeminfo, whoami, hostname, net config, ipconfig, and wmic — classic Fawkes discovery burst mapped to T1082/T1016/T1033"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:25.112Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 9388,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+          "command_line": "wmic os get Caption,Version,BuildNumber,OSArchitecture,TotalVisibleMemorySize,NumberOfProcessors /format:list",
+          "parent": {
+            "pid": 9104,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1082",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "wmic.exe querying OS build, architecture, memory, and CPU count — consistent with Fawkes av-detect / env commands gathering host fingerprint for C2 operator"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T08:45:10.554Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6120,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c systeminfo > C:\\Users\\jsmith\\Desktop\\sysinfo_report.txt",
+          "parent": {
+            "pid": 5800,
+            "name": "devenv.exe",
+            "executable": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\devenv.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1082",
+          "description": "Developer running systeminfo to capture environment details for a bug report — spawned from Visual Studio, output redirected to Desktop file, single targeted command rather than chained discovery burst"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T08:52:33.779Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3340,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+          "command_line": "wmic os get Version /format:list",
+          "parent": {
+            "pid": 2988,
+            "name": "MsMpEng.exe",
+            "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.24010.12\\MsMpEng.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1082",
+          "description": "Windows Defender querying OS version via wmic for compatibility check — SYSTEM context, trusted signed parent, single narrow query with no chained discovery activity"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable",
+      "process.executable",
+      "user.name"
+    ],
+    "notes": "Detection signal: flag rapid sequential spawning of systeminfo, wmic, ipconfig, hostname, whoami, and net config within a short time window (< 5s) from a common non-standard parent process. The parent executable path in AppData\\Local\\Temp is a strong high-confidence indicator — legitimate admin tools are rarely parented from Temp. Correlate process.parent.executable matching *\\AppData\\Local\\Temp\\* with child process.name in [cmd.exe, wmic.exe, systeminfo.exe, ipconfig.exe, net.exe] using a sequence or aggregation rule. Benign cases are distinguished by: trusted/signed parents (devenv.exe, MsMpEng.exe), SYSTEM context, single-command (non-chained) invocations, and output redirection to user-visible locations."
+  },
+  "log_sources_used": [
+    "sysmon_eid_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "technique_id": "T1486",
+  "technique_name": "Data Encrypted for Impact",
+  "description": "Simulates Data Encrypted for Impact attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T14:22:11.304Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "update_helper.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe --silent --key 3f9a1b2c4d5e6f78",
+          "hash": {
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "parent": {
+            "pid": 4412,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "user": {
+          "name": "bwilson",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1486",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Ransomware dropper update_helper.exe launched by PowerShell with embedded encryption key argument"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:19.871Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "path": "C:\\Users\\bwilson\\Documents\\Q1_Budget_Final.xlsx.locked",
+          "name": "Q1_Budget_Final.xlsx.locked",
+          "extension": "locked",
+          "directory": "C:\\Users\\bwilson\\Documents"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "update_helper.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+        },
+        "user": {
+          "name": "bwilson",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1486",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Ransomware writing encrypted output file with .locked extension, replacing original document"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:21.053Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "path": "C:\\Users\\bwilson\\Documents\\HOW_TO_RESTORE_FILES.txt",
+          "name": "HOW_TO_RESTORE_FILES.txt",
+          "extension": "txt",
+          "directory": "C:\\Users\\bwilson\\Documents"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "update_helper.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\update_helper.exe"
+        },
+        "user": {
+          "name": "bwilson",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1486",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Ransomware dropping ransom note HOW_TO_RESTORE_FILES.txt into victim document directory"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T09:15:44.210Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "path": "C:\\Users\\bwilson\\Documents\\Q1_Budget_Final.xlsx.bak",
+          "name": "Q1_Budget_Final.xlsx.bak",
+          "extension": "bak",
+          "directory": "C:\\Users\\bwilson\\Documents"
+        },
+        "process": {
+          "pid": 3360,
+          "name": "OneDrive.exe",
+          "executable": "C:\\Users\\bwilson\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe"
+        },
+        "user": {
+          "name": "bwilson",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1486",
+          "description": "OneDrive creating a .bak temporary file during sync conflict resolution — similar file extension pattern to ransomware but from a trusted, signed parent process in a known software path"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T11:03:58.774Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6104,
+          "name": "MpCmdRun.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MpCmdRun.exe",
+          "command_line": "\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MpCmdRun.exe\" -Scan -ScanType 1 -File \"C:\\Users\\bwilson\\Documents\"",
+          "hash": {
+            "sha256": "a6785db47ae8a0c5a4e8ad70c49a0adbc5e2c2f6cc5e2d0b1e84a7f3b9c1d22f"
+          },
+          "parent": {
+            "pid": 1120,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1486",
+          "description": "Windows Defender MpCmdRun.exe scanning the Documents folder — runs from C:\\ProgramData like the malicious process but is a signed Microsoft binary spawned by services.exe"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.command_line",
+      "file.extension",
+      "file.name",
+      "process.parent.name"
+    ],
+    "notes": "Detection focus: (1) file.extension of .locked / .enc / .crypt / .crypted written by a non-system, non-backup process; (2) ransom note filename patterns (HOW_TO*, DECRYPT*, RESTORE_FILES*) created by the same process writing encrypted files; (3) process spawned from C:\\ProgramData\\ with embedded hex key arguments and powershell.exe as parent — ProgramData is not a normal parent directory for update binaries. Correlate process.pid across EID-1 and EID-11 events to link the process create to bulk file creation activity. Benign differentiators: trusted signed binaries (OneDrive, Defender) in versioned platform paths spawned by services.exe or known sync agents."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

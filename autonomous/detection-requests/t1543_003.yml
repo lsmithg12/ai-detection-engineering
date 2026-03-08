@@ -1,11 +1,11 @@
 technique_id: T1543.003
 title: 'Create or Modify System Process: Windows Service'
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: critical
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
-scenario_file: ''
+scenario_file: simulator\scenarios\t1543_003.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
@@ -24,5 +24,13 @@ changelog:
   agent: intel
   action: update
   details: 'Updated fields: fawkes_commands'
+- date: '2026-03-08T14:26:04Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-08T14:26:04Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
 fawkes_commands:
 - service -action create

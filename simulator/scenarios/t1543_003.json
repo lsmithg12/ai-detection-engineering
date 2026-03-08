@@ -1,0 +1,236 @@
+{
+  "technique_id": "T1543.003",
+  "technique_name": "Create or Modify System Process: Windows Service",
+  "description": "Simulates Create or Modify System Process: Windows Service attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T09:14:33.412Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "sc.exe",
+          "executable": "C:\\Windows\\System32\\sc.exe",
+          "command_line": "sc.exe create SyncAgentSvc binPath= \"C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe\" start= auto DisplayName= \"Windows Sync Agent Service\"",
+          "parent": {
+            "pid": 3340,
+            "name": "sync_agent.exe",
+            "executable": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe"
+          }
+        },
+        "user": {
+          "name": "agarcia",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1543.003",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Attacker uses sc.exe to register a new Windows service pointing to a user-space malicious binary under AppData\\Roaming"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:35.887Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SyncAgentSvc\\ImagePath",
+          "value": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+          "hive": "HKLM",
+          "key": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SyncAgentSvc",
+          "data": {
+            "type": "SZ",
+            "strings": [
+              "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe"
+            ]
+          }
+        },
+        "process": {
+          "pid": 664,
+          "name": "services.exe",
+          "executable": "C:\\Windows\\System32\\services.exe"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1543.003",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "SCM writes the malicious ImagePath into the registry under HKLM\\Services — binary path resolves to user-writable AppData location, not a system directory"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:38.201Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5104,
+          "name": "sync_agent.exe",
+          "executable": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+          "command_line": "C:\\Users\\agarcia\\AppData\\Roaming\\Microsoft\\sync_agent.exe",
+          "parent": {
+            "pid": 664,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1543.003",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "services.exe launches the malicious binary as a service — high-privilege SYSTEM execution from a user-writable AppData path is a strong indicator of persistence via service abuse"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T08:55:12.304Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 2988,
+          "name": "sc.exe",
+          "executable": "C:\\Windows\\System32\\sc.exe",
+          "command_line": "sc.exe create CrowdStrikeFalconSensor binPath= \"C:\\Program Files\\CrowdStrike\\CSFalconService.exe\" start= auto DisplayName= \"CrowdStrike Falcon Sensor Service\"",
+          "parent": {
+            "pid": 7340,
+            "name": "msiexec.exe",
+            "executable": "C:\\Windows\\System32\\msiexec.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1543.003",
+          "description": "Legitimate software installer (msiexec) registers a service via sc.exe — binary path is under Program Files (not user-writable), parent is the Windows installer, and caller is SYSTEM not a user account"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T08:57:44.118Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 1948,
+          "name": "CrowdStrikeFalconSensor.exe",
+          "executable": "C:\\Program Files\\CrowdStrike\\CSFalconService.exe",
+          "command_line": "C:\\Program Files\\CrowdStrike\\CSFalconService.exe",
+          "parent": {
+            "pid": 664,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1543.003",
+          "description": "Legitimate security agent started by services.exe — same services.exe parent and SYSTEM context as attack, but binary path is under Program Files and matches a known signed vendor executable"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.executable",
+      "process.parent.name",
+      "registry.path",
+      "registry.value",
+      "user.name",
+      "user.domain"
+    ],
+    "notes": "High-fidelity indicators for T1543.003: (1) sc.exe spawned by a non-installer, non-SYSTEM process; (2) service ImagePath resolving to a user-writable path (AppData, Temp, ProgramData) rather than Program Files or System32; (3) services.exe launching a child process whose executable path is outside standard system directories. Correlate EID 1 (sc.exe create) + EID 13 (registry ImagePath write) + EID 1 (service binary launch from services.exe) within a short time window on the same host. False positive reduction: exclude binPath values matching C:\\Program Files\\* or C:\\Windows\\* when parent is msiexec.exe or a signed software updater."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_13"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
