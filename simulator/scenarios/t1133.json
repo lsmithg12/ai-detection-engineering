@@ -1,0 +1,251 @@
+{
+  "technique_id": "T1133",
+  "technique_name": "External Remote Services",
+  "description": "Simulates External Remote Services attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T07:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\task_scheduler.exe",
+          "command_line": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\task_scheduler.exe -connect 185.220.101.47:443 -user clee -domain CORP",
+          "parent": {
+            "pid": 2104,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1133",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Masqueraded binary launched from user AppData path, impersonating Windows Task Scheduler, initiating external remote service connection"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T07:14:34.118Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+        },
+        "destination": {
+          "ip": "185.220.101.47",
+          "port": 443,
+          "geo": {
+            "country_iso_code": "NL"
+          }
+        },
+        "source": {
+          "ip": "10.10.1.5",
+          "port": 51834
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1133",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Masqueraded task_scheduler.exe establishes outbound TLS connection to external C2 IP on port 443, consistent with Fawkes domain-fronted C2 channel via External Remote Services"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T07:14:36.892Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "registry": {
+          "path": "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\TaskSchedulerHelper",
+          "value": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\task_scheduler.exe -silent",
+          "hive": "HKCU",
+          "key": "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1133",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Malicious binary writes HKCU Run key to persist access across logons, ensuring re-establishment of external remote service channel after reboot"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T07:09:11.204Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3360,
+          "name": "taskschd.exe",
+          "executable": "C:\\Windows\\System32\\taskschd.exe",
+          "command_line": "C:\\Windows\\System32\\taskschd.exe /s SRV-DC-01",
+          "parent": {
+            "pid": 716,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1133",
+          "description": "Legitimate Windows Task Scheduler binary launched by svchost from System32 — superficially similar name to malicious task_scheduler.exe but signed, system-path resident, and SYSTEM-owned"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T07:11:48.557Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 3812,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe"
+        },
+        "destination": {
+          "ip": "10.10.1.20",
+          "port": 3389,
+          "geo": {
+            "country_iso_code": "US"
+          }
+        },
+        "source": {
+          "ip": "10.10.1.5",
+          "port": 49201
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "rdp"
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1133",
+          "description": "Legitimate RDP session initiated by clee to internal host via mstsc.exe — same user as attacker, external remote service pattern, but to RFC1918 address via signed binary"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.name",
+      "process.command_line",
+      "destination.ip",
+      "destination.port",
+      "registry.path",
+      "registry.value",
+      "user.name"
+    ],
+    "notes": "Detection focus: (1) process.executable matching AppData\\Roaming paths with scheduler-themed names is a strong signal — legitimate taskschd.exe lives in System32; (2) outbound TLS from non-browser, non-system processes on port 443 to external IPs on a DC is highly anomalous; (3) HKCU Run key written by the same process that made the outbound connection completes the T1133 + T1547.001 chain. Correlate all three events by process.pid 4872 for high-confidence detection. False positive caution: mstsc.exe RDP and svchost-parented taskschd.exe are common — exclude System32-resident, SYSTEM-owned scheduler binaries."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_3",
+    "sysmon_13"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

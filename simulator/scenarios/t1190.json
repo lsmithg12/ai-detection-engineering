@@ -1,0 +1,245 @@
+{
+  "technique_id": "T1190",
+  "technique_name": "Exploit Public-Facing Application",
+  "description": "Simulates Exploit Public-Facing Application attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "svc_updater.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe -s -k HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+          "parent": {
+            "pid": 1284,
+            "name": "w3wp.exe",
+            "executable": "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+          }
+        },
+        "user": {
+          "name": "IUSR",
+          "domain": "IIS APPPOOL"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1190",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "IIS worker process (w3wp.exe) spawns suspicious binary dropped to ProgramData — indicates successful web application exploitation leading to implant execution"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:45.817Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "svc_updater.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe"
+        },
+        "destination": {
+          "ip": "185.220.101.47",
+          "port": 443,
+          "domain": "update-cdn.windowsazure-cdn.net"
+        },
+        "source": {
+          "ip": "10.10.20.15",
+          "port": 49832
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "IUSR",
+          "domain": "IIS APPPOOL"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1190",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Implant initiates outbound C2 beacon over TLS 443 to typosquatted Azure-lookalike domain shortly after process creation — classic post-exploitation callback"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:15:02.093Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "svc_updater.exe",
+          "path": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+          "extension": "exe"
+        },
+        "process": {
+          "pid": 1284,
+          "name": "w3wp.exe",
+          "executable": "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+        },
+        "user": {
+          "name": "IUSR",
+          "domain": "IIS APPPOOL"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1190",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Web application process writes an executable to ProgramData — web shell or deserialization RCE used to drop implant to disk prior to execution"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T08:45:11.204Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3620,
+          "name": "WaAppAgent.exe",
+          "executable": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe",
+          "command_line": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe -update -silent",
+          "parent": {
+            "pid": 832,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1190",
+          "description": "Legitimate Windows Azure Guest Agent update — similar naming convention and update flags to the malicious implant, but spawns from services.exe with SYSTEM context and resides in a signed Azure path"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T08:52:39.557Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 3620,
+          "name": "WaAppAgent.exe",
+          "executable": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1075\\WaAppAgent.exe"
+        },
+        "destination": {
+          "ip": "168.63.129.16",
+          "port": 443,
+          "domain": "md-hdd-5c44fv4mz4b5.blob.core.windows.net"
+        },
+        "source": {
+          "ip": "10.10.20.15",
+          "port": 49801
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1190",
+          "description": "Legitimate Azure Guest Agent contacting Microsoft infrastructure on 168.63.129.16 (Azure IMDS/RDFE reserved range) — similar outbound TLS 443 pattern to attack event but destination is a known-good Microsoft IP"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.parent.name",
+      "process.executable",
+      "file.path",
+      "destination.ip",
+      "destination.domain",
+      "user.name",
+      "user.domain"
+    ],
+    "notes": "High-fidelity signal: w3wp.exe (IIS worker) spawning any child process is abnormal and high-confidence exploitation. Chain: w3wp.exe writes executable to ProgramData -> launches it -> it beacons outbound. Differentiate from benign by: (1) parent process context (services.exe vs w3wp.exe), (2) user context (SYSTEM vs IUSR/IIS APPPOOL), (3) file drop path (signed vendor path vs ProgramData\\WindowsUpdate), (4) destination IP reputation (Microsoft RDFE 168.63.129.16 vs unknown Tor-exit 185.220.101.x). Detection rule should alert on: w3wp.exe, java.exe, tomcat*.exe, or python.exe as parent of any non-IIS binary."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_3",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

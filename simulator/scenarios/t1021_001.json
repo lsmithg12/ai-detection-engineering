@@ -1,0 +1,243 @@
+{
+  "technique_id": "T1021.001",
+  "technique_name": "Remote Services: Remote Desktop Protocol",
+  "description": "Simulates Remote Services: Remote Desktop Protocol attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T14:23:11.482Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe",
+          "command_line": "mstsc.exe /v:10.10.20.45:3389 /f",
+          "parent": {
+            "pid": 6104,
+            "name": "sync_agent.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\sync_agent.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1021.001",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Malicious sync_agent.exe programmatically spawns mstsc.exe to initiate RDP lateral movement to internal host 10.10.20.45"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:23:13.917Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe"
+        },
+        "source": {
+          "ip": "10.10.10.88",
+          "port": 49823
+        },
+        "destination": {
+          "ip": "10.10.20.45",
+          "port": 3389
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "rdp"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1021.001",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "mstsc.exe (spawned by sync_agent.exe) establishes outbound RDP connection to lateral movement target 10.10.20.45"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:23:15.204Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe"
+        },
+        "file": {
+          "name": "Default.rdp",
+          "path": "C:\\Users\\jsmith\\Documents\\Default.rdp",
+          "extension": "rdp"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1021.001",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "mstsc.exe writes Default.rdp credential/connection profile to disk — artifacts of programmatic RDP session establishment"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T09:05:47.331Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4512,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe",
+          "command_line": "mstsc.exe /v:10.10.20.11:3389",
+          "parent": {
+            "pid": 3108,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1021.001",
+          "description": "Legitimate user-initiated RDP session from explorer.exe — finance analyst connecting to a shared report server via RDP as part of normal workflow"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T10:44:02.119Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 4512,
+          "name": "mstsc.exe",
+          "executable": "C:\\Windows\\System32\\mstsc.exe"
+        },
+        "source": {
+          "ip": "10.10.10.88",
+          "port": 51204
+        },
+        "destination": {
+          "ip": "10.10.20.11",
+          "port": 3389
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "rdp"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1021.001",
+          "description": "Legitimate outbound RDP connection from user-spawned mstsc.exe — same port and protocol as attack but parent process is explorer.exe, not a temp-path executable"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.parent.executable",
+      "process.parent.name",
+      "process.name",
+      "process.command_line",
+      "destination.port",
+      "network.protocol",
+      "file.extension"
+    ],
+    "notes": "High-fidelity detection signal: mstsc.exe spawned by a process residing in a user-writable temp path (AppData\\Local\\Temp) is highly anomalous. Legitimate RDP is nearly always user-initiated from explorer.exe, a desktop shortcut (RunDLL), or an IT management tool installed in Program Files. Detections should alert on mstsc.exe where process.parent.executable matches Temp/AppData/Roaming paths. Secondary signal: .rdp file creation correlated with a non-interactive parent is a strong lateral movement indicator. Correlate the EID 1 (process create) → EID 3 (network conn) → EID 11 (file create) chain within a short time window for high-confidence alerting."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_3",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

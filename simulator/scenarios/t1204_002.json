@@ -1,0 +1,255 @@
+{
+  "technique_id": "T1204.002",
+  "technique_name": "User Execution: Malicious File",
+  "description": "Simulates User Execution: Malicious File attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T09:14:33.412Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7284,
+          "name": "runtime_host.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+          "command_line": "\"C:\\ProgramData\\WindowsUpdate\\runtime_host.exe\" -s",
+          "hash": {
+            "md5": "a3f1c9e02b847d6e5f2109c3d4a87b21",
+            "sha256": "4f3a1b9c2d8e7f0a5c6b3e2d1f9a8b7c6d5e4f3a2b1c9d8e7f6a5b4c3d2e1f0"
+          },
+          "parent": {
+            "pid": 3812,
+            "name": "OUTLOOK.EXE",
+            "executable": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+            "command_line": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE\""
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1204.002",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "User double-clicked malicious attachment; Outlook spawned runtime_host.exe from ProgramData staging directory"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:35.881Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "runtime_host.exe",
+          "path": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe",
+          "extension": "exe",
+          "size": 3276800
+        },
+        "process": {
+          "pid": 7284,
+          "name": "runtime_host.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1204.002",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Malicious payload drops secondary file into ProgramData subdirectory mimicking a Windows update component"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T09:14:38.204Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 7284,
+          "name": "runtime_host.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\runtime_host.exe"
+        },
+        "destination": {
+          "ip": "185.220.101.47",
+          "port": 443,
+          "geo": {
+            "country_iso_code": "NL"
+          }
+        },
+        "source": {
+          "ip": "10.10.5.21",
+          "port": 49823
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp",
+          "protocol": "tls"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1204.002",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Malicious payload establishes C2 callback over TLS to known Tor exit node shortly after execution"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T09:02:11.774Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6104,
+          "name": "WUAHandler.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows\\WUAHandler\\WUAHandler.exe",
+          "command_line": "\"C:\\ProgramData\\Microsoft\\Windows\\WUAHandler\\WUAHandler.exe\" /scan",
+          "hash": {
+            "md5": "7d2f8a1b3c4e9f0d6a5b8c2e1f4d3a7b",
+            "sha256": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
+          },
+          "parent": {
+            "pid": 788,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe",
+            "command_line": "C:\\Windows\\system32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1204.002",
+          "description": "Legitimate Windows Update Agent handler running from ProgramData under SYSTEM via services.exe — similar directory path but trusted parent and account"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T08:47:55.003Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 9340,
+          "name": "OneDriveSetup.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\OneDrive\\setup\\19.232.1124.0010\\OneDriveSetup.exe",
+          "command_line": "\"C:\\ProgramData\\Microsoft\\OneDrive\\setup\\19.232.1124.0010\\OneDriveSetup.exe\" /update /silent",
+          "hash": {
+            "md5": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+            "sha256": "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e"
+          },
+          "parent": {
+            "pid": 4912,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe",
+            "command_line": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p -s Schedule"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1204.002",
+          "description": "Legitimate OneDrive silent update running from ProgramData under jsmith context via scheduled task svchost — same user and base directory class but legitimate signed binary with versioned path"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.parent.name",
+      "process.parent.executable",
+      "user.name",
+      "file.path",
+      "destination.ip",
+      "destination.port"
+    ],
+    "notes": "High-fidelity detection signals: (1) executable running from C:\\ProgramData\\ in a non-vendor-namespaced subdirectory (WindowsUpdate vs Microsoft\\...) spawned by a user-context mail client (OUTLOOK.EXE) — parent-child pair is anomalous; (2) binary has no Authenticode signature (not modeled in ECS but should be checked via process.code_signature.trusted); (3) near-immediate outbound TLS to a non-Microsoft IP within seconds of first execution; (4) benign equivalents share ProgramData path prefix and same user but exhibit trusted parent chains (services.exe, svchost Schedule) and versioned/vendor-namespaced install paths. Tune by adding code_signature.trusted:false and excluding known-good parent processes (services.exe, msiexec.exe, svchost.exe -k netsvcs)."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_3",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
