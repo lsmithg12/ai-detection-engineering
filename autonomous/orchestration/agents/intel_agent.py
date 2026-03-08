@@ -292,7 +292,11 @@ def search_web_for_intel(
         "You are a threat intelligence analyst. You have curl via the Bash tool. "
         "Be FAST: fetch ONE index page, pick the most recent report, fetch it, "
         "extract techniques, and return JSON immediately. Do not fetch more than "
-        "2 pages total. Return results as a JSON array — no markdown, no explanation."
+        "2 pages total. Return results as a JSON array — no markdown, no explanation.\n\n"
+        "IMPORTANT: When using curl, ALWAYS strip HTML tags and script content to "
+        "avoid saving malicious code samples to disk. Use this pattern:\n"
+        "  curl -sL <url> | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300\n"
+        "This removes all HTML tags and script blocks, keeping only readable text."
     )
 
     # Build a combined prompt with all queries
@@ -300,14 +304,18 @@ def search_web_for_intel(
 
     prompt = f"""You have curl access. Find {max_reports} recent threat reports with MITRE ATT&CK techniques.
 
+IMPORTANT SECURITY NOTE: Always strip HTML/script tags from curl output to avoid
+triggering antivirus on malicious code samples in reports. Use this pattern:
+  curl -sL "<url>" | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300
+
 INSTRUCTIONS — be fast, limit to 2-3 curl calls total:
 1. Fetch ONE of these index pages to find recent report URLs:
-   curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | head -200
-   curl -sL "https://elastic.co/security-labs" | head -200
-   curl -sL "https://thedfirreport.com/" | head -200
+   curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | sed 's/<[^>]*>//g' | head -200
+   curl -sL "https://elastic.co/security-labs" | sed 's/<[^>]*>//g' | head -200
+   curl -sL "https://thedfirreport.com/" | sed 's/<[^>]*>//g' | head -200
 2. Pick the 1-2 most recent report links from the index page
-3. Fetch each report: curl -sL "<url>" | head -300
-4. Extract MITRE ATT&CK technique IDs from the report content
+3. Fetch each report with HTML stripped (see pattern above)
+4. Extract MITRE ATT&CK technique IDs from the text content
 5. Return JSON immediately — do NOT fetch additional pages
 
 Topics of interest:
