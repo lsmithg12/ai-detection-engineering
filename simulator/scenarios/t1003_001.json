@@ -1,0 +1,242 @@
+{
+  "technique_id": "T1003.001",
+  "technique_name": "OS Credential Dumping: LSASS Memory",
+  "description": "Simulates OS Credential Dumping: LSASS Memory attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-08T14:22:11.443Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe",
+          "command_line": "task_scheduler.exe --dump lsass",
+          "parent": {
+            "pid": 4412,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1003.001",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Masqueraded task_scheduler.exe launched from user AppData — precursor to LSASS access"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:13.817Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+        },
+        "target": {
+          "process": {
+            "pid": 660,
+            "name": "lsass.exe",
+            "executable": "C:\\Windows\\System32\\lsass.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1410",
+            "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+9e1d4|C:\\Windows\\System32\\KERNELBASE.dll+2b01e|C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe+31a7c"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1003.001",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "task_scheduler.exe opens lsass.exe with PROCESS_VM_READ | PROCESS_QUERY_INFORMATION access (0x1410) — classic credential dump pattern"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:22:15.092Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "lsass.dmp",
+          "path": "C:\\Users\\dkim\\AppData\\Local\\Temp\\lsass.dmp",
+          "extension": "dmp"
+        },
+        "process": {
+          "pid": 7824,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\task_scheduler.exe"
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1003.001",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "LSASS minidump file written to Temp directory by masqueraded process — confirms successful MiniDumpWriteDump call"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-08T14:18:04.221Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 1152,
+          "name": "MsMpEng.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\platform\\4.18.2301.6-0\\MsMpEng.exe"
+        },
+        "target": {
+          "process": {
+            "pid": 660,
+            "name": "lsass.exe",
+            "executable": "C:\\Windows\\System32\\lsass.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1000",
+            "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+9e1d4|C:\\Windows\\System32\\KERNELBASE.dll+2b01e|C:\\ProgramData\\Microsoft\\Windows Defender\\platform\\4.18.2301.6-0\\MsMpEng.exe+7f2a1"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1003.001",
+          "description": "Windows Defender AV engine accesses lsass.exe for memory scanning — PROCESS_QUERY_LIMITED_INFORMATION only (0x1000), no VM_READ, signed binary from known path"
+        }
+      },
+      {
+        "@timestamp": "2026-03-08T14:05:39.774Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "MEMORY.DMP",
+          "path": "C:\\Windows\\MEMORY.DMP",
+          "extension": "DMP"
+        },
+        "process": {
+          "pid": 4,
+          "name": "System",
+          "executable": "System"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1003.001",
+          "description": "Windows kernel writing system crash dump to C:\\Windows\\MEMORY.DMP — legitimate OS behavior, written by PID 4 (System), not a user process"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "event.code",
+      "process.executable",
+      "target.process.name",
+      "winlog.event_data.GrantedAccess",
+      "winlog.event_data.CallTrace",
+      "file.path",
+      "file.extension"
+    ],
+    "notes": "Detection should correlate EID 10 (lsass access with GrantedAccess containing 0x10 VM_READ bit) with the source process path — high-confidence signal when source is outside System32/ProgramFiles and CallTrace includes non-system modules. Chaining EID 10 → EID 11 (.dmp file write) within a short time window from the same PID dramatically reduces false positives. Key exclusions: MsMpEng.exe, csrss.exe, werfault.exe, svchost.exe under SYSTEM context accessing lsass are routine."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_10",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
