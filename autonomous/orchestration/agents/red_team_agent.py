@@ -19,6 +19,7 @@ from uuid import uuid4
 
 from orchestration.state import StateManager
 from orchestration import learnings
+from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -571,6 +572,153 @@ def scenario_t1562_001():
     }
 
 
+# ─── Claude-Powered Dynamic Generator ─────────────────────────────
+
+# Example scenario JSON given to Claude as a template
+_EXAMPLE_SCENARIO = json.dumps({
+    "attack_events": [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "start", "action": "Process Create (rule: ProcessCreate)", "code": "1"},
+            "process": {
+                "pid": 12345, "name": "malware.exe",
+                "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\malware.exe",
+                "command_line": "malware.exe --payload",
+                "parent": {"pid": 1000, "name": "cmd.exe", "executable": "C:\\Windows\\System32\\cmd.exe"},
+            },
+            "user": {"name": "jsmith", "domain": "CORP"},
+            "host": {"name": "WS-FINANCE-01", "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "attack", "technique": "T1059.001", "sequence_order": 1, "sequence_total": 1, "description": "Malicious process execution"},
+        },
+    ],
+    "benign_events": [
+        {
+            "@timestamp": "{{now}}",
+            "event": {"category": "process", "type": "start", "action": "Process Create (rule: ProcessCreate)", "code": "1"},
+            "process": {
+                "pid": 54321, "name": "legitimate.exe",
+                "executable": "C:\\Program Files\\App\\legitimate.exe",
+                "command_line": "legitimate.exe --normal",
+                "parent": {"pid": 2000, "name": "services.exe", "executable": "C:\\Windows\\System32\\services.exe"},
+            },
+            "user": {"name": "SYSTEM", "domain": "NT AUTHORITY"},
+            "host": {"name": "WS-FINANCE-01", "os": {"platform": "windows"}},
+            "agent": {"type": "sysmon"},
+            "_simulation": {"type": "benign_similar", "technique": "T1059.001", "description": "Legitimate process — similar but benign"},
+        },
+    ],
+    "key_fields": ["process.name", "process.command_line"],
+    "notes": "Detection hint for blue team",
+    "log_sources_used": ["sysmon_1"],
+}, indent=2)
+
+
+def generate_scenario_with_claude(technique_id: str, request: dict) -> tuple | None:
+    """
+    Use Claude CLI (pure reasoning) to dynamically generate a scenario.
+
+    Returns (attack_events, benign_events, metadata) or None on failure.
+    """
+    if not claude_llm.is_available():
+        print(f"    [red-team] Claude CLI not available — cannot generate {technique_id}")
+        return None
+
+    title = request.get("title", technique_id)
+    tactic = request.get("mitre_tactic", "unknown")
+    source = request.get("source", "")
+
+    # Pick random environment values so Claude can use them
+    host = random.choice(HOSTNAMES)
+    user, domain = random.choice(USERS)
+    mal_proc = random.choice(MALICIOUS_PROCS)
+    temp = random.choice(TEMP_PATHS).format(user=user)
+
+    prompt = f"""Generate a realistic attack simulation scenario for MITRE ATT&CK technique {technique_id} ({title}).
+Tactic: {tactic}
+Source intel: {source}
+
+Use these environment values:
+- Hostname: {host}
+- User: {user}, Domain: {domain}
+- Malicious process: {mal_proc} at {temp}\\{mal_proc}
+
+Generate 2-3 attack events and 1-2 benign events that look similar but are legitimate.
+Events must be ECS-compatible Sysmon-style JSON.
+
+Common Sysmon event codes:
+- 1: Process Create (process.name, process.command_line, process.parent.name)
+- 3: Network Connection (destination.ip, destination.port, network.direction)
+- 7: Image Loaded (file.name, file.path)
+- 8: CreateRemoteThread
+- 10: Process Access (winlog.event_data.GrantedAccess)
+- 11: File Create (file.path)
+- 12/13: Registry (registry.path, registry.value)
+
+Example output format (follow this EXACTLY):
+{_EXAMPLE_SCENARIO}
+
+Return ONLY valid JSON matching the example structure above.
+No markdown fences, no explanation, no commentary — pure JSON only."""
+
+    system = (
+        "You are a red team operator generating realistic attack simulations. "
+        "Output ONLY valid JSON. No markdown, no explanation. "
+        "Make attack events realistic and benign events genuinely similar."
+    )
+
+    result = claude_llm.ask(
+        prompt=prompt,
+        agent_name="red-team",
+        system_prompt=system,
+        allowed_tools=[],  # Pure reasoning, no tools
+        max_turns=1,
+        timeout_seconds=60,
+    )
+
+    if not result["success"]:
+        print(f"    [red-team] Claude failed for {technique_id}: {result.get('error')}")
+        return None
+
+    # Parse the JSON response
+    response = result["response"].strip()
+
+    # Strip markdown fences if present
+    if response.startswith("```"):
+        lines = response.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        response = "\n".join(lines)
+
+    try:
+        data = json.loads(response)
+    except json.JSONDecodeError as e:
+        print(f"    [red-team] Failed to parse Claude JSON for {technique_id}: {e}")
+        return None
+
+    attack_events = data.get("attack_events", [])
+    benign_events = data.get("benign_events", [])
+
+    if not attack_events:
+        print(f"    [red-team] Claude returned no attack events for {technique_id}")
+        return None
+
+    metadata = {
+        "key_fields": data.get("key_fields", []),
+        "notes": data.get("notes", f"Auto-generated by Claude for {technique_id}"),
+        "log_sources_used": data.get("log_sources_used", ["sysmon_1"]),
+        "platforms": data.get("platforms", ["windows"]),
+        "generated_by": "claude",
+    }
+
+    print(f"    [red-team] Claude generated {len(attack_events)} attack, "
+          f"{len(benign_events)} benign events for {technique_id}")
+
+    return attack_events, benign_events, metadata
+
+
 # ─── Scenario Registry ─────────────────────────────────────────────
 SCENARIO_GENERATORS = {
     "T1055.001": scenario_t1055_001,
@@ -587,14 +735,21 @@ SCENARIO_GENERATORS = {
 def build_scenario(technique_id: str, request: dict) -> dict | None:
     """
     Generate a scenario JSON file for the given technique.
-    Returns the scenario dict or None if no generator exists.
+
+    Uses hardcoded generators when available (fast, no token cost).
+    Falls back to Claude CLI for dynamic generation of any technique.
+    Returns the scenario dict or None if generation fails.
     """
     generator = SCENARIO_GENERATORS.get(technique_id)
-    if not generator:
-        print(f"    [red-team] No scenario generator for {technique_id}")
-        return None
-
-    attack_events, benign_events, metadata = generator()
+    if generator:
+        attack_events, benign_events, metadata = generator()
+    else:
+        # Fall back to Claude CLI for dynamic generation
+        print(f"    [red-team] No hardcoded generator for {technique_id} — trying Claude...")
+        result = generate_scenario_with_claude(technique_id, request)
+        if not result:
+            return None
+        attack_events, benign_events, metadata = result
 
     scenario = {
         "technique_id": technique_id,
@@ -677,8 +832,8 @@ def run(state_manager: StateManager) -> dict:
             scenarios_skipped.append(tid)
             learnings.record(
                 AGENT_NAME, run_id, "improvement", "general",
-                f"No generator for {tid}",
-                f"Need to implement scenario generator for {request.get('title', tid)}",
+                f"Scenario generation failed for {tid}",
+                f"Both hardcoded and Claude generators failed for {request.get('title', tid)}",
                 technique_id=tid,
             )
             continue
