@@ -1,6 +1,6 @@
 technique_id: T1486
 title: Data Encrypted for Impact
-status: DEPLOYED
+status: MONITORING
 priority: critical
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-l
 scenario_file: simulator\scenarios\t1486.json
 sigma_rule: detections\execution\t1486.yml
 deployed_date: '2026-03-08T22:20:03Z'
-last_quality_review: ''
+last_quality_review: '2026-03-10T22:34:58Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -64,6 +64,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-03-10T22:34:58Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-10T22:34:58Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 compiled_lucene: detections\execution\compiled\t1486.lucene
 compiled_spl: detections\execution\compiled\t1486.spl
 mitre_tactic: execution
