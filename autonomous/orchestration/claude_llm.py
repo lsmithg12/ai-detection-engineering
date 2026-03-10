@@ -299,7 +299,13 @@ Respond with ONLY the Sigma YAML rule — no markdown fences, no explanation bef
     system = (
         "You are a senior detection engineer writing Sigma rules. "
         "Output ONLY valid Sigma YAML. No markdown, no explanation, no commentary. "
-        "Focus on behavioral patterns over IOCs. Minimize false positives."
+        "Focus on behavioral patterns over IOCs. Minimize false positives. "
+        "IMPORTANT: Use the EXACT field names from the attack/benign event samples. "
+        "The events use ECS (Elastic Common Schema) field paths like process.executable, "
+        "process.command_line, file.path, destination.ip, etc. Your Sigma rule selection "
+        "fields MUST match the event field names exactly — the validator checks field-by-field. "
+        "Do NOT use legacy Sysmon field names (SourceImage, TargetImage, etc.) unless those "
+        "exact names appear in the event samples."
     )
 
     result = ask(
