@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-10T08:45:11.007Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4912,
+      "name": "sc.exe",
+      "executable": "C:\\Windows\\System32\\sc.exe",
+      "command_line": "sc.exe start wuauserv",
+      "parent": {
+        "pid": 3204,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1569.002",
+      "description": "Legitimate Windows Update service (wuauserv) started by svchost \u2014 sc.exe used but parent and binary path are expected"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T08:51:03.442Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5108,
+      "name": "SenseIR.exe",
+      "executable": "C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseIR.exe",
+      "command_line": "\"C:\\Program Files\\Windows Defender Advanced Threat Protection\\SenseIR.exe\"",
+      "parent": {
+        "pid": 692,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1569.002",
+      "description": "Legitimate security service spawned by services.exe from a signed, expected installation path under Program Files \u2014 similar parent/user context to attack event but benign path"
+    }
+  }
+]

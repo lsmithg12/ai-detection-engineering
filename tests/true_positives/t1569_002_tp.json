@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-10T09:14:22.341Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7412,
+      "name": "sc.exe",
+      "executable": "C:\\Windows\\System32\\sc.exe",
+      "command_line": "sc.exe create WindowsUpdateSvc binPath= \"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" start= auto DisplayName= \"Windows Update Service\"",
+      "parent": {
+        "pid": 6880,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1569.002",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Adversary uses sc.exe to register malicious binary as a Windows service with auto-start, masquerading as a legitimate Windows Update service"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T09:14:24.812Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7488,
+      "name": "sc.exe",
+      "executable": "C:\\Windows\\System32\\sc.exe",
+      "command_line": "sc.exe start WindowsUpdateSvc",
+      "parent": {
+        "pid": 6880,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1569.002",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Adversary starts the newly registered malicious service via sc.exe"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T09:14:25.194Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7556,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+      "command_line": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+      "parent": {
+        "pid": 692,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1569.002",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Malicious Fawkes C2 agent (task_scheduler.exe) spawned by services.exe from a non-standard ProgramData path \u2014 high-fidelity indicator"
+    }
+  }
+]

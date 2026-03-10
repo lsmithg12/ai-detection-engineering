@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1490",
+  "date": "2026-03-10T22:32:54Z",
+  "sigma_rule": "detections\\execution\\t1490.yml",
+  "metrics": {
+    "tp": 3,
+    "fp": 0,
+    "fn": 0,
+    "tn": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "auto_deploy"
+}

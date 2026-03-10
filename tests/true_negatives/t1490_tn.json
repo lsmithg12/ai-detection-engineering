@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-10T07:00:12.301Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3388,
+      "name": "vssadmin.exe",
+      "executable": "C:\\Windows\\System32\\vssadmin.exe",
+      "command_line": "vssadmin.exe list shadows",
+      "parent": {
+        "pid": 1880,
+        "name": "BackupService.exe",
+        "executable": "C:\\Program Files\\Veritas\\Backup Exec\\BackupService.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1490",
+      "description": "Legitimate enterprise backup agent enumerating VSS shadow copies as part of scheduled backup job \u2014 read-only list operation, not destructive"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T09:15:44.780Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7712,
+      "name": "bcdedit.exe",
+      "executable": "C:\\Windows\\System32\\bcdedit.exe",
+      "command_line": "bcdedit.exe /set {current} bootstatuspolicy ignoreallfailures",
+      "parent": {
+        "pid": 2244,
+        "name": "msiexec.exe",
+        "executable": "C:\\Windows\\System32\\msiexec.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1490",
+      "description": "Software installer (msiexec) setting bcdedit boot policy to suppress startup repair prompts \u2014 common during enterprise software deployment, not malicious"
+    }
+  }
+]

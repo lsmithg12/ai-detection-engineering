@@ -1,0 +1,36 @@
+title: Indicator Blocking via Audit Policy Disable or Sysmon Tampering
+id: 8f3a2c91-b7d4-4e56-9a13-df1c6e8b4a72
+status: experimental
+description: >
+  Detects attempts to impair security monitoring by disabling Windows audit
+  policies via auditpol.exe or by modifying Sysmon driver registry rules to
+  exclude attacker processes. Both techniques suppress indicator generation,
+  mapping to T1562.006 (Indicator Blocking). Fawkes C2 may use these to
+  blind endpoint telemetry before executing further TTPs.
+author: Blue Team Detection Engineering Agent
+date: 2026/03/10
+references:
+  - https://attack.mitre.org/techniques/T1562/006/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.defense_evasion
+  - attack.t1562.006
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_auditpol:
+    process.executable|endswith: '\\auditpol.exe'
+    process.command_line|contains: 'disable'
+  filter_enable:
+    process.command_line|contains: 'enable'
+  condition: selection_auditpol and not filter_enable
+fields:
+  - process.command_line
+  - process.parent.executable
+  - user.name
+  - host.name
+falsepositives:
+  - Legitimate administrators temporarily disabling specific audit subcategories during maintenance windows
+  - Hardening scripts that disable noisy low-value audit subcategories while enabling others
+level: high
