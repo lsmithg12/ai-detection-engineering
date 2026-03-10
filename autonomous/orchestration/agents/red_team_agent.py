@@ -644,14 +644,31 @@ Use these environment values:
 - Malicious process: {mal_proc} at {temp}\\{mal_proc}
 
 Generate 2-3 attack events and 1-2 benign events that look similar but are legitimate.
-Events must be ECS-compatible Sysmon-style JSON.
+Events must use ECS (Elastic Common Schema) field names consistently.
 
-Common Sysmon event codes:
+IMPORTANT — Use ONLY these ECS dotted field paths in events:
+- process.name, process.executable, process.command_line, process.pid
+- process.parent.name, process.parent.executable, process.parent.pid
+- event.code, event.category, event.type, event.action
+- user.name, user.domain
+- host.name, host.os.platform
+- file.name, file.path, file.extension
+- destination.ip, destination.port
+- source.ip, source.port
+- network.direction, network.transport
+- registry.path, registry.value
+- winlog.event_data.GrantedAccess (for Sysmon EID 10 only)
+- winlog.event_data.TargetImage (for Sysmon EID 8/10 — process access target)
+
+Do NOT invent non-standard field names. The blue-team agent writes Sigma rules
+matching these exact field paths, so consistency is critical for F1 scoring.
+
+Common Sysmon event codes and their key fields:
 - 1: Process Create (process.name, process.command_line, process.parent.name)
 - 3: Network Connection (destination.ip, destination.port, network.direction)
 - 7: Image Loaded (file.name, file.path)
-- 8: CreateRemoteThread
-- 10: Process Access (winlog.event_data.GrantedAccess)
+- 8: CreateRemoteThread (winlog.event_data.TargetImage)
+- 10: Process Access (winlog.event_data.GrantedAccess, winlog.event_data.TargetImage)
 - 11: File Create (file.path)
 - 12/13: Registry (registry.path, registry.value)
 

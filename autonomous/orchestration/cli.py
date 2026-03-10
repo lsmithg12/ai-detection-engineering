@@ -124,6 +124,78 @@ def cmd_update(args):
         sys.exit(1)
 
 
+def cmd_deploy(args):
+    """Deploy VALIDATED detections with auto_deploy_eligible=True to SIEMs."""
+    import yaml
+    from orchestration.siem import deploy_to_siems
+
+    sm = StateManager()
+    repo_root = Path(__file__).resolve().parent.parent.parent
+
+    validated = sm.query_by_state("VALIDATED")
+    eligible = [r for r in validated if r.get("auto_deploy_eligible")]
+
+    if not eligible:
+        print("  No VALIDATED detections eligible for deployment.")
+        return
+
+    print(f"  Found {len(eligible)} VALIDATED detections eligible for deployment")
+    deployed = 0
+
+    for request in eligible:
+        tid = request["technique_id"]
+        sigma_path = request.get("sigma_rule", "")
+        lucene_path = request.get("compiled_lucene", "")
+        spl_path = request.get("compiled_spl", "")
+
+        if not sigma_path or not lucene_path:
+            print(f"  Skipping {tid} — missing artifacts")
+            continue
+
+        sigma_full = repo_root / sigma_path
+        lucene_full = repo_root / lucene_path
+        spl_full = repo_root / spl_path if spl_path else None
+
+        if not sigma_full.exists() or not lucene_full.exists():
+            print(f"  Skipping {tid} — files not found")
+            continue
+
+        with open(sigma_full, encoding="utf-8") as f:
+            sigma_data = yaml.safe_load(f)
+        lucene = lucene_full.read_text(encoding="utf-8").strip()
+        spl = spl_full.read_text(encoding="utf-8").strip() if spl_full and spl_full.exists() else ""
+
+        print(f"\n  Deploying {tid} — {request.get('title', '')}")
+        deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
+
+        if deploy_results:
+            deploy_details = []
+            if "elastic" in deploy_results:
+                sm.update(tid, agent="blue-team",
+                          elastic_rule_id=deploy_results["elastic"].get("rule_id", ""))
+                deploy_details.append("Elastic")
+            if "splunk" in deploy_results:
+                sm.update(tid, agent="blue-team",
+                          splunk_saved_search=deploy_results["splunk"].get("search_name", ""))
+                deploy_details.append("Splunk")
+
+            try:
+                import datetime
+                sm.transition(tid, "DEPLOYED", agent="blue-team",
+                              details=f"Post-merge deploy to {' + '.join(deploy_details)}")
+                sm.update(tid, agent="blue-team",
+                          deployed_date=datetime.datetime.now(
+                              datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+                print(f"  {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
+                deployed += 1
+            except ValueError as e:
+                print(f"  DEPLOYED transition failed for {tid}: {e}")
+        else:
+            print(f"  No SIEMs available for {tid}")
+
+    print(f"\n  Deployed {deployed}/{len(eligible)} detections")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patronus",
@@ -166,6 +238,9 @@ def main():
     p_update.add_argument("--set", nargs="+", metavar="KEY=VALUE",
                           help="Fields to update (e.g., fp_rate=0.05 tp_rate=0.95)")
 
+    # deploy
+    sub.add_parser("deploy", help="Deploy VALIDATED detections to SIEMs (post-merge)")
+
     args = parser.parse_args()
     cmd_map = {
         "status": cmd_status,
@@ -174,6 +249,7 @@ def main():
         "create": cmd_create,
         "transition": cmd_transition,
         "update": cmd_update,
+        "deploy": cmd_deploy,
     }
     cmd_map[args.command](args)
 

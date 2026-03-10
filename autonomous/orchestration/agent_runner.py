@@ -95,7 +95,7 @@ def _commit_and_push(branch: str, agent_name: str, summary: str):
         print(f"  [{agent_name}] No changes to commit.")
         return False
 
-    message = f"feat(agent): {agent_name} run — {summary}"
+    message = f"feat(agent): {agent_name} run --{summary}"
     _run_git(["commit", "-m", message])
     _run_git(["push", "-u", "origin", branch])
     return True
@@ -149,7 +149,7 @@ def _create_pr(branch: str, agent_name: str, title: str, body: str):
             print(f"  [{agent_name}] PR created: {pr_url}")
             return pr_url
     except urllib.error.HTTPError as e:
-        # Log status code and reason only — avoid leaking headers/body
+        # Log status code and reason only --avoid leaking headers/body
         print(f"  [{agent_name}] PR creation failed: HTTP {e.code} {e.reason}")
         return None
     except Exception as e:
@@ -162,7 +162,7 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     run_id = _generate_run_id()
     start_time = datetime.datetime.now(datetime.timezone.utc)
     print(f"\n{'='*60}")
-    print(f"  Patronus Agent Runner — {agent_name}")
+    print(f"  Patronus Agent Runner --{agent_name}")
     print(f"  Run ID: {run_id}")
     print(f"  Time: {start_time.isoformat()}")
     print(f"{'='*60}\n")
@@ -181,7 +181,7 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     sm = StateManager()
 
     # 1. Check for pending work
-    # Scheduled agents (intel, quality) always run — they create work or review fleet.
+    # Scheduled agents (intel, quality) always run --they create work or review fleet.
     # Triggered agents (red-team, blue-team) need pending items.
     # Security agent requires a PR number.
     SCHEDULED_AGENTS = {"intel", "quality"}
@@ -196,9 +196,9 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
         if pending:
             print(f"  [{agent_name}] Found {len(pending)} pending items:")
             for p in pending:
-                print(f"    [{p['status']}] {p['technique_id']} — {p.get('title','')}")
+                print(f"    [{p['status']}] {p['technique_id']} --{p.get('title','')}")
         else:
-            print(f"  [{agent_name}] No pending items — running scheduled tasks.")
+            print(f"  [{agent_name}] No pending items --running scheduled tasks.")
     else:
         pending = sm.query_pending(agent_name)
         if not pending:
@@ -206,7 +206,7 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
             return
         print(f"  [{agent_name}] Found {len(pending)} pending items:")
         for p in pending:
-            print(f"    [{p['status']}] {p['technique_id']} — {p.get('title','')}")
+            print(f"    [{p['status']}] {p['technique_id']} --{p.get('title','')}")
 
     # 2. Load learnings briefing
     briefing = learnings.get_briefing(agent_name)
@@ -295,16 +295,146 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     print(f"\n  [{agent_name}] Run {run_id} complete.")
 
 
+def run_pipeline(pipeline_agents: list[str], dry_run: bool = False):
+    """
+    Run multiple agents sequentially on a SINGLE branch, creating ONE PR.
+
+    This replaces the manual workflow of:
+      red-team ->merge ->blue-team ->merge ->quality ->merge
+    With:
+      red-team ->blue-team ->quality ->single PR
+
+    The state machine tracks transitions --no merges needed between agents.
+    """
+    run_id = _generate_run_id()
+    start_time = datetime.datetime.now(datetime.timezone.utc)
+    pipeline_name = "-".join(pipeline_agents)
+
+    print(f"\n{'='*60}")
+    print(f"  Patronus Pipeline --{pipeline_name}")
+    print(f"  Run ID: {run_id}")
+    print(f"  Agents: {' ->'.join(pipeline_agents)}")
+    print(f"  Time: {start_time.isoformat()}")
+    print(f"{'='*60}\n")
+
+    sm = StateManager()
+
+    # Create single branch for entire pipeline
+    branch = None
+    if not dry_run:
+        branch = f"agent/pipeline/{run_id}"
+        _run_git(["checkout", "main"])
+        _run_git(["pull", "origin", "main"])
+        _run_git(["checkout", "-b", branch])
+        print(f"  [pipeline] Created branch: {branch}")
+
+    all_results = {}
+    all_summaries = []
+
+    for agent_name in pipeline_agents:
+        print(f"\n{'-'*50}")
+        print(f"  Running: {agent_name}")
+        print(f"{'-'*50}")
+
+        # Budget check
+        budget_decision = budget.check_budget(agent_name)
+        if not budget_decision.allowed:
+            print(f"  [{agent_name}] Skipped: {budget_decision.reason}")
+            continue
+
+        # Import and run
+        module_name = AGENT_MODULES.get(agent_name)
+        if not module_name:
+            print(f"  Error: Unknown agent '{agent_name}'")
+            continue
+
+        try:
+            module = importlib.import_module(module_name)
+            result = module.run(sm)
+        except Exception as e:
+            print(f"  [{agent_name}] Agent failed: {e}")
+            learnings.record(agent_name, run_id, "error", "general",
+                             f"Pipeline agent crashed: {type(e).__name__}", str(e))
+            result = {"summary": f"Failed: {e}", "error": True}
+
+        all_results[agent_name] = result
+        summary = result.get("summary", "completed") if isinstance(result, dict) else "completed"
+        all_summaries.append(f"**{agent_name}**: {summary}")
+
+        # Log budget
+        budget.log_run(agent_name, 0, 1, status="completed" if not result.get("error") else "error")
+
+        # Commit after each agent (but don't push yet)
+        if not dry_run and branch:
+            _run_git(["add", "-A"])
+            diff_result = subprocess.run(
+                ["git", "diff", "--cached", "--quiet"], cwd=str(REPO_ROOT))
+            if diff_result.returncode != 0:
+                msg = f"feat(agent): {agent_name} run --{summary}"
+                _run_git(["commit", "-m", msg])
+                print(f"  [{agent_name}] Committed changes")
+
+    # Push and create PR
+    if not dry_run and branch:
+        try:
+            _run_git(["push", "-u", "origin", branch])
+        except RuntimeError as e:
+            print(f"  [pipeline] Push failed: {e}")
+            return
+
+        combined_summary = f"Pipeline run: {pipeline_name}"
+        pr_title = f"[Pipeline] {' ->'.join(pipeline_agents)} ({run_id})"
+        pr_body = f"""## Pipeline Summary
+{chr(10).join('- ' + s for s in all_summaries)}
+
+## Run Details
+- Pipeline: {pipeline_name}
+- Run ID: {run_id}
+- Branch: {branch}
+- Agents: {' ->'.join(pipeline_agents)}
+
+---
+*Generated by Patronus Pipeline Runner*
+"""
+        _create_pr(branch, "pipeline", pr_title, pr_body)
+
+    print(f"\n  [pipeline] Pipeline {run_id} complete.")
+
+
+# Pre-defined pipeline sequences
+PIPELINE_PRESETS = {
+    "red-blue": ["red-team", "blue-team"],
+    "red-blue-quality": ["red-team", "blue-team", "quality"],
+    "full": ["intel", "red-team", "blue-team", "quality"],
+}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Patronus Agent Runner")
-    parser.add_argument("--agent", required=True,
-                        choices=["intel", "red-team", "blue-team", "quality", "security"])
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--agent",
+                       choices=["intel", "red-team", "blue-team", "quality", "security"])
+    group.add_argument("--pipeline",
+                       help="Run agents sequentially on one branch. "
+                            "Use preset name (red-blue, red-blue-quality, full) "
+                            "or comma-separated agents (red-team,blue-team,quality)")
     parser.add_argument("--pr", type=int, default=None,
                         help="PR number (required for security agent)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Run agent without git operations")
     args = parser.parse_args()
-    run_agent(args.agent, pr_number=args.pr, dry_run=args.dry_run)
+
+    if args.pipeline:
+        # Resolve preset or parse comma-separated list
+        agents = PIPELINE_PRESETS.get(args.pipeline)
+        if not agents:
+            agents = [a.strip() for a in args.pipeline.split(",")]
+            for a in agents:
+                if a not in AGENT_MODULES:
+                    parser.error(f"Unknown agent: {a}")
+        run_pipeline(agents, dry_run=args.dry_run)
+    else:
+        run_agent(args.agent, pr_number=args.pr, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

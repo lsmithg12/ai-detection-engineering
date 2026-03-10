@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
       - name: Set up Python
@@ -54,7 +54,7 @@ jobs:
       - name: Run Quality Monitor
         if: steps.check.outputs.deployed != '0'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           cd autonomous
           python -m orchestration.agent_runner --agent quality

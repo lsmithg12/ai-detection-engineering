@@ -1,0 +1,45 @@
+name: Deploy Detection Rules
+
+# Deploys VALIDATED detections to SIEMs after human-reviewed PR merge.
+# This ensures rules are only live after human approval.
+
+on:
+  push:
+    branches: [main]
+    paths: ['detections/**']
+
+concurrency:
+  group: deploy-rules
+  cancel-in-progress: false  # Don't cancel in-progress deploys
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r autonomous/orchestration/requirements.txt
+
+      - name: Deploy validated detections
+        env:
+          ES_URL: ${{ secrets.ES_URL }}
+          KIBANA_URL: ${{ secrets.KIBANA_URL }}
+          ES_USER: ${{ secrets.ES_USER }}
+          ES_PASS: ${{ secrets.ES_PASS }}
+          SPLUNK_URL: ${{ secrets.SPLUNK_URL }}
+          SPLUNK_AUTH: ${{ secrets.SPLUNK_AUTH }}
+        run: |
+          cd autonomous
+          python orchestration/cli.py deploy

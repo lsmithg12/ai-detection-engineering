@@ -1,9 +1,11 @@
 """
-Blue Team Agent — Authors Sigma rules, validates against scenarios,
-and deploys detections to Elastic/Splunk.
+Blue Team Agent — Authors Sigma rules and validates against scenarios.
 
 Processes detections in SCENARIO_BUILT state through:
-  SCENARIO_BUILT -> AUTHORED -> VALIDATED -> DEPLOYED
+  SCENARIO_BUILT -> AUTHORED -> VALIDATED
+
+SIEM deployment is handled post-merge by deploy-rules.yml or `cli.py deploy`.
+This ensures rules are only live after human review.
 
 Called by agent_runner.py. Implements run(state_manager) interface.
 """
@@ -19,7 +21,7 @@ import yaml
 
 from orchestration.state import StateManager
 from orchestration import learnings
-from orchestration.siem import deploy_to_siems, TACTIC_MAP, SEVERITY_MAP
+from orchestration.siem import TACTIC_MAP, SEVERITY_MAP
 from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
@@ -32,6 +34,7 @@ AGENT_NAME = "blue-team"
 MAX_DETECTIONS = 5
 AUTO_DEPLOY_THRESHOLD = 0.90
 MAX_FP_RATE_AUTO_DEPLOY = 0.05
+MAX_TUNE_RETRIES = 2  # Max attempts to refine a rule when F1 < threshold
 
 # Map MITRE technique prefixes to tactic directories
 TECHNIQUE_TACTIC_MAP = {
@@ -301,6 +304,70 @@ def save_test_cases(tid_under: str, scenario: dict):
     return tp_path, tn_path
 
 
+def event_matches_block(event: dict, block: dict) -> bool:
+    """Check if an event matches ALL conditions in a Sigma detection block."""
+    if not block:
+        return False  # Empty block matches nothing (prevents accidental match-all)
+    for field_expr, expected_vals in block.items():
+        # Parse field name and modifier
+        parts = field_expr.split("|")
+        field = parts[0]
+        modifier = parts[1] if len(parts) > 1 else None
+
+        actual = _get_nested(event, field)
+        if actual is None:
+            return False
+        actual_str = str(actual).lower()
+
+        # Normalize expected values to list
+        if not isinstance(expected_vals, list):
+            expected_vals = [expected_vals]
+
+        if modifier == "contains":
+            if not any(str(v).lower() in actual_str for v in expected_vals):
+                return False
+        elif modifier == "startswith":
+            if not any(actual_str.startswith(str(v).lower()) for v in expected_vals):
+                return False
+        elif modifier == "endswith":
+            if not any(actual_str.endswith(str(v).lower()) for v in expected_vals):
+                return False
+        else:
+            # Exact match (OR logic — any value matches)
+            if not any(actual_str == str(v).lower() for v in expected_vals):
+                return False
+    return True
+
+
+def _parse_selection_logic(condition_str: str, selections: dict) -> tuple:
+    """
+    Parse Sigma condition string to determine how selection blocks combine.
+    Returns: ('and' | 'or', [block_names])
+    """
+    # Strip filter clauses for selection parsing
+    cond = condition_str.split(" and not ")[0].split(" | not ")[0].strip()
+
+    # Handle "1 of selection_*" / "all of selection_*"
+    if "of selection" in cond:
+        if cond.startswith("all"):
+            return "and", list(selections.keys())
+        else:
+            return "or", list(selections.keys())
+
+    # Split on " and " or " or " to find selection block names
+    if " or " in cond:
+        parts = [p.strip() for p in cond.split(" or ")]
+        block_names = [p for p in parts if p in selections]
+        return "or", block_names if block_names else list(selections.keys())
+    elif " and " in cond:
+        parts = [p.strip() for p in cond.split(" and ")]
+        block_names = [p for p in parts if p in selections]
+        return "and", block_names if block_names else list(selections.keys())
+    else:
+        # Single selection
+        return "and", [cond] if cond in selections else list(selections.keys())
+
+
 def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
     """
     Validate a detection against scenario events.
@@ -317,53 +384,39 @@ def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
         rule = yaml.safe_load(f)
 
     detection = rule.get("detection", {})
-    selection = detection.get("selection", {})
-    filters = {}
     condition = detection.get("condition", "selection")
 
-    # Collect all filter blocks
+    # Collect all selection_* and filter_* blocks
+    selections = {}
+    filters = {}
     for key, val in detection.items():
-        if key.startswith("filter"):
+        if key == "condition":
+            continue
+        if key.startswith("selection"):
+            selections[key] = val
+        elif key.startswith("filter"):
             filters[key] = val
 
+    # Fallback: if no selection blocks found, empty match (nothing matches)
+    if not selections:
+        selections = {"selection": {}}
+
     has_filter = "not" in condition and filters
-
-    def event_matches_block(event, block):
-        """Check if an event matches ALL conditions in a detection block."""
-        for field_expr, expected_vals in block.items():
-            # Parse field name and modifier
-            parts = field_expr.split("|")
-            field = parts[0]
-            modifier = parts[1] if len(parts) > 1 else None
-
-            actual = _get_nested(event, field)
-            if actual is None:
-                return False
-            actual_str = str(actual).lower()
-
-            # Normalize expected values to list
-            if not isinstance(expected_vals, list):
-                expected_vals = [expected_vals]
-
-            if modifier == "contains":
-                if not any(str(v).lower() in actual_str for v in expected_vals):
-                    return False
-            elif modifier == "startswith":
-                if not any(actual_str.startswith(str(v).lower()) for v in expected_vals):
-                    return False
-            elif modifier == "endswith":
-                if not any(actual_str.endswith(str(v).lower()) for v in expected_vals):
-                    return False
-            else:
-                # Exact match (OR logic — any value matches)
-                if not any(actual_str == str(v).lower() for v in expected_vals):
-                    return False
-        return True
+    sel_logic, sel_block_names = _parse_selection_logic(condition, selections)
 
     def event_detected(event):
-        """Apply selection + filter logic."""
-        if not event_matches_block(event, selection):
-            return False
+        """Apply selection + filter logic with multi-block support."""
+        # Check selection blocks with AND/OR logic
+        if sel_logic == "and":
+            if not all(event_matches_block(event, selections.get(name, {}))
+                       for name in sel_block_names):
+                return False
+        else:  # or
+            if not any(event_matches_block(event, selections.get(name, {}))
+                       for name in sel_block_names):
+                return False
+
+        # Apply filters (exclusions)
         if has_filter:
             for fblock in filters.values():
                 if event_matches_block(event, fblock):
@@ -391,6 +444,43 @@ def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
         "total_attack": len(attack_events),
         "total_benign": len(benign_events),
     }
+
+
+def _event_detected_by_rule(rule_path: Path, event: dict) -> bool:
+    """Check if a single event would be detected by the Sigma rule at rule_path."""
+    with open(rule_path, encoding="utf-8") as f:
+        rule = yaml.safe_load(f)
+    detection = rule.get("detection", {})
+    condition = detection.get("condition", "selection")
+
+    selections = {}
+    filters = {}
+    for key, val in detection.items():
+        if key == "condition":
+            continue
+        if key.startswith("selection"):
+            selections[key] = val
+        elif key.startswith("filter"):
+            filters[key] = val
+
+    if not selections:
+        return False
+
+    has_filter = "not" in condition and filters
+    sel_logic, sel_block_names = _parse_selection_logic(condition, selections)
+
+    if sel_logic == "and":
+        if not all(event_matches_block(event, selections.get(n, {})) for n in sel_block_names):
+            return False
+    else:
+        if not any(event_matches_block(event, selections.get(n, {})) for n in sel_block_names):
+            return False
+
+    if has_filter:
+        for fblock in filters.values():
+            if event_matches_block(event, fblock):
+                return False
+    return True
 
 
 def assess_quality(metrics: dict) -> str:
@@ -511,6 +601,93 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
           f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
     print(f"    [blue-team] Quality: {quality_tier}")
 
+    # ─── RETRY-WITH-FEEDBACK (if F1 < threshold and Claude available) ───
+    if metrics["f1_score"] < AUTO_DEPLOY_THRESHOLD and claude_llm.is_available():
+        attack_events = scenario.get("events", {}).get("attack_sequence", [])
+        benign_events = scenario.get("events", {}).get("benign_similar", [])
+
+        for attempt in range(1, MAX_TUNE_RETRIES + 1):
+            print(f"    [blue-team] Retry {attempt}/{MAX_TUNE_RETRIES}: "
+                  f"F1={metrics['f1_score']} < {AUTO_DEPLOY_THRESHOLD}, asking Claude to refine")
+
+            current_rule_yaml = rule_path.read_text(encoding="utf-8")
+
+            # Use validate_detection to identify FN/FP events precisely
+            fn_events = [evt for evt in attack_events
+                         if not _event_detected_by_rule(rule_path, evt)]
+            fp_events = [evt for evt in benign_events
+                         if _event_detected_by_rule(rule_path, evt)]
+
+            fn_summary = json.dumps(fn_events[:3], indent=2)[:1500] if fn_events else "None"
+            fp_summary = json.dumps(fp_events[:3], indent=2)[:1500] if fp_events else "None"
+
+            refine_prompt = f"""This Sigma rule scored F1={metrics['f1_score']} (target >= {AUTO_DEPLOY_THRESHOLD}).
+
+Attack events that SHOULD have triggered but DIDN'T (false negatives):
+{fn_summary}
+
+Benign events that SHOULD NOT have triggered but DID (false positives):
+{fp_summary}
+
+Current rule:
+{current_rule_yaml}
+
+Fix the rule. The field names in the events are the source of truth — your rule's
+selection fields must match the event field paths exactly.
+Return ONLY the corrected Sigma YAML — no markdown fences, no explanation."""
+
+            refine_result = claude_llm.ask(
+                prompt=refine_prompt,
+                agent_name="blue-team",
+                system_prompt=(
+                    "You are a senior detection engineer fixing a Sigma rule. "
+                    "Output ONLY valid Sigma YAML. Match field names from the events exactly."
+                ),
+                allowed_tools=[],
+                max_turns=1,
+                timeout_seconds=90,
+            )
+
+            if refine_result["success"]:
+                refined_yaml = refine_result["response"].strip()
+                # Strip markdown fences
+                if refined_yaml.startswith("```"):
+                    lines = refined_yaml.split("\n")
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    refined_yaml = "\n".join(lines)
+
+                try:
+                    yaml.safe_load(refined_yaml)  # Validate YAML
+                    rule_path.write_text(refined_yaml, encoding="utf-8")
+                    print(f"    [blue-team] Claude refined rule ({len(refined_yaml)} chars)")
+
+                    # Re-transpile
+                    lucene, spl = transpile_sigma(rule_path)
+                    if lucene:
+                        save_compiled(tactic, tid_under, lucene, spl)
+
+                    # Re-validate
+                    metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+                    quality_tier = assess_quality(metrics)
+
+                    print(f"    [blue-team] After retry {attempt}: "
+                          f"TP={metrics['tp']}/{metrics['total_attack']}, "
+                          f"FP={metrics['fp']}/{metrics['total_benign']}, "
+                          f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
+                    print(f"    [blue-team] Quality: {quality_tier}")
+
+                    if metrics["f1_score"] >= AUTO_DEPLOY_THRESHOLD:
+                        print(f"    [blue-team] F1 target met after {attempt} retry(ies)")
+                        break
+                except yaml.YAMLError:
+                    print(f"    [blue-team] Retry {attempt}: Claude output was not valid YAML")
+            else:
+                print(f"    [blue-team] Retry {attempt}: Claude error: {refine_result.get('error')}")
+                break  # Don't retry if Claude itself is failing
+
     # Save test results (required by schema for DEPLOYED transition)
     results_dir = REPO_ROOT / "tests" / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -555,53 +732,19 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
         result["status"] = "authored"
         return result
 
-    # ─── DEPLOY (conditional) ───────────────────────────────────
+    # ─── POST-MERGE DEPLOY (mark eligible, don't deploy yet) ───
+    # Deployment now happens AFTER human review + PR merge, not here.
+    # See: .github/workflows/deploy-rules.yml or `cli.py deploy --validated`
     if quality_tier == "auto_deploy":
         state_manager.update(tid, agent=AGENT_NAME, auto_deploy_eligible=True)
-        print(f"    [blue-team] Eligible for auto-deploy (F1={metrics['f1_score']}, "
-              f"FP_rate={metrics['fp_rate']})")
-
-        # Load Sigma rule for metadata
-        with open(rule_path, encoding="utf-8") as f:
-            sigma_data = yaml.safe_load(f)
-
-        # Deploy to available SIEMs
-        deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
-
-        if deploy_results:
-            # Transition VALIDATED -> DEPLOYED
-            deploy_details = []
-            if "elastic" in deploy_results:
-                state_manager.update(tid, agent=AGENT_NAME,
-                                     elastic_rule_id=deploy_results["elastic"].get("rule_id", ""))
-                deploy_details.append("Elastic")
-            if "splunk" in deploy_results:
-                state_manager.update(tid, agent=AGENT_NAME,
-                                     splunk_saved_search=deploy_results["splunk"].get("search_name", ""))
-                deploy_details.append("Splunk")
-
-            try:
-                state_manager.transition(tid, "DEPLOYED", agent=AGENT_NAME,
-                                         details=f"Deployed to {' + '.join(deploy_details)}. "
-                                                 f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
-                state_manager.update(tid, agent=AGENT_NAME, deployed_date=_now_iso())
-                print(f"    [blue-team] Transitioned {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
-                result["status"] = "deployed"
-                result["auto_deployed"] = True
-                result["deploy_targets"] = deploy_details
-            except ValueError as e:
-                print(f"    [blue-team] DEPLOYED transition failed: {e}")
-                result["status"] = "validated"
-                result["auto_deployed"] = False
-        else:
-            print(f"    [blue-team] No SIEMs available — staying at VALIDATED")
-            result["status"] = "validated"
-            result["auto_deployed"] = False
+        result["status"] = "validated"
+        result["auto_deploy_eligible"] = True
+        print(f"    [blue-team] Eligible for post-merge deploy (F1={metrics['f1_score']}, "
+              f"FP_rate={metrics['fp_rate']}). Will deploy after PR merge.")
     else:
         result["status"] = "validated"
-        result["auto_deployed"] = False
-        print(f"    [blue-team] Pending human review for deployment "
-              f"(F1={metrics['f1_score']})")
+        result["auto_deploy_eligible"] = False
+        print(f"    [blue-team] Pending human review (F1={metrics['f1_score']})")
 
     return result
 
@@ -626,69 +769,14 @@ def run(state_manager: StateManager) -> dict:
     if detection_lessons:
         print(f"  [blue-team] {len(detection_lessons)} detection lessons loaded")
 
-    # 1b. Deploy any VALIDATED detections that are auto-deploy eligible
-    validated_pending = state_manager.query_by_state("VALIDATED")
-    deploy_pending = [r for r in validated_pending if r.get("auto_deploy_eligible")]
-    deployed_count = 0
-    if deploy_pending:
-        print(f"  [blue-team] Found {len(deploy_pending)} VALIDATED detections pending deployment")
-        for request in deploy_pending:
-            tid = request["technique_id"]
-            sigma_path = request.get("sigma_rule", "")
-            lucene_path = request.get("compiled_lucene", "")
-            spl_path = request.get("compiled_spl", "")
-
-            if not sigma_path or not lucene_path:
-                continue
-
-            # Load files
-            sigma_full = REPO_ROOT / sigma_path
-            lucene_full = REPO_ROOT / lucene_path
-            spl_full = REPO_ROOT / spl_path if spl_path else None
-
-            if not sigma_full.exists() or not lucene_full.exists():
-                continue
-
-            with open(sigma_full, encoding="utf-8") as f:
-                sigma_data = yaml.safe_load(f)
-            lucene = lucene_full.read_text(encoding="utf-8").strip()
-            spl = spl_full.read_text(encoding="utf-8").strip() if spl_full and spl_full.exists() else ""
-
-            print(f"\n  [blue-team] === Deploying {tid} — {request.get('title', '')} ===")
-            deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
-
-            if deploy_results:
-                deploy_details = []
-                if "elastic" in deploy_results:
-                    state_manager.update(tid, agent=AGENT_NAME,
-                                         elastic_rule_id=deploy_results["elastic"].get("rule_id", ""))
-                    deploy_details.append("Elastic")
-                if "splunk" in deploy_results:
-                    state_manager.update(tid, agent=AGENT_NAME,
-                                         splunk_saved_search=deploy_results["splunk"].get("search_name", ""))
-                    deploy_details.append("Splunk")
-
-                try:
-                    state_manager.transition(tid, "DEPLOYED", agent=AGENT_NAME,
-                                             details=f"Deployed to {' + '.join(deploy_details)}")
-                    state_manager.update(tid, agent=AGENT_NAME, deployed_date=_now_iso())
-                    print(f"    [blue-team] Transitioned {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
-                    deployed_count += 1
-                except ValueError as e:
-                    print(f"    [blue-team] DEPLOYED transition failed: {e}")
-
-        if deployed_count:
-            print(f"\n  [blue-team] Deployed {deployed_count} previously validated detections")
+    # NOTE: SIEM deployment is now post-merge only.
+    # See .github/workflows/deploy-rules.yml or `cli.py deploy --validated`
 
     # 2. Get SCENARIO_BUILT detections
     ready = state_manager.query_by_state("SCENARIO_BUILT")
-    if not ready and not deploy_pending:
+    if not ready:
         print("  [blue-team] No SCENARIO_BUILT detections. Nothing to do.")
         return {"summary": "No SCENARIO_BUILT detections", "detections_authored": 0}
-    if not ready:
-        summary = f"Deployed {deployed_count} previously validated detections"
-        print(f"\n  [blue-team] {summary}")
-        return {"summary": summary, "detections_deployed": deployed_count}
 
     priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     ready.sort(key=lambda r: priority_order.get(r.get("priority", "medium"), 2))
@@ -700,7 +788,7 @@ def run(state_manager: StateManager) -> dict:
     results = []
     authored = 0
     validated = 0
-    deployed = 0
+    deploy_eligible = 0
     needs_rework = 0
 
     for request in ready[:MAX_DETECTIONS]:
@@ -710,13 +798,11 @@ def run(state_manager: StateManager) -> dict:
         result = author_and_validate(request, state_manager, run_id)
         results.append(result)
 
-        if result["status"] == "deployed":
-            deployed += 1
-            authored += 1
-            validated += 1
-        elif result["status"] == "validated":
+        if result["status"] == "validated":
             validated += 1
             authored += 1
+            if result.get("auto_deploy_eligible"):
+                deploy_eligible += 1
         elif result["status"] == "needs_rework":
             authored += 1
             needs_rework += 1
@@ -726,7 +812,7 @@ def run(state_manager: StateManager) -> dict:
     # 4. Summary
     summary = (
         f"Authored {authored}, validated {validated}, "
-        f"auto-deploy eligible {deployed}, needs rework {needs_rework}"
+        f"deploy-eligible {deploy_eligible}, needs rework {needs_rework}"
     )
     print(f"\n  [blue-team] {summary}")
 
@@ -734,7 +820,7 @@ def run(state_manager: StateManager) -> dict:
         "summary": summary,
         "detections_authored": authored,
         "detections_validated": validated,
-        "detections_deployed": deployed,
+        "detections_deploy_eligible": deploy_eligible,
         "detections_needs_rework": needs_rework,
         "results": results,
     }
