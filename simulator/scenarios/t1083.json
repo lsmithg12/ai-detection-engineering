@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1083",
+  "technique_name": "File and Directory Discovery",
+  "description": "Simulates File and Directory Discovery attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-11T09:14:22.341Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c dir C:\\Users\\clee\\ /s /b 2>&1",
+          "parent": {
+            "pid": 5540,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1083",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent spawns cmd.exe to recursively enumerate user home directory contents"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T09:14:25.819Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7901,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c dir C:\\Users\\ /s /b 2>&1",
+          "parent": {
+            "pid": 5540,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1083",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent broadens directory enumeration to all user profiles on the host"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T09:14:31.204Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7965,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c dir C:\\Program Files\\ /s /b 2>&1 & dir C:\\Program Files (x86)\\ /s /b 2>&1",
+          "parent": {
+            "pid": 5540,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1083",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent enumerates installed software directories to identify targets for lateral movement or data staging"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-11T09:02:11.087Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6210,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c dir C:\\Users\\clee\\Documents\\ /b",
+          "parent": {
+            "pid": 4488,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1083",
+          "description": "User manually runs a dir command from explorer context menu or a legitimate script — single directory, no recursion, benign parent"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T09:07:55.612Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6704,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c dir C:\\Users\\clee\\Desktop\\ /s /b",
+          "parent": {
+            "pid": 3812,
+            "name": "OneDrive.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-HR-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1083",
+          "description": "OneDrive sync agent enumerates desktop folder recursively during file sync check — similar recursive dir pattern but from a known-good signed parent"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable"
+    ],
+    "notes": "High-fidelity detection signal: cmd.exe with /s (recursive) flag spawned by a process residing in AppData\\Roaming. Distinguish attack from benign by correlating process.parent.executable path — legitimate tools (explorer.exe, OneDrive.exe) live in well-known signed paths; Fawkes runtime_host.exe is in a user-writable AppData path. Rapid sequential dir invocations (3 within 10 seconds) from the same parent PID is a strong behavioral indicator of automated discovery."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
