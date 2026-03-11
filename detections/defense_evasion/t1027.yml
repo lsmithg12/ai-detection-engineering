@@ -1,0 +1,68 @@
+title: Obfuscated PowerShell Execution With Encoded Command and Suspicious Indicators
+id: 8a3c7e12-bf44-4d91-a1e3-c027d5f9e4a1
+status: experimental
+description: >
+  Detects PowerShell invoked with Base64-encoded commands combined with
+  additional obfuscation flags (hidden window, no profile, non-interactive)
+  where the parent process originates from a user-writable directory. This
+  pattern is consistent with Fawkes C2 and similar frameworks that use
+  encoded payloads to evade plain-text command-line inspection (T1027).
+author: Blue Team Detection Engineering Agent
+date: 2026/03/11
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1027/
+tags:
+  - attack.defense_evasion
+  - attack.t1027
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    process.name: powershell.exe
+  selection_encoded:
+    process.command_line|contains:
+      - '-Enc '
+      - '-Enc"'
+      - '-EncodedCommand '
+      - '-encodedcommand '
+      - '-Encoded '
+      - '-encoded '
+      - '-ec '
+  selection_suspicious_flags:
+    process.command_line|contains:
+      - '-W Hidden'
+      - '-WindowStyle Hidden'
+      - '-w hidden'
+      - '-NoP'
+      - '-nop'
+      - '-NoProfile'
+  selection_suspicious_parent:
+    process.parent.executable|contains:
+      - '\\AppData\\Roaming\\'
+      - '\\AppData\\Local\\Temp\\'
+      - '\\Users\\Public\\'
+      - '\\ProgramData\\'
+      - '\\Downloads\\'
+  filter_system_user:
+    user.name: SYSTEM
+    process.parent.executable|contains:
+      - '\\Windows\\System32\\'
+      - '\\Windows\\SysWOW64\\'
+  filter_management_noninteractive:
+    user.name: SYSTEM
+    process.command_line|contains: '-NonInteractive'
+    process.parent.name:
+      - svchost.exe
+      - services.exe
+      - taskeng.exe
+      - taskhostw.exe
+  condition: selection_process and selection_encoded and (selection_suspicious_flags or selection_suspicious_parent) and not filter_system_user and not filter_management_noninteractive
+falsepositives:
+  - Enterprise management tools (SCCM, Intune) running encoded PowerShell as SYSTEM from system directories
+  - Custom IT automation scripts launched from scheduled tasks with encoded arguments
+  - Software deployment tools that use encoded PowerShell for complex parameter passing
+level: high

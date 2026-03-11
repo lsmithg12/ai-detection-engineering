@@ -1,0 +1,52 @@
+title: Network Service Discovery via Port Scanning from Suspicious Location
+id: 8c4e2f1a-3d7b-4a9e-b5c8-1f2e3d4a5b6c
+status: experimental
+description: Detects processes executing from suspicious directories (Temp, AppData) with command line arguments indicating network port scanning activity, a technique used by C2 agents like Fawkes for internal reconnaissance.
+author: Blue Team Detection Engineering
+date: 2026/03/11
+modified: 2026/03/11
+references:
+    - https://attack.mitre.org/techniques/T1046/
+    - https://github.com/galoryber/fawkes
+tags:
+    - attack.discovery
+    - attack.t1046
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_location:
+        process.executable|contains:
+            - 'AppData\\Local\\Temp'
+            - 'AppData\\Roaming'
+            - 'ProgramData'
+            - 'Windows\\Temp'
+            - 'Users\\Public'
+    selection_cmdline_scan:
+        process.command_line|contains:
+            - '--ports'
+            - '--scan'
+            - '-p '
+            - '/scan'
+            - '--top-ports'
+            - '-sS'
+            - '-sT'
+            - '-sV'
+            - '-sC'
+    filter_legitimate_tools:
+        process.executable|contains:
+            - 'Program Files'
+            - 'Program Files (x86)'
+    condition: selection_location and selection_cmdline_scan and not filter_legitimate_tools
+fields:
+    - process.executable
+    - process.command_line
+    - process.parent.executable
+    - user.name
+    - host.name
+    - process.pid
+falsepositives:
+    - Legitimate network scanning tools deployed to non-standard locations by IT teams
+    - Vulnerability scanners running from temporary extraction directories
+    - Software installers performing network checks during setup
+level: high

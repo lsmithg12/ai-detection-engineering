@@ -1,0 +1,76 @@
+[
+  {
+    "@timestamp": "2026-03-11T08:02:14.773Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3120,
+      "name": "netsh.exe",
+      "executable": "C:\\Windows\\System32\\netsh.exe",
+      "command_line": "netsh advfirewall firewall add rule name=\"CorpVPN Client\" dir=in action=allow program=\"C:\\Program Files\\CorpVPN\\vpnclient.exe\" enable=yes",
+      "parent": {
+        "pid": 1488,
+        "name": "msiexec.exe",
+        "executable": "C:\\Windows\\System32\\msiexec.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1562.004",
+      "description": "Legitimate VPN client MSI installer adding an inbound firewall allow rule during software installation \u2014 same netsh advfirewall firewall add rule pattern as attack but parent is msiexec from Program Files and user is SYSTEM"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T07:45:58.301Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "process": {
+      "pid": 892,
+      "name": "svchost.exe",
+      "executable": "C:\\Windows\\System32\\svchost.exe"
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\EnableFirewall",
+      "value": "1"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1562.004",
+      "description": "Windows Group Policy application (svchost / mpssvc) writing EnableFirewall=1 during policy refresh \u2014 same registry path as attack but written by SYSTEM/svchost and setting is 1 (enable), not 0 (disable)"
+    }
+  }
+]

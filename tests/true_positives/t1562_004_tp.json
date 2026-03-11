@@ -1,0 +1,120 @@
+[
+  {
+    "@timestamp": "2026-03-11T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "netsh.exe",
+      "executable": "C:\\Windows\\System32\\netsh.exe",
+      "command_line": "netsh advfirewall set allprofiles state off",
+      "parent": {
+        "pid": 5412,
+        "name": "update_helper.exe",
+        "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.004",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 update_helper.exe spawns netsh.exe to disable all Windows Firewall profiles"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T09:14:35.109Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7901,
+      "name": "netsh.exe",
+      "executable": "C:\\Windows\\System32\\netsh.exe",
+      "command_line": "netsh advfirewall firewall add rule name=\"update_helper\" dir=in action=allow program=\"C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe\" enable=yes",
+      "parent": {
+        "pid": 5412,
+        "name": "update_helper.exe",
+        "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.004",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes C2 adds inbound firewall allow rule for itself by full executable path to survive firewall re-enable"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T09:14:37.882Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "process": {
+      "pid": 5412,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\EnableFirewall",
+      "value": "0"
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.004",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes C2 directly sets EnableFirewall registry key to 0 on StandardProfile as a redundant disable mechanism"
+    }
+  }
+]

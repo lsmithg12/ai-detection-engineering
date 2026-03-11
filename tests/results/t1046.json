@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1046",
+  "date": "2026-03-11T14:02:21Z",
+  "sigma_rule": "detections\\discovery\\t1046.yml",
+  "metrics": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 3,
+    "tn": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "fp_rate": 0.0,
+    "tp_rate": 0.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "needs_rework"
+}

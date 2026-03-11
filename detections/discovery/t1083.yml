@@ -1,0 +1,45 @@
+title: Recursive File and Directory Discovery via Suspicious Parent
+id: 8c3f7a2e-1d94-4b6f-a3e8-5f9c0d2b7e41
+status: experimental
+description: >
+  Detects recursive directory enumeration (dir /s) spawned by a process running
+  from a user-writable staging directory such as AppData\Roaming, AppData\Local\Temp,
+  or ProgramData. This pattern is consistent with Fawkes C2 agent using the run
+  command to enumerate files and directories for collection or lateral movement planning.
+author: Blue Team Detection Engineering Agent
+date: 2026/03/11
+references:
+  - https://attack.mitre.org/techniques/T1083/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.discovery
+  - attack.t1083
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    process.executable|endswith: '\cmd.exe'
+  selection_commandline_dir:
+    process.command_line|contains|all:
+      - 'dir '
+      - ' /s'
+  selection_parent_suspicious:
+    process.parent.executable|contains:
+      - '\AppData\Roaming\'
+      - '\AppData\Local\Temp\'
+      - '\ProgramData\'
+      - '\Public\'
+      - '\Temp\'
+  filter_known_good_parents:
+    process.parent.executable|contains:
+      - '\Microsoft\OneDrive\'
+      - '\Microsoft\Teams\'
+      - '\Google\Chrome\'
+      - '\Mozilla Firefox\'
+  condition: selection_process and selection_commandline_dir and selection_parent_suspicious and not filter_known_good_parents
+falsepositives:
+  - Legitimate applications installed in AppData that perform directory enumeration
+  - Custom user scripts launched from user profile directories
+  - Software updaters running from AppData\Roaming with dir enumeration
+level: medium

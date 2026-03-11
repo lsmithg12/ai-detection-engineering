@@ -1,0 +1,82 @@
+[
+  {
+    "@timestamp": "2026-03-10T08:45:10.203Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3256,
+      "name": "powershell.exe",
+      "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "command_line": "powershell.exe -NonInteractive -Encoded VwByAGkAdABlAC0ASABvAHMAdAAgACcASQBUACAAQwBvAG4AZgBpAGcAIABTAHkAbgBjACcA",
+      "parent": {
+        "pid": 1884,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1027",
+      "description": "Legitimate SCCM/Intune management agent invoking PowerShell with a Base64-encoded configuration sync command \u2014 encoded args are used by management tooling to safely pass complex strings"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T08:52:38.774Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "process": {
+      "pid": 2140,
+      "name": "MicrosoftEdgeUpdate.exe",
+      "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+      "parent": {
+        "pid": 688,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "file": {
+      "name": "EdgeUpdate_1741596758.tmp",
+      "path": "C:\\Users\\bwilson\\AppData\\Local\\Temp\\EdgeUpdate_1741596758.tmp",
+      "extension": "tmp"
+    },
+    "user": {
+      "name": "bwilson",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1027",
+      "description": "Microsoft Edge updater writing a timestamped temp file to AppData\\Local\\Temp \u2014 legitimate software commonly drops randomly-named temp files in the same location as the attack artifacts"
+    }
+  }
+]

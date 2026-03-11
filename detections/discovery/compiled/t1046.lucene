@@ -1,0 +1,1 @@
+(process.executable:(*AppData\\Local\\Temp* OR *AppData\\Roaming* OR *ProgramData* OR *Windows\\Temp* OR *Users\\Public*)) AND (process.command_line:(*\-\-ports* OR *\-\-scan* OR *\-p\ * OR *\/scan* OR *\-\-top\-ports* OR *\-sS* OR *\-sT* OR *\-sV* OR *\-sC*)) AND (NOT (process.executable:(*Program\ Files* OR *Program\ Files\ \(x86\)*)))
