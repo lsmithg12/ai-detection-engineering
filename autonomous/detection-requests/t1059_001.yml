@@ -13,7 +13,7 @@ compiled_spl: detections/execution/compiled/t1059_001_powershell_bypass.spl
 deployed_date: '2026-03-01T00:00:00Z'
 elastic_rule_id: b7a9d54f-a85c-4c55-a2d8-5b19ba14b884
 splunk_saved_search: PowerShell Bypass T1059.001
-last_quality_review: '2026-03-10T22:34:58Z'
+last_quality_review: '2026-03-11T14:05:00Z'
 quality_score: 0.95
 fp_rate: 0.0
 tp_rate: 1.0
@@ -56,6 +56,10 @@ changelog:
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-10T22:34:58Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-11T14:05:00Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
