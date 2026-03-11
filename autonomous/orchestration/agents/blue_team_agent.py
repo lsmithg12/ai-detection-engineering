@@ -321,24 +321,29 @@ def event_matches_block(event: dict, block: dict) -> bool:
         actual = _get_nested(event, field)
         if actual is None:
             return False
-        actual_str = str(actual).lower()
+        # Normalize backslashes: YAML single-quoted '\\' stays literal double-backslash,
+        # but JSON '\\' decodes to single backslash. Normalize both to single.
+        actual_str = str(actual).lower().replace("\\\\", "\\")
 
         # Normalize expected values to list
         if not isinstance(expected_vals, list):
             expected_vals = [expected_vals]
 
+        def _norm(v):
+            return str(v).lower().replace("\\\\", "\\")
+
         if modifier == "contains":
-            if not any(str(v).lower() in actual_str for v in expected_vals):
+            if not any(_norm(v) in actual_str for v in expected_vals):
                 return False
         elif modifier == "startswith":
-            if not any(actual_str.startswith(str(v).lower()) for v in expected_vals):
+            if not any(actual_str.startswith(_norm(v)) for v in expected_vals):
                 return False
         elif modifier == "endswith":
-            if not any(actual_str.endswith(str(v).lower()) for v in expected_vals):
+            if not any(actual_str.endswith(_norm(v)) for v in expected_vals):
                 return False
         else:
             # Exact match (OR logic — any value matches)
-            if not any(actual_str == str(v).lower() for v in expected_vals):
+            if not any(actual_str == _norm(v) for v in expected_vals):
                 return False
     return True
 
