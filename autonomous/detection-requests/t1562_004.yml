@@ -1,17 +1,17 @@
 technique_id: T1562.004
 title: 'Impair Defenses: Disable or Modify System Firewall'
-status: REQUESTED
+status: VALIDATED
 priority: medium
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
-scenario_file: ''
-sigma_rule: ''
+scenario_file: simulator\scenarios\t1562_004.json
+sigma_rule: detections\defense_evasion\t1562_004.yml
 deployed_date: ''
 last_quality_review: ''
-quality_score: 0.0
-fp_rate: 0.0
-tp_rate: 0.0
+quality_score: 0.857
+fp_rate: 0.5
+tp_rate: 1.0
 alert_volume_24h: 0
 cost_estimate: low
 auto_deploy_eligible: false
@@ -20,3 +20,30 @@ changelog:
   agent: intel
   action: created
   details: 'Detection request created from intel: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml'
+- date: '2026-03-11T13:58:49Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-11T13:58:49Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
+- date: '2026-03-11T14:03:16Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl, mitre_tactic'
+- date: '2026-03-11T14:03:16Z'
+  agent: blue-team
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
+- date: '2026-03-11T14:04:59Z'
+  agent: blue-team
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-11T14:04:59Z'
+  agent: blue-team
+  action: transition:AUTHORED->VALIDATED
+  details: F1=0.857, FP_rate=0.5, tier=human_review
+compiled_lucene: detections\defense_evasion\compiled\t1562_004.lucene
+compiled_spl: detections\defense_evasion\compiled\t1562_004.spl
+mitre_tactic: defense_evasion

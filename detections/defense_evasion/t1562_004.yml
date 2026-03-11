@@ -1,0 +1,80 @@
+title: Windows Firewall Disabled via Netsh or Registry Modification
+id: 8c3f1a2e-6d47-4b9a-a1e3-5f8c2d7b0e94
+status: experimental
+description: >
+  Detects Windows Firewall being disabled or modified through two methods:
+  (1) netsh.exe spawned from a suspicious parent process to disable firewall
+  profiles or add permissive rules, and (2) direct registry modification of
+  FirewallPolicy keys to set EnableFirewall to 0. Fawkes C2 agents use both
+  approaches — netsh commands and direct registry writes — to neutralize
+  host-based firewalls after initial compromise.
+author: Blue Team Detection Engineering Agent
+date: 2026/03/11
+references:
+  - https://attack.mitre.org/techniques/T1562/004/
+  - https://github.com/galoryber/fawkes
+  - https://learn.microsoft.com/en-us/windows-server/networking/technologies/netsh/netsh-contexts
+tags:
+  - attack.defense_evasion
+  - attack.t1562.004
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_netsh_base:
+    event.code: '1'
+    process.executable|endswith: '\netsh.exe'
+  selection_netsh_disable:
+    process.command_line|contains:
+      - 'state off'
+      - 'opmode disable'
+      - 'set allprofiles state'
+      - 'firewall set opmode'
+  selection_netsh_add_suspicious:
+    process.command_line|contains|all:
+      - 'add rule'
+      - 'action=allow'
+    process.parent.executable|contains:
+      - '\Temp\'
+      - '\AppData\'
+      - '\Downloads\'
+      - '\ProgramData\'
+      - '\Users\'
+  filter_add_legitimate_parent:
+    process.parent.executable|contains:
+      - '\Windows\System32\'
+      - '\Windows\SysWOW64\'
+      - '\Program Files\'
+      - '\Program Files (x86)\'
+  selection_registry_base:
+    event.code: '13'
+    event.category: registry
+  selection_registry_firewall_disable:
+    registry.path|contains: '\FirewallPolicy\'
+    registry.path|endswith: '\EnableFirewall'
+    registry.value: '0'
+  selection_registry_suspicious_process:
+    process.executable|contains:
+      - '\Temp\'
+      - '\AppData\'
+      - '\Downloads\'
+      - '\ProgramData\'
+  condition: >
+    (selection_netsh_base and (selection_netsh_disable or (selection_netsh_add_suspicious and not filter_add_legitimate_parent)))
+    or (selection_registry_base and selection_registry_firewall_disable and selection_registry_suspicious_process)
+fields:
+  - process.command_line
+  - process.parent.executable
+  - process.parent.name
+  - process.executable
+  - process.name
+  - registry.path
+  - registry.value
+  - user.name
+  - host.name
+falsepositives:
+  - Legitimate software installers (msiexec, setup.exe) from Program Files or System32 adding firewall rules
+  - GPO-deployed scripts that reconfigure firewall profiles during maintenance windows
+  - Enterprise endpoint management tools resetting firewall state
+  - Windows Update or system maintenance temporarily toggling firewall registry keys
+level: high

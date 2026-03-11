@@ -1,0 +1,1 @@
+process.executable:*\\cmd.exe AND (process.command_line:*dir\ * AND process.command_line:*\ \/s*) AND (process.parent.executable:(*\\AppData\\Roaming\\* OR *\\AppData\\Local\\Temp\\* OR *\\ProgramData\\* OR *\\Public\\* OR *\\Temp\\*)) AND (NOT (process.parent.executable:(*\\Microsoft\\OneDrive\\* OR *\\Microsoft\\Teams\\* OR *\\Google\\Chrome\\* OR *\\Mozilla\ Firefox\\*)))

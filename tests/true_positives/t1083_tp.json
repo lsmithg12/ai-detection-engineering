@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-11T09:14:22.341Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c dir C:\\Users\\clee\\ /s /b 2>&1",
+      "parent": {
+        "pid": 5540,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1083",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent spawns cmd.exe to recursively enumerate user home directory contents"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T09:14:25.819Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7901,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c dir C:\\Users\\ /s /b 2>&1",
+      "parent": {
+        "pid": 5540,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1083",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent broadens directory enumeration to all user profiles on the host"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T09:14:31.204Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7965,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c dir C:\\Program Files\\ /s /b 2>&1 & dir C:\\Program Files (x86)\\ /s /b 2>&1",
+      "parent": {
+        "pid": 5540,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1083",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent enumerates installed software directories to identify targets for lateral movement or data staging"
+    }
+  }
+]

@@ -1,0 +1,1 @@
+process.executable="*\\cmd.exe" process.command_line="*dir *" process.command_line="* /s*" process.parent.executable IN ("*\\AppData\\Roaming\\*", "*\\AppData\\Local\\Temp\\*", "*\\ProgramData\\*", "*\\Public\\*", "*\\Temp\\*") NOT (process.parent.executable IN ("*\\Microsoft\\OneDrive\\*", "*\\Microsoft\\Teams\\*", "*\\Google\\Chrome\\*", "*\\Mozilla Firefox\\*"))

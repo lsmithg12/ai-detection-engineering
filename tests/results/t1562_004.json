@@ -1,0 +1,19 @@
+{
+  "technique_id": "T1562.004",
+  "date": "2026-03-11T14:04:59Z",
+  "sigma_rule": "detections\\defense_evasion\\t1562_004.yml",
+  "metrics": {
+    "tp": 3,
+    "fp": 1,
+    "fn": 0,
+    "tn": 1,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.857,
+    "fp_rate": 0.5,
+    "tp_rate": 1.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "human_review"
+}

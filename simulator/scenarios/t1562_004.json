@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1562.004",
+  "technique_name": "Impair Defenses: Disable or Modify System Firewall",
+  "description": "Simulates Impair Defenses: Disable or Modify System Firewall attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-11T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "netsh.exe",
+          "executable": "C:\\Windows\\System32\\netsh.exe",
+          "command_line": "netsh advfirewall set allprofiles state off",
+          "parent": {
+            "pid": 5412,
+            "name": "update_helper.exe",
+            "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.004",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 update_helper.exe spawns netsh.exe to disable all Windows Firewall profiles"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T09:14:35.109Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7901,
+          "name": "netsh.exe",
+          "executable": "C:\\Windows\\System32\\netsh.exe",
+          "command_line": "netsh advfirewall firewall add rule name=\"update_helper\" dir=in action=allow program=\"C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe\" enable=yes",
+          "parent": {
+            "pid": 5412,
+            "name": "update_helper.exe",
+            "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.004",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes C2 adds inbound firewall allow rule for itself by full executable path to survive firewall re-enable"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T09:14:37.882Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "process": {
+          "pid": 5412,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Local\\Temp\\update_helper.exe"
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\EnableFirewall",
+          "value": "0"
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.004",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes C2 directly sets EnableFirewall registry key to 0 on StandardProfile as a redundant disable mechanism"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-11T08:02:14.773Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3120,
+          "name": "netsh.exe",
+          "executable": "C:\\Windows\\System32\\netsh.exe",
+          "command_line": "netsh advfirewall firewall add rule name=\"CorpVPN Client\" dir=in action=allow program=\"C:\\Program Files\\CorpVPN\\vpnclient.exe\" enable=yes",
+          "parent": {
+            "pid": 1488,
+            "name": "msiexec.exe",
+            "executable": "C:\\Windows\\System32\\msiexec.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.004",
+          "description": "Legitimate VPN client MSI installer adding an inbound firewall allow rule during software installation — same netsh advfirewall firewall add rule pattern as attack but parent is msiexec from Program Files and user is SYSTEM"
+        }
+      },
+      {
+        "@timestamp": "2026-03-11T07:45:58.301Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "process": {
+          "pid": 892,
+          "name": "svchost.exe",
+          "executable": "C:\\Windows\\System32\\svchost.exe"
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\EnableFirewall",
+          "value": "1"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.004",
+          "description": "Windows Group Policy application (svchost / mpssvc) writing EnableFirewall=1 during policy refresh — same registry path as attack but written by SYSTEM/svchost and setting is 1 (enable), not 0 (disable)"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable",
+      "registry.path",
+      "registry.value",
+      "user.name"
+    ],
+    "notes": "Detection should trigger on: (1) netsh.exe with 'set allprofiles state off' or 'set * state off' in command_line; (2) netsh.exe with 'add rule' spawned from a non-standard parent (not msiexec/services/svchost) or from a Temp-path parent; (3) registry write of EnableFirewall=0 by any process that is NOT svchost.exe. Key discriminators from benign: parent process path in AppData/Temp, registry value of 0 vs 1, user is interactive domain user not SYSTEM."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_13"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

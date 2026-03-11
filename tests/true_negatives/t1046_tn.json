@@ -1,0 +1,84 @@
+[
+  {
+    "@timestamp": "2026-03-10T14:19:05.114Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6104,
+      "name": "nmap.exe",
+      "executable": "C:\\Program Files (x86)\\Nmap\\nmap.exe",
+      "command_line": "nmap.exe -sV -p 80,443,8080 10.10.20.10",
+      "parent": {
+        "pid": 3820,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1046",
+      "description": "IT admin running Nmap from its standard installed location under Program Files \u2014 legitimate IT asset discovery tool invoked for a narrow targeted scan, not from a Temp directory"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T14:20:31.778Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 2388,
+      "name": "mstsc.exe",
+      "executable": "C:\\Windows\\System32\\mstsc.exe"
+    },
+    "destination": {
+      "ip": "10.10.20.10",
+      "port": 3389
+    },
+    "source": {
+      "ip": "10.10.10.112",
+      "port": 50991
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1046",
+      "description": "Legitimate RDP connection from mstsc.exe (Remote Desktop Client) to a single known internal host \u2014 single destination, signed system binary, not a Temp-resident process"
+    }
+  }
+]

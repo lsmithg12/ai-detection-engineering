@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-11T09:02:11.087Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6210,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c dir C:\\Users\\clee\\Documents\\ /b",
+      "parent": {
+        "pid": 4488,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1083",
+      "description": "User manually runs a dir command from explorer context menu or a legitimate script \u2014 single directory, no recursion, benign parent"
+    }
+  },
+  {
+    "@timestamp": "2026-03-11T09:07:55.612Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6704,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c dir C:\\Users\\clee\\Desktop\\ /s /b",
+      "parent": {
+        "pid": 3812,
+        "name": "OneDrive.exe",
+        "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1083",
+      "description": "OneDrive sync agent enumerates desktop folder recursively during file sync check \u2014 similar recursive dir pattern but from a known-good signed parent"
+    }
+  }
+]
