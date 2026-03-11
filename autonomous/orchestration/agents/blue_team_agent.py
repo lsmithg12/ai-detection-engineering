@@ -55,6 +55,10 @@ TECHNIQUE_TACTIC_MAP = {
     "T1087": "discovery",
     "T1047": "execution",
     "T1003": "credential_access",
+    "T1490": "impact",
+    "T1569": "execution",
+    "T1046": "discovery",
+    "T1083": "discovery",
 }
 
 
@@ -383,6 +387,15 @@ def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
     with open(rule_path, encoding="utf-8") as f:
         rule = yaml.safe_load(f)
 
+    if not isinstance(rule, dict):
+        # Rule file is not valid Sigma YAML (e.g. plain string from bad Claude output)
+        return {
+            "tp": 0, "fp": 0, "fn": len(attack_events), "tn": len(benign_events),
+            "precision": 0.0, "recall": 0.0, "f1_score": 0.0,
+            "fp_rate": 0.0, "tp_rate": 0.0,
+            "total_attack": len(attack_events), "total_benign": len(benign_events),
+        }
+
     detection = rule.get("detection", {})
     condition = detection.get("condition", "selection")
 
@@ -450,6 +463,8 @@ def _event_detected_by_rule(rule_path: Path, event: dict) -> bool:
     """Check if a single event would be detected by the Sigma rule at rule_path."""
     with open(rule_path, encoding="utf-8") as f:
         rule = yaml.safe_load(f)
+    if not isinstance(rule, dict):
+        return False
     detection = rule.get("detection", {})
     condition = detection.get("condition", "selection")
 
@@ -545,9 +560,12 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
         if llm_result["success"]:
             # Validate YAML is parseable before accepting
             try:
-                yaml.safe_load(llm_result["sigma_yaml"])
-                sigma_yaml = llm_result["sigma_yaml"]
-                print(f"    [blue-team] Claude authored rule ({len(sigma_yaml)} chars)")
+                parsed = yaml.safe_load(llm_result["sigma_yaml"])
+                if isinstance(parsed, dict) and "detection" in parsed:
+                    sigma_yaml = llm_result["sigma_yaml"]
+                    print(f"    [blue-team] Claude authored rule ({len(sigma_yaml)} chars)")
+                else:
+                    print(f"    [blue-team] Claude output is not a valid Sigma rule (missing detection block), falling back")
             except yaml.YAMLError:
                 print(f"    [blue-team] Claude output was not valid YAML, falling back")
                 sigma_yaml = None
@@ -645,7 +663,7 @@ Return ONLY the corrected Sigma YAML — no markdown fences, no explanation."""
                 ),
                 allowed_tools=[],
                 max_turns=1,
-                timeout_seconds=90,
+                timeout_seconds=150,
             )
 
             if refine_result["success"]:
@@ -660,7 +678,10 @@ Return ONLY the corrected Sigma YAML — no markdown fences, no explanation."""
                     refined_yaml = "\n".join(lines)
 
                 try:
-                    yaml.safe_load(refined_yaml)  # Validate YAML
+                    parsed_refined = yaml.safe_load(refined_yaml)
+                    if not isinstance(parsed_refined, dict) or "detection" not in parsed_refined:
+                        print(f"    [blue-team] Retry {attempt}: output is not a valid Sigma rule")
+                        continue
                     rule_path.write_text(refined_yaml, encoding="utf-8")
                     print(f"    [blue-team] Claude refined rule ({len(refined_yaml)} chars)")
 
