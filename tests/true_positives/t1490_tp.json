@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-10T02:14:33.112Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5832,
+      "name": "vssadmin.exe",
+      "executable": "C:\\Windows\\System32\\vssadmin.exe",
+      "command_line": "vssadmin.exe delete shadows /all /quiet",
+      "parent": {
+        "pid": 4120,
+        "name": "sync_agent.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\sync_agent.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1490",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes sync_agent.exe deletes all VSS shadow copies to prevent system restoration"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T02:14:41.887Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6044,
+      "name": "bcdedit.exe",
+      "executable": "C:\\Windows\\System32\\bcdedit.exe",
+      "command_line": "bcdedit.exe /set {default} recoveryenabled No",
+      "parent": {
+        "pid": 4120,
+        "name": "sync_agent.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\sync_agent.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1490",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes sync_agent.exe disables Windows Recovery Environment via bcdedit to prevent boot-time repair"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T02:14:49.554Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6211,
+      "name": "wbadmin.exe",
+      "executable": "C:\\Windows\\System32\\wbadmin.exe",
+      "command_line": "wbadmin.exe delete catalog -quiet",
+      "parent": {
+        "pid": 4120,
+        "name": "sync_agent.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\sync_agent.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1490",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes sync_agent.exe deletes Windows Backup catalog to destroy restore point metadata \u2014 completes recovery inhibition chain"
+    }
+  }
+]

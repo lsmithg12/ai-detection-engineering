@@ -1,0 +1,239 @@
+{
+  "technique_id": "T1562.006",
+  "technique_name": "Impair Defenses: Indicator Blocking",
+  "description": "Simulates Impair Defenses: Indicator Blocking attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-10T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5872,
+          "name": "auditpol.exe",
+          "executable": "C:\\Windows\\System32\\auditpol.exe",
+          "command_line": "auditpol.exe /set /subcategory:\"Process Creation\" /success:disable /failure:disable",
+          "parent": {
+            "pid": 4416,
+            "name": "update_helper.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.006",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Malicious process disables Windows process creation auditing via auditpol.exe to suppress Security event log indicators"
+        }
+      },
+      {
+        "@timestamp": "2026-03-10T09:14:35.113Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "process": {
+          "pid": 4416,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "command_line": "update_helper.exe --install --silent",
+          "parent": {
+            "pid": 2180,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SysmonDrv\\Parameters\\Rules",
+          "value": "ExcludeImage_0"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.006",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Malicious process writes a process exclusion rule directly into SysmonDrv registry parameters to hide its own telemetry from Sysmon collection"
+        }
+      },
+      {
+        "@timestamp": "2026-03-10T09:14:38.772Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "process": {
+          "pid": 4416,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "command_line": "update_helper.exe --install --silent",
+          "parent": {
+            "pid": 2180,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EventLog-Security\\Enabled",
+          "value": "0"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1562.006",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Malicious process disables the EventLog-Security ETW autologger session to block Security channel event collection at the kernel level"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-10T08:02:11.334Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3340,
+          "name": "auditpol.exe",
+          "executable": "C:\\Windows\\System32\\auditpol.exe",
+          "command_line": "auditpol.exe /set /subcategory:\"Logon\" /success:enable /failure:enable",
+          "parent": {
+            "pid": 1248,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.006",
+          "description": "Group Policy startup script invoking auditpol.exe to ENABLE logon auditing — legitimate hardening, not indicator blocking"
+        }
+      },
+      {
+        "@timestamp": "2026-03-10T07:45:50.229Z",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "process": {
+          "pid": 692,
+          "name": "services.exe",
+          "executable": "C:\\Windows\\System32\\services.exe",
+          "command_line": "C:\\Windows\\System32\\services.exe",
+          "parent": {
+            "pid": 564,
+            "name": "wininit.exe",
+            "executable": "C:\\Windows\\System32\\wininit.exe"
+          }
+        },
+        "registry": {
+          "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Security\\MaxSize",
+          "value": "209715200"
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1562.006",
+          "description": "services.exe applying GPO-pushed registry value to increase Security event log maximum size — routine log management, not suppression"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.parent.executable",
+      "process.command_line",
+      "registry.path",
+      "registry.value",
+      "user.domain"
+    ],
+    "notes": "Detection should focus on three high-confidence indicators: (1) auditpol.exe spawned by a non-administrative, non-GPO parent (especially from AppData paths) with /success:disable or /failure:disable arguments; (2) direct registry writes to HKLM\\SYSTEM\\CurrentControlSet\\Services\\SysmonDrv\\Parameters by non-SYSTEM processes; (3) registry writes setting HKLM\\SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EventLog-Security\\Enabled to 0. Benign baseline shows auditpol invocations from SYSTEM/GPO chains with enabling arguments, and services.exe making log-size adjustments — differentiate on parent process lineage and argument direction (enable vs. disable)."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_13"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

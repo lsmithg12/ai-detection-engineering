@@ -31,6 +31,7 @@ TACTIC_MAP = {
     "collection": ("Collection", "TA0009"),
     "command_and_control": ("Command and Control", "TA0011"),
     "initial_access": ("Initial Access", "TA0001"),
+    "impact": ("Impact", "TA0040"),
 }
 
 SEVERITY_MAP = {
