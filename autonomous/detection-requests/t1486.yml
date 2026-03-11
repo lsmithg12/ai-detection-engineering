@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-l
 scenario_file: simulator\scenarios\t1486.json
 sigma_rule: detections\execution\t1486.yml
 deployed_date: '2026-03-08T22:20:03Z'
-last_quality_review: '2026-03-11T14:05:00Z'
+last_quality_review: '2026-03-11T18:37:14Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -73,6 +73,10 @@ changelog:
   action: transition:DEPLOYED->MONITORING
   details: "Health score 0.915 \u2014 healthy"
 - date: '2026-03-11T14:05:00Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-11T18:37:14Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
