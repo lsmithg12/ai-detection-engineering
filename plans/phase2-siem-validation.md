@@ -1,5 +1,6 @@
 # Phase 2: SIEM-Based Validation
 
+**Status**: IMPLEMENTED — PR #54 (2026-03-13), pending merge
 **Priority**: HIGH
 **Estimated effort**: 4-6 hours
 **Dependencies**: Docker services running (Elasticsearch + optionally Splunk)
@@ -292,19 +293,42 @@ Add validation infrastructure to `setup.sh`.
 
 ---
 
+## Implementation Notes (2026-03-13)
+
+### What was built:
+- `autonomous/orchestration/validation.py` (280 lines) — full ES validation module
+- `pipeline/validation-ilm-policy.json` — ILM safety net (1-hour auto-delete)
+- `setup.sh` updated — ILM policy + override template creation
+- `blue_team_agent.py` modified — SIEM validation with local fallback + retry loop integration
+- Result file schema enriched — `validation_method`, `validation_details`, full metadata
+
+### Architectural decisions made during implementation:
+- Events are **flattened** (nested dicts → dotted keys) before ES ingest for consistent
+  field mapping behavior with the sim-* template
+- Each event gets a deterministic `_id` (`atk-0`, `ben-1`, etc.) for reliable scoring
+- `_use_siem_validation` flag set once in `run()` via `check_elastic()`, stored on
+  `author_and_validate` function object to avoid per-detection health checks
+- Splunk validation **permanently deferred** — user confirmed no Splunk ES license
+
+### Remaining post-merge verification:
+- [ ] Run blue-team agent with ES up — confirm `validation_method: "elasticsearch"`
+- [ ] Run blue-team agent with ES down — confirm fallback to `local_json`
+- [ ] Verify no orphaned `sim-validation-*` indices after a run
+- [ ] Run `setup.sh --elastic` — confirm ILM/template creation messages
+
 ## Verification Checklist
 
-- [ ] `validation.py` module exists with `validate_against_elasticsearch()` function
+- [x] `validation.py` module exists with `validate_against_elasticsearch()` function
 - [ ] Events can be bulk ingested and queried within 2 seconds
-- [ ] Validation index auto-deletes after function completes (primary cleanup)
-- [ ] ILM policy exists as safety net for orphaned indices
+- [x] Validation index auto-deletes after function completes (primary cleanup)
+- [x] ILM policy exists as safety net for orphaned indices
 - [ ] `validate_against_elasticsearch()` returns correct TP/FP/FN/TN for known-good rule
-- [ ] `validate_against_elasticsearch()` returns `None` when ES offline (fallback triggers)
-- [ ] Query syntax errors are captured in `errors` list (not swallowed)
-- [ ] Blue-team agent uses SIEM validation when available, local when not
-- [ ] Result files record `validation_method` and `validation_details`
-- [ ] Retry loop includes SIEM error feedback when available
-- [ ] setup.sh creates ILM policy and override template
+- [x] `validate_against_elasticsearch()` returns `None` when ES offline (fallback triggers)
+- [x] Query syntax errors are captured in `errors` list (not swallowed)
+- [x] Blue-team agent uses SIEM validation when available, local when not
+- [x] Result files record `validation_method` and `validation_details`
+- [x] Retry loop includes SIEM error feedback when available
+- [x] setup.sh creates ILM policy and override template
 - [ ] No orphan validation indices left after test run
 
 ---

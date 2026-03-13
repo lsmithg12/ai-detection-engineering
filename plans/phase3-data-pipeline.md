@@ -1,8 +1,9 @@
 # Phase 3: Data Pipeline — Raw Logs through Cribl
 
+**Status**: NOT STARTED
 **Priority**: HIGH
 **Estimated effort**: 8-12 hours (multi-session)
-**Dependencies**: Phase 2 (SIEM validation), Docker + Cribl running
+**Dependencies**: Phase 2 (SIEM validation) — DONE (PR #54). Docker + Cribl running.
 **Branch**: `infra/phase3-data-pipeline`
 
 ---
@@ -12,19 +13,34 @@
 Current flow skips the normalization layer where most real-world detection failures occur:
 
 ```
-Current:  Red-team → pre-normalized ECS JSON → direct to SIEM
+Current:  Red-team → pre-normalized ECS JSON → direct to ES → Lucene query → F1
 Problem:  Fields are always correct because they're hand-crafted
 Reality:  Raw logs → parsing → normalization → SIEM (failures at every step)
 ```
 
 This phase implements the full pipeline: raw vendor events → Cribl normalization → SIEM.
 
+### What Phase 2 Already Built (Leverage Points)
+
+Phase 2 delivered `validation.py` with an `ingestion_method` parameter designed for this:
+
+```python
+validate_against_elasticsearch(
+    ...,
+    ingestion_method="direct",  # Phase 2 default — bulk ingest to ES
+    # ingestion_method="cribl"  # Phase 3 — route through Cribl HEC first
+)
+```
+
+The ephemeral index pattern (`sim-validation-*`), ILM cleanup, and scoring logic all
+carry over unchanged. Phase 3 only needs to add the Cribl routing path.
+
 ## Architecture
 
 ```
 Red-Team Agent
-  ↓ generates raw vendor-format events
-  ↓ (Windows Event XML, raw syslog, HEC JSON with _raw field)
+  ↓ generates raw vendor-format events (NEW)
+  ↓ (Sysmon text, Windows Event XML, HEC JSON with _raw field)
 simulator/raw/<source_type>/<technique_id>.json
   ↓
 Cribl Stream (cim_normalize pipeline)
@@ -32,9 +48,9 @@ Cribl Stream (cim_normalize pipeline)
   ↓ eval: map to ECS field names
   ↓ drop: filter noise events
   ↓
-Elasticsearch (sim-validation index)
+Elasticsearch (sim-validation-* index via Phase 2 infrastructure)
   ↓
-Blue-Team Agent
+validation.py (reused from Phase 2)
   ↓ runs Lucene query → measures TP/FP
   ↓
 Detection validated end-to-end
@@ -86,9 +102,9 @@ Create reference formats for each data source the lab uses.
 Modify `red_team_agent.py` to generate raw events alongside ECS events.
 
 **Steps**:
-1. Add `generate_raw_events()` function that converts ECS events to raw vendor format
+1. Add `ecs_to_raw_sysmon()` function that converts ECS events to raw vendor format
 2. For each scenario, generate both:
-   - `simulator/scenarios/<technique_id>.json` (current ECS format — for local validation fallback)
+   - `simulator/scenarios/<technique_id>.json` (current ECS format — for local/direct validation)
    - `simulator/raw/sysmon/<technique_id>.json` (raw HEC format — for Cribl pipeline)
 3. Include `_raw` field with the unstructured log text
 4. Include HEC metadata: `sourcetype`, `host`, `source`, `time`
@@ -163,45 +179,37 @@ cribl_add_pipeline_function('cim_normalize', {
 })
 ```
 
-**Function 4: CIM Aliases (Splunk)**
-```javascript
-cribl_add_pipeline_function('cim_normalize', {
-  type: 'eval',
-  filter: 'true',
-  conf: { add: [
-    { name: 'src_ip', value: "__e['source.ip']" },
-    { name: 'dest_ip', value: "__e['destination.ip']" },
-    { name: 'user', value: "__e['user.name']" },
-    { name: 'CommandLine', value: "__e['process.command_line']" },
-    { name: 'EventCode', value: "__e['event.code']" }
-  ]},
-  description: 'CIM field aliases for Splunk compatibility'
-})
-```
-
 5. Preview pipeline with raw samples: `cribl_preview_pipeline('cim_normalize', raw_samples)`
 6. Verify all required ECS fields are present in output
 7. Check metrics: `cribl_get_metrics()`
 
-### Task 3.4: Integrate Cribl into Validation Flow
+### Task 3.4: Implement Cribl Ingestion Method in validation.py
 
-Modify the validation flow to route raw events through Cribl before querying.
+Extend `validate_against_elasticsearch()` to support `ingestion_method="cribl"`.
 
 **Steps**:
-1. In `validate_against_elasticsearch()`, add option to route via Cribl:
-   ```python
-   if use_cribl:
-       # Send raw events to Cribl HEC input
-       for event in raw_events:
-           requests.post(f"{CRIBL_HEC_URL}/services/collector/event",
-               headers={"Authorization": f"Splunk {HEC_TOKEN}"},
-               json=event)
-       # Wait for Cribl to process and forward to ES
-       time.sleep(2)
-       # Query ES for normalized events
+1. When `ingestion_method="cribl"`:
+   - Convert ECS events to raw format using `ecs_to_raw_sysmon()`
+   - Send raw events to Cribl HEC input (not directly to ES)
+   - Wait for Cribl to process and forward to ES
+   - Query the same `sim-validation-*` index via existing scoring logic
+2. Add Cribl HEC config to `config.yml`:
+   ```yaml
+   cribl:
+     hec_url: "http://localhost:8288"
+     hec_token: "blue-team-lab-hec-token"
    ```
-2. Compare results: raw→Cribl→ES vs direct ECS→ES
-3. If fields are missing after Cribl normalization, use MCP tools to fix the pipeline
+3. The `_simulation.type` tag must survive Cribl normalization — verify the pipeline
+   passes it through (add passthrough rule if not)
+
+**Key difference from direct ingest**: Events land in ES via Cribl's output, not via
+our Bulk API. The index name is determined by Cribl's routing rules, so we need Cribl
+configured to route `sim-validation-*` events to the correct index.
+
+**Alternative approach** (simpler): Keep direct ES ingest but compare field values
+post-Cribl-normalization. Send raw events through Cribl separately, capture the
+normalized output via `cribl_preview_pipeline`, then ingest the normalized result
+directly into ES. This avoids needing Cribl routing changes.
 
 ### Task 3.5: Data Source Gap Tracking (Structured YAML)
 
@@ -280,6 +288,6 @@ Modify `intel_agent.py` to include `data_source_requirements` in detection reque
 
 1. `feat(simulator): add raw vendor event format support`
 2. `feat(cribl): build cim_normalize pipeline for Sysmon events`
-3. `feat(validation): route raw events through Cribl for end-to-end testing`
+3. `feat(validation): add Cribl ingestion method to ES validation`
 4. `feat(gaps): structured data source gap tracking (YAML)`
 5. `feat(intel): tag detection requests with data source requirements`

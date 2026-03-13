@@ -1,8 +1,9 @@
 # Phase 6: Operational Maturity
 
+**Status**: NOT STARTED
 **Priority**: MEDIUM
 **Estimated effort**: 8-12 hours (multi-session)
-**Dependencies**: Phases 1-2 recommended, Phase 4 (quality upgrades) helps
+**Dependencies**: Phase 1 (DONE), Phase 2 (DONE). Phase 4 (quality upgrades) helps.
 **Branch**: `infra/phase6-ops-maturity`
 
 ---
@@ -87,11 +88,13 @@ jobs:
 ```
 
 **Steps**:
-1. Extract validation logic from `blue_team_agent.py` into standalone `validate_rule.py`
+1. Extract validation logic into standalone `validate_rule.py` (can reuse
+   `validation.validate_against_elasticsearch()` from Phase 2 when ES is available,
+   or `blue_team_agent.validate_detection()` for CI without ES)
 2. Accept: Sigma rule path, TP test path, TN test path
-3. Output: PASS/FAIL with F1 score
+3. Output: PASS/FAIL with F1 score and validation method used
 4. Fail the PR if F1 drops below previous value (regression)
-5. Post F1 results as PR comment
+5. Post F1 results as PR comment including validation method
 
 ### Task 6.3: Pipeline Performance Metrics
 

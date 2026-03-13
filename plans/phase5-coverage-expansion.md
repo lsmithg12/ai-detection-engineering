@@ -1,9 +1,17 @@
 # Phase 5: Coverage Expansion — Close ATT&CK Gaps
 
+**Status**: NOT STARTED
 **Priority**: MEDIUM
 **Estimated effort**: 16-24 hours (multi-session)
-**Dependencies**: Phase 1 (quality fixes), Phase 3 (data pipeline) recommended
+**Dependencies**: Phase 1 (DONE), Phase 2 (DONE — SIEM validation available). Phase 3 (data pipeline) recommended but not required.
 **Branch**: Per-technique branches `detection/TXXXX-YYY-short-name`
+
+### Phase 2 Leverage
+
+New detections authored in Phase 5 will automatically benefit from SIEM-based validation
+if Elasticsearch is running. The blue-team agent will validate Lucene queries against real
+ES indices, catching field mapping issues that local validation misses. This is especially
+valuable for the more complex detections (EQL correlation, threshold rules) planned here.
 
 ---
 
