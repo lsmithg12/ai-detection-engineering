@@ -411,6 +411,28 @@ if [[ "$SIEM_MODE" == "elastic" || "$SIEM_MODE" == "both" ]] && [ "$INCLUDE_SIMU
         }
       }
     }' > /dev/null 2>&1 && log_ok "Index template 'sim-*' created" || log_warn "Template may already exist"
+
+    # Validation infrastructure — ILM policy + override template for ephemeral test indices
+    # These are used by the blue-team agent's SIEM-based validation (Phase 2)
+    curl -sf -u elastic:changeme -X PUT "http://localhost:9200/_ilm/policy/validation-cleanup" \
+        -H "Content-Type: application/json" \
+        -d @pipeline/validation-ilm-policy.json > /dev/null 2>&1 \
+        && log_ok "ILM policy 'validation-cleanup' created" \
+        || log_warn "ILM policy may already exist"
+
+    curl -sf -u elastic:changeme -X PUT "http://localhost:9200/_index_template/sim-validation" \
+        -H "Content-Type: application/json" \
+        -d '{
+      "index_patterns": ["sim-validation-*"],
+      "priority": 600,
+      "template": {
+        "settings": {
+          "number_of_shards": 1,
+          "number_of_replicas": 0,
+          "index.lifecycle.name": "validation-cleanup"
+        }
+      }
+    }' > /dev/null 2>&1 && log_ok "Validation index template created" || log_warn "Validation template may already exist"
 fi
 
 # ─── Load Attack Range Sample Data (if available) ───────────────

@@ -23,79 +23,71 @@ Real-world detection failures almost always occur at the query/SIEM layer, not t
 ```
 Current:  Scenario JSON → Python matcher → F1 score
 Proposed: Scenario JSON → Elasticsearch ingest → Lucene query → F1 score
-                        → Splunk ingest → SPL query → F1 score (parallel)
+                        → Splunk ingest → SPL query → F1 score (Phase 3+)
 Fallback: When SIEMs offline → current Python matcher (for CI)
 ```
 
+### Key Design Decisions
+
+1. **Separate module**: Validation lives in `autonomous/orchestration/validation.py`
+   (NOT in blue_team_agent.py — it's already 853 lines)
+2. **Reuse sim-* template**: `sim-validation-*` indices inherit `sim-*` template mappings
+   automatically (same wildcard pattern), so no duplicate template needed
+3. **ILM is a safety net**: The function deletes indices after each test (primary cleanup).
+   ILM catches orphans from crashes (1-hour auto-delete).
+4. **Phase 3 extensibility**: Accept `ingestion_method` parameter from the start
+   (direct ingest vs Cribl routing) to avoid refactoring later
+5. **Splunk validation deferred**: Splunk doesn't support easy event deletion. Defer to
+   Phase 3+ when Cribl routing is available. Elastic-only for now.
+6. **SIEM errors fed to retry loop**: When ES returns query syntax errors, include the
+   error message in the feedback to Claude for the retry-with-feedback loop.
+
 ## Tasks
 
-### Task 2.1: Create Validation Index Template
+### Task 2.1: Create Validation ILM Policy (Safety Net)
 
-Create a dedicated `sim-validation` index in Elasticsearch for ephemeral test data.
+Create an ILM policy to auto-delete orphaned validation indices.
 
-**Steps**:
-1. Create index template `sim-validation` with all ECS fields used in detections
-2. Set short retention (auto-delete after 1 hour) via ILM policy
-3. Add to `setup.sh` index template creation block
+**Note**: We do NOT need a separate index template — the existing `sim-*` template
+(priority 500, created in setup.sh) already matches `sim-validation-*` indices.
+The ILM policy is purely a safety net for indices left behind by crashes.
 
-**Index template** (`pipeline/validation-index-template.json`):
+**ILM policy** (`pipeline/validation-ilm-policy.json`):
 ```json
 {
-  "index_patterns": ["sim-validation-*"],
-  "template": {
-    "settings": {
-      "number_of_shards": 1,
-      "number_of_replicas": 0,
-      "index.lifecycle.name": "validation-cleanup",
-      "index.lifecycle.rollover_alias": "sim-validation"
-    },
-    "mappings": {
-      "properties": {
-        "process.name": { "type": "keyword" },
-        "process.executable": { "type": "text", "fields": { "keyword": { "type": "keyword" }}},
-        "process.command_line": { "type": "text", "fields": { "keyword": { "type": "keyword" }}},
-        "process.pid": { "type": "long" },
-        "process.parent.name": { "type": "keyword" },
-        "process.parent.executable": { "type": "text", "fields": { "keyword": { "type": "keyword" }}},
-        "event.code": { "type": "keyword" },
-        "event.category": { "type": "keyword" },
-        "event.type": { "type": "keyword" },
-        "event.action": { "type": "keyword" },
-        "user.name": { "type": "keyword" },
-        "user.domain": { "type": "keyword" },
-        "host.name": { "type": "keyword" },
-        "file.name": { "type": "keyword" },
-        "file.path": { "type": "text", "fields": { "keyword": { "type": "keyword" }}},
-        "destination.ip": { "type": "ip" },
-        "destination.port": { "type": "long" },
-        "source.ip": { "type": "ip" },
-        "source.port": { "type": "long" },
-        "registry.path": { "type": "text", "fields": { "keyword": { "type": "keyword" }}},
-        "registry.value": { "type": "keyword" },
-        "_simulation.type": { "type": "keyword" },
-        "_simulation.technique": { "type": "keyword" },
-        "_simulation.expected_result": { "type": "keyword" }
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {}
+      },
+      "delete": {
+        "min_age": "1h",
+        "actions": {
+          "delete": {}
+        }
       }
     }
   }
 }
 ```
 
-**ILM policy** (auto-cleanup):
-```json
-{
-  "policy": {
-    "phases": {
-      "hot": { "actions": {} },
-      "delete": { "min_age": "1h", "actions": { "delete": {} } }
-    }
-  }
-}
-```
+**Steps**:
+1. Create `pipeline/validation-ilm-policy.json`
+2. Add ILM policy creation to `setup.sh` (after ES health check, before simulator start)
+3. Create a thin override template for `sim-validation-*` that only adds the ILM policy
+   reference (inherits all mappings from the parent `sim-*` template)
 
-### Task 2.2: Build Elasticsearch Validation Function
+### Task 2.2: Build Elasticsearch Validation Module
 
-Add `validate_against_elasticsearch()` to `blue_team_agent.py` (or a new `validator.py` module).
+Create `autonomous/orchestration/validation.py` with SIEM validation functions.
+
+**Module responsibilities**:
+1. Ingest scenario events into ephemeral ES index (Bulk API, NDJSON format)
+2. Run compiled Lucene query against the index
+3. Calculate TP/FP/FN/TN metrics based on `_simulation.type` tags
+4. Delete the ephemeral index after testing
+5. Fall back to `None` when ES is unreachable (caller uses local validation)
 
 **Function signature**:
 ```python
@@ -103,12 +95,16 @@ def validate_against_elasticsearch(
     compiled_lucene: str,
     attack_events: list[dict],
     benign_events: list[dict],
+    technique_id: str = "",
     es_url: str = "http://localhost:9200",
     es_auth: tuple = ("elastic", "changeme"),
     index_prefix: str = "sim-validation"
-) -> dict:
+) -> dict | None:
     """
     Ingest events into Elasticsearch, run Lucene query, measure TP/FP/FN/TN.
+
+    Returns dict with metrics on success, None if ES unreachable.
+    Caller should fall back to local validation when None is returned.
 
     Returns:
         {
@@ -119,77 +115,154 @@ def validate_against_elasticsearch(
             "query_used": str,
             "index_used": str,
             "events_ingested": int,
-            "query_hits": int
+            "query_hits": int,
+            "query_time_ms": int,
+            "errors": []  # Query syntax errors, ingest failures, etc.
         }
     """
 ```
 
-**Implementation steps**:
-1. Generate unique index name: `sim-validation-{uuid4()[:8]}`
-2. Bulk ingest all events (attack tagged `_simulation.type: attack`, benign tagged `baseline`)
-3. Wait for refresh: `POST /{index}/_refresh`
-4. Run the compiled Lucene query: `POST /{index}/_search` with `query_string`
-5. For each hit, check `_simulation.type`:
-   - Hit on `attack` event → TP
-   - Hit on `baseline` event → FP
-6. For each attack event NOT hit → FN
-7. For each baseline event NOT hit → TN
-8. Calculate F1, TP rate, FP rate
-9. Delete the validation index: `DELETE /{index}`
-10. Return metrics
+**Implementation details**:
 
-**Error handling**:
-- If Elasticsearch is unreachable → fall back to local validation, log warning
-- If query syntax error → return error with Lucene query for debugging
-- If bulk ingest fails → retry once, then fall back
+1. **Index naming**: `sim-validation-{uuid4()[:8]}` (ephemeral, unique per test run)
 
-### Task 2.3: Build Splunk Validation Function (Optional)
+2. **Event tagging during ingest**: Each event gets metadata added:
+   ```python
+   event["_simulation"] = {
+       "type": "attack",  # or "baseline"
+       "technique": technique_id
+   }
+   event["@timestamp"] = datetime.utcnow().isoformat() + "Z"
+   ```
 
-Add `validate_against_splunk()` — same concept but using Splunk REST API.
+3. **Bulk API format** (NDJSON):
+   ```
+   {"index": {"_index": "sim-validation-a1b2c3d4"}}
+   {"process.name": "cmd.exe", ..., "_simulation": {"type": "attack"}}
+   {"index": {"_index": "sim-validation-a1b2c3d4"}}
+   {"process.name": "svchost.exe", ..., "_simulation": {"type": "baseline"}}
+   ```
 
-**Steps**:
-1. Ingest events via HEC: `POST http://localhost:8288/services/collector/event`
-2. Run SPL query as oneshot search
-3. Parse results, calculate metrics
-4. Clean up: delete events from index
+4. **Flatten nested events**: ES handles nested dicts natively (dotted field paths
+   from nested JSON), but we need to ensure the event structure matches what sigma-cli
+   outputs. Since our scenarios already use ECS-nested format AND the sim-* template
+   maps fields as dotted paths, no flattening is needed.
 
-**Note**: Splunk validation is lower priority than Elasticsearch. Implement if time permits.
+5. **Query execution**: Use `query_string` query:
+   ```json
+   {
+     "query": {
+       "query_string": {
+         "query": "<compiled_lucene>",
+         "default_operator": "AND",
+         "analyze_wildcard": true
+       }
+     },
+     "size": 1000,
+     "_source": ["_simulation.type"]
+   }
+   ```
+
+6. **Scoring**:
+   - Assign each event a unique `_id` during ingest (or use ES auto-IDs)
+   - Tag attack events with `_simulation.type: attack`, benign with `baseline`
+   - After query: hits on `attack` → TP, hits on `baseline` → FP
+   - Non-hits: attack → FN, baseline → TN
+
+7. **Cleanup**: `DELETE /{index}` after scoring (primary cleanup)
+
+8. **Error handling**:
+   - ES unreachable → return `None` (caller falls back to local)
+   - Query syntax error → return result with `errors` list populated,
+     `f1_score: 0.0`, and the error message (for retry loop feedback)
+   - Bulk ingest error → retry once, then return `None`
+
+### Task 2.3: Splunk Validation (DEFERRED to Phase 3+)
+
+**Rationale**: Splunk doesn't support deleting individual events from an index.
+Workarounds (temporary index, event deletion via searches) are fragile and complex.
+Defer until Phase 3 when Cribl can route events to a dedicated Splunk index with
+automated cleanup.
+
+**When to revisit**: After Phase 3 Cribl integration provides controlled event routing.
 
 ### Task 2.4: Integrate into Blue-Team Agent
 
-Modify `blue_team_agent.py` to use SIEM validation when available.
+Modify `blue_team_agent.py` to use SIEM validation when available, with graceful
+fallback to local Python matching.
+
+**Integration point**: After transpilation, before quality assessment.
 
 **Steps**:
-1. At start of `author_and_validate()`, check if Elasticsearch is reachable:
+1. Import `validation.validate_against_elasticsearch` and `siem.check_elastic`
+2. At start of `author_and_validate()`, check ES availability once:
    ```python
+   from orchestration.validation import validate_against_elasticsearch
    from orchestration.siem import check_elastic
    use_siem_validation = check_elastic()
    ```
-2. After transpiling to Lucene, if `use_siem_validation`:
+3. After transpiling to Lucene, if `use_siem_validation` AND lucene is non-empty:
    ```python
-   metrics = validate_against_elasticsearch(
-       compiled_lucene=lucene_query,
+   siem_metrics = validate_against_elasticsearch(
+       compiled_lucene=lucene,
        attack_events=scenario["events"]["attack_sequence"],
-       benign_events=scenario["events"]["benign_similar"]
+       benign_events=scenario["events"]["benign_similar"],
+       technique_id=tid,
    )
+   if siem_metrics is not None:
+       metrics = siem_metrics  # Use SIEM results
+       validation_method = "elasticsearch"
+   else:
+       metrics = validate_detection(...)  # Fallback
+       validation_method = "local_json"
    ```
-3. If not available, fall back to current `event_matches_block()` local validation
-4. Log which validation method was used in the result file
-5. The retry-with-feedback loop works the same — just uses better metrics
+4. If `siem_metrics` has `errors` (query syntax issues), include those errors in the
+   retry-with-feedback prompt so Claude can fix Lucene-incompatible patterns
+5. Result files record `validation_method` and `validation_details`
 
-### Task 2.5: Add Validation Method to Result Files
+**Retry loop enhancement**: When SIEM validation returns errors, append to the refine prompt:
+```
+Elasticsearch query error: {error_message}
+The compiled Lucene query was: {lucene_query}
+Fix the Sigma rule to avoid generating Lucene syntax that Elasticsearch rejects.
+```
 
-Update result file schema to track which validation method was used:
+### Task 2.5: Update Result File Schema
 
+Extend result files to track validation method and SIEM details.
+
+**New schema** (backwards-compatible — adds fields, doesn't change existing):
 ```json
 {
-  "validation_method": "elasticsearch",  // or "local_json" or "splunk"
+  "technique_id": "T1059.001",
+  "date": "2026-03-13T10:00:00Z",
+  "sigma_rule": "detections/execution/t1059_001.yml",
+  "metrics": {
+    "tp": 3, "fp": 0, "fn": 0, "tn": 5,
+    "precision": 1.0, "recall": 1.0, "f1_score": 1.0,
+    "fp_rate": 0.0, "tp_rate": 1.0,
+    "total_attack": 3, "total_benign": 5
+  },
+  "quality_tier": "auto_deploy",
+  "validation_method": "elasticsearch",
   "validation_details": {
     "index": "sim-validation-a1b2c3d4",
     "query": "process.name:powershell.exe AND ...",
     "events_ingested": 8,
     "query_hits": 3,
-    "query_time_ms": 45
+    "query_time_ms": 45,
+    "errors": []
+  },
+  "validated_by": "blue-team-agent",
+  "siem_targets": ["elasticsearch", "splunk"],
+  "sigma_rule_path": "detections/execution/t1059_001.yml",
+  "scenario_path": "simulator/scenarios/t1059_001.json",
+  "attack_event_count": 3,
+  "benign_event_count": 5,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
   }
 }
 ```
@@ -198,31 +271,46 @@ Update result file schema to track which validation method was used:
 
 In GitHub Actions (no SIEM running), validation must still work.
 
-**Steps**:
+**Behavior**:
 1. `validate_against_elasticsearch()` returns `None` if ES unreachable
-2. Agent falls back to `event_matches_block()` (current local validation)
-3. Result file notes `validation_method: "local_json"` with warning
-4. Quality agent flags local-only validated detections for re-validation when SIEMs available
+2. Agent falls back to `validate_detection()` (current local Python matching)
+3. Result file notes `validation_method: "local_json"`
+4. Quality agent flags local-only validated detections for re-validation when SIEMs available:
+   - During quality run, check result files for `validation_method: "local_json"`
+   - If SIEM is now available, recommend re-validation (state: `TUNE` recommendation)
+
+### Task 2.7: setup.sh Integration
+
+Add validation infrastructure to `setup.sh`.
+
+**Steps**:
+1. After the existing `sim-*` template creation block, add:
+   - ILM policy creation: `PUT _ilm/policy/validation-cleanup`
+   - Override template: `PUT _index_template/sim-validation` (higher priority, adds ILM)
+2. Conditional on ES being available (same guard as existing template block)
+3. Non-blocking: `|| log_warn` on failure (validation still works without ILM)
 
 ---
 
 ## Verification Checklist
 
-- [ ] `sim-validation` index template created and working
+- [ ] `validation.py` module exists with `validate_against_elasticsearch()` function
 - [ ] Events can be bulk ingested and queried within 2 seconds
-- [ ] Validation index auto-deletes after 1 hour (ILM policy)
+- [ ] Validation index auto-deletes after function completes (primary cleanup)
+- [ ] ILM policy exists as safety net for orphaned indices
 - [ ] `validate_against_elasticsearch()` returns correct TP/FP/FN/TN for known-good rule
-- [ ] `validate_against_elasticsearch()` returns correct metrics for known-bad rule
-- [ ] Fallback to local validation works when ES offline
-- [ ] Result files record validation method
-- [ ] At least 5 detections re-validated using SIEM method and metrics match expectations
+- [ ] `validate_against_elasticsearch()` returns `None` when ES offline (fallback triggers)
+- [ ] Query syntax errors are captured in `errors` list (not swallowed)
+- [ ] Blue-team agent uses SIEM validation when available, local when not
+- [ ] Result files record `validation_method` and `validation_details`
+- [ ] Retry loop includes SIEM error feedback when available
+- [ ] setup.sh creates ILM policy and override template
 - [ ] No orphan validation indices left after test run
 
 ---
 
 ## Commit Strategy
 
-1. `feat(validation): add sim-validation index template and ILM policy`
-2. `feat(validation): add Elasticsearch-based validation function`
-3. `feat(agent): integrate SIEM validation into blue-team agent with fallback`
-4. `test: re-validate 5 detections using SIEM validation method`
+1. `feat(validation): add Elasticsearch-based validation module and ILM policy`
+2. `feat(agent): integrate SIEM validation into blue-team agent with fallback`
+3. `docs(plans): update Phase 2 plan with architectural fixes`

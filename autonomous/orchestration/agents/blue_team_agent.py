@@ -21,7 +21,8 @@ import yaml
 
 from orchestration.state import StateManager
 from orchestration import learnings
-from orchestration.siem import TACTIC_MAP, SEVERITY_MAP
+from orchestration.siem import TACTIC_MAP, SEVERITY_MAP, check_elastic
+from orchestration.validation import validate_against_elasticsearch
 from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
@@ -614,9 +615,59 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
         return result
 
     # ─── VALIDATE ───────────────────────────────────────────────
-    print(f"    [blue-team] Validating against scenario events")
+    # Prefer SIEM-based validation (Elasticsearch) when available.
+    # Falls back to local Python matching when ES is offline (e.g., CI).
+    validation_method = "local_json"
+    validation_details = {}
+    siem_errors = []
 
-    metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+    use_siem = getattr(author_and_validate, '_use_siem_validation', False)
+
+    if use_siem and lucene:
+        print(f"    [blue-team] Validating against Elasticsearch (SIEM-based)")
+        attack_events = scenario.get("events", {}).get("attack_sequence", [])
+        benign_events = scenario.get("events", {}).get("benign_similar", [])
+
+        siem_metrics = validate_against_elasticsearch(
+            compiled_lucene=lucene,
+            attack_events=attack_events,
+            benign_events=benign_events,
+            technique_id=tid,
+        )
+
+        if siem_metrics is not None:
+            validation_method = "elasticsearch"
+            siem_errors = siem_metrics.get("errors", [])
+            validation_details = {
+                "index": siem_metrics.get("index_used", ""),
+                "query": siem_metrics.get("query_used", "")[:200],
+                "events_ingested": siem_metrics.get("events_ingested", 0),
+                "query_hits": siem_metrics.get("query_hits", 0),
+                "query_time_ms": siem_metrics.get("query_time_ms", 0),
+                "errors": siem_errors,
+            }
+            # Use SIEM metrics (same shape as local metrics)
+            metrics = {
+                "tp": siem_metrics["tp"], "fp": siem_metrics["fp"],
+                "fn": siem_metrics["fn"], "tn": siem_metrics["tn"],
+                "precision": siem_metrics["precision"], "recall": siem_metrics["recall"],
+                "f1_score": siem_metrics["f1_score"],
+                "fp_rate": siem_metrics["fp_rate"], "tp_rate": siem_metrics["tp_rate"],
+                "total_attack": siem_metrics["total_attack"],
+                "total_benign": siem_metrics["total_benign"],
+            }
+            if siem_errors:
+                print(f"    [blue-team] SIEM validation warnings: {'; '.join(siem_errors[:2])}")
+        else:
+            print(f"    [blue-team] ES unreachable, falling back to local validation")
+            metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+    else:
+        if not use_siem:
+            print(f"    [blue-team] Validating locally (ES not available)")
+        else:
+            print(f"    [blue-team] Validating locally (no Lucene query available)")
+        metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+
     quality_tier = assess_quality(metrics)
 
     print(f"    [blue-team] Results: TP={metrics['tp']}/{metrics['total_attack']}, "
@@ -644,6 +695,16 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
             fn_summary = json.dumps(fn_events[:3], indent=2)[:1500] if fn_events else "None"
             fp_summary = json.dumps(fp_events[:3], indent=2)[:1500] if fp_events else "None"
 
+            # Include SIEM-specific errors if available (query syntax issues, etc.)
+            siem_error_context = ""
+            if siem_errors:
+                siem_error_context = f"""
+Elasticsearch query errors (the compiled Lucene query failed):
+{chr(10).join('- ' + e for e in siem_errors)}
+The compiled Lucene query was: {lucene[:300] if lucene else 'N/A'}
+Fix the Sigma rule to avoid generating Lucene syntax that Elasticsearch rejects.
+"""
+
             refine_prompt = f"""This Sigma rule scored F1={metrics['f1_score']} (target >= {AUTO_DEPLOY_THRESHOLD}).
 
 Attack events that SHOULD have triggered but DIDN'T (false negatives):
@@ -651,7 +712,7 @@ Attack events that SHOULD have triggered but DIDN'T (false negatives):
 
 Benign events that SHOULD NOT have triggered but DID (false positives):
 {fp_summary}
-
+{siem_error_context}
 Current rule:
 {current_rule_yaml}
 
@@ -695,8 +756,41 @@ Return ONLY the corrected Sigma YAML — no markdown fences, no explanation."""
                     if lucene:
                         save_compiled(tactic, tid_under, lucene, spl)
 
-                    # Re-validate
-                    metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+                    # Re-validate (prefer SIEM when available)
+                    if use_siem and lucene:
+                        siem_retry = validate_against_elasticsearch(
+                            compiled_lucene=lucene,
+                            attack_events=attack_events,
+                            benign_events=benign_events,
+                            technique_id=tid,
+                        )
+                        if siem_retry is not None:
+                            validation_method = "elasticsearch"
+                            siem_errors = siem_retry.get("errors", [])
+                            validation_details = {
+                                "index": siem_retry.get("index_used", ""),
+                                "query": siem_retry.get("query_used", "")[:200],
+                                "events_ingested": siem_retry.get("events_ingested", 0),
+                                "query_hits": siem_retry.get("query_hits", 0),
+                                "query_time_ms": siem_retry.get("query_time_ms", 0),
+                                "errors": siem_errors,
+                            }
+                            metrics = {
+                                "tp": siem_retry["tp"], "fp": siem_retry["fp"],
+                                "fn": siem_retry["fn"], "tn": siem_retry["tn"],
+                                "precision": siem_retry["precision"],
+                                "recall": siem_retry["recall"],
+                                "f1_score": siem_retry["f1_score"],
+                                "fp_rate": siem_retry["fp_rate"],
+                                "tp_rate": siem_retry["tp_rate"],
+                                "total_attack": siem_retry["total_attack"],
+                                "total_benign": siem_retry["total_benign"],
+                            }
+                        else:
+                            metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+                            validation_method = "local_json"
+                    else:
+                        metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
                     quality_tier = assess_quality(metrics)
 
                     print(f"    [blue-team] After retry {attempt}: "
@@ -718,13 +812,28 @@ Return ONLY the corrected Sigma YAML — no markdown fences, no explanation."""
     results_dir = REPO_ROOT / "tests" / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     results_file = results_dir / f"{tid_under}.json"
-    results_file.write_text(json.dumps({
+    result_data = {
         "technique_id": tid,
         "date": _now_iso(),
         "sigma_rule": str(rule_path.relative_to(REPO_ROOT)),
         "metrics": metrics,
         "quality_tier": quality_tier,
-    }, indent=2), encoding="utf-8")
+        "validation_method": validation_method,
+        "validated_by": "blue-team-agent",
+        "siem_targets": ["elasticsearch", "splunk"],
+        "sigma_rule_path": str(rule_path.relative_to(REPO_ROOT)),
+        "scenario_path": scenario_path,
+        "attack_event_count": len(scenario.get("events", {}).get("attack_sequence", [])),
+        "benign_event_count": len(scenario.get("events", {}).get("benign_similar", [])),
+        "quality_tier_criteria": {
+            "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+            "validated": "F1 >= 0.75",
+            "needs_rework": "F1 < 0.75",
+        },
+    }
+    if validation_details:
+        result_data["validation_details"] = validation_details
+    results_file.write_text(json.dumps(result_data, indent=2), encoding="utf-8")
 
     # Update metrics on request
     state_manager.update(
@@ -797,6 +906,15 @@ def run(state_manager: StateManager) -> dict:
 
     # NOTE: SIEM deployment is now post-merge only.
     # See .github/workflows/deploy-rules.yml or `cli.py deploy --validated`
+
+    # Check ES availability once (avoid per-detection health checks)
+    use_siem = check_elastic()
+    if use_siem:
+        print(f"  [blue-team] Elasticsearch available — using SIEM-based validation")
+    else:
+        print(f"  [blue-team] Elasticsearch not available — using local validation")
+    # Store on function object so author_and_validate can access it
+    author_and_validate._use_siem_validation = use_siem
 
     # 2. Get SCENARIO_BUILT detections
     ready = state_manager.query_by_state("SCENARIO_BUILT")
