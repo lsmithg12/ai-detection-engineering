@@ -1,1 +1,2 @@
+Parsing Sigma rules
 process.executable="*\\auditpol.exe" process.command_line="*disable*" NOT process.command_line="*enable*" | table process.command_line,process.parent.executable,user.name,host.name

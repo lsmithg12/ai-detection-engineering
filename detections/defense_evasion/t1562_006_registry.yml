@@ -1,0 +1,44 @@
+title: Indicator Blocking via Sysmon or ETW Registry Tampering [T1562.006]
+id: 3b9e1f4a-7c2d-4a8b-9d6e-5f1a3c7b9e2d
+status: experimental
+description: |
+  Detects registry modifications that tamper with security monitoring infrastructure:
+  (1) writes to SysmonDrv Parameters (adding process exclusion rules to blind Sysmon),
+  (2) disabling the EventLog-Security ETW autologger session to suppress Security
+  channel event collection at the kernel level. Both techniques are Indicator Blocking
+  (T1562.006). Fawkes C2 may chain these with auditpol disable for full telemetry
+  suppression.
+author: blue-team-agent
+date: 2026-03-13
+modified: 2026-03-13
+references:
+  - https://attack.mitre.org/techniques/T1562/006/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.defense_evasion
+  - attack.t1562.006
+  - detection.fawkes
+logsource:
+  product: windows
+  category: registry_set
+detection:
+  selection_sysmon_tamper:
+    registry.path|contains: 'Services\SysmonDrv\Parameters'
+  selection_etw_disable:
+    registry.path|contains: 'Autologger\EventLog-Security'
+    registry.value: '0'
+  filter_system_services:
+    process.name: 'services.exe'
+    process.executable|contains: 'Windows\System32\services.exe'
+  condition: (selection_sysmon_tamper or selection_etw_disable) and not filter_system_services
+fields:
+  - registry.path
+  - registry.value
+  - process.name
+  - process.executable
+  - user.name
+  - host.name
+falsepositives:
+  - Sysmon configuration updates by authorized security tooling
+  - GPO-driven changes to ETW autologger settings during log management
+level: critical

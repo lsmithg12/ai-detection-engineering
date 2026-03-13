@@ -1,1 +1,48 @@
-You've hit your limit · resets 7pm (America/Chicago)
+title: Service Execution via sc.exe with Suspicious Binary Path [T1569.002]
+id: 7a1b3c5d-9e2f-4d8a-b6c1-3e5f7a9b1d3e
+status: experimental
+description: |
+  Detects sc.exe creating or starting Windows services where the binary path
+  points to a suspicious writable directory (ProgramData, AppData, Temp, Public).
+  Fawkes C2 uses its 'service' command to register and execute malicious payloads
+  as Windows services from non-standard locations.
+author: blue-team-agent
+date: 2026-03-13
+modified: 2026-03-13
+references:
+  - https://attack.mitre.org/techniques/T1569/002/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.execution
+  - attack.t1569.002
+  - detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_sc:
+    process.executable|endswith: '\sc.exe'
+    process.command_line|contains:
+      - 'create'
+      - 'start'
+  selection_suspicious_path:
+    process.command_line|contains:
+      - 'ProgramData'
+      - 'AppData'
+      - 'Temp'
+      - 'Users\Public'
+  filter_legitimate:
+    process.parent.executable|contains:
+      - 'Program Files'
+      - 'Program Files (x86)'
+      - 'Windows\System32\svchost.exe'
+  condition: selection_sc and selection_suspicious_path and not filter_legitimate
+fields:
+  - process.command_line
+  - process.parent.executable
+  - user.name
+  - host.name
+falsepositives:
+  - Legitimate software installers that register services from ProgramData subdirectories
+  - SCCM/Intune deployment scripts creating services with temp staging paths
+level: high

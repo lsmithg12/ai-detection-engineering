@@ -1,0 +1,90 @@
+[
+  {
+    "@timestamp": "2026-03-10T09:14:35.113Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "process": {
+      "pid": 4416,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+      "command_line": "update_helper.exe --install --silent",
+      "parent": {
+        "pid": 2180,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\SysmonDrv\\Parameters\\Rules",
+      "value": "ExcludeImage_0"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.006",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Malicious process writes a process exclusion rule directly into SysmonDrv registry parameters to hide its own telemetry from Sysmon collection"
+    }
+  },
+  {
+    "@timestamp": "2026-03-10T09:14:38.772Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "process": {
+      "pid": 4416,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+      "command_line": "update_helper.exe --install --silent",
+      "parent": {
+        "pid": 2180,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EventLog-Security\\Enabled",
+      "value": "0"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1562.006",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Malicious process disables the EventLog-Security ETW autologger session to block Security channel event collection at the kernel level"
+    }
+  }
+]

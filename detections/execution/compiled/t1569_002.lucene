@@ -1,0 +1,2 @@
+Parsing Sigma rules
+(process.executable:*\\sc.exe AND (process.command_line:(*create* OR *start*))) AND (process.command_line:(*ProgramData* OR *AppData* OR *Temp* OR *Users\\Public*)) AND (NOT (process.parent.executable:(*Program\ Files* OR *Program\ Files\ \(x86\)* OR *Windows\\System32\\svchost.exe*)))

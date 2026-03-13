@@ -1,1 +1,2 @@
+Parsing Sigma rules
 (process.executable:*\\auditpol.exe AND process.command_line:*disable*) AND (NOT process.command_line:*enable*)

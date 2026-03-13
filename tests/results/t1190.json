@@ -15,5 +15,21 @@
     "total_attack": 3,
     "total_benign": 2
   },
-  "quality_tier": "human_review"
+  "quality_tier": "validated",
+  "validated_at": "2026-03-08T22:30:57Z",
+  "validated_by": "blue-team-agent",
+  "validation_method": "local_json",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections/execution/t1190.yml",
+  "scenario_path": "simulator/scenarios/t1190.json",
+  "attack_event_count": 3,
+  "benign_event_count": 2,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  }
 }

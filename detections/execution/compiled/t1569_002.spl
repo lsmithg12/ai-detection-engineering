@@ -1,0 +1,2 @@
+Parsing Sigma rules
+process.executable="*\\sc.exe" process.command_line IN ("*create*", "*start*") process.command_line IN ("*ProgramData*", "*AppData*", "*Temp*", "*Users\\Public*") NOT (process.parent.executable IN ("*Program Files*", "*Program Files (x86)*", "*Windows\\System32\\svchost.exe*")) | table process.command_line,process.parent.executable,user.name,host.name

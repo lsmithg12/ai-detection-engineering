@@ -10,5 +10,20 @@
     "false_positive_total": 2,
     "f1_score": 1.0
   },
-  "notes": "Reworked from original F1=0.667. Now targets EID 8 (CreateRemoteThread) from user-writable paths only. EID 10 (ProcessAccess) handled separately by T1134.001. TP: sync_agent.exe from AppData\\Temp creating remote thread. TN: csrss.exe and MsMpEng.exe correctly excluded."
+  "notes": "Reworked from original F1=0.667. Now targets EID 8 (CreateRemoteThread) from user-writable paths only. EID 10 (ProcessAccess) handled separately by T1134.001. TP: sync_agent.exe from AppData\\Temp creating remote thread. TN: csrss.exe and MsMpEng.exe correctly excluded.",
+  "validated_by": "blue-team-agent",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections/privilege_escalation/t1055_001.yml",
+  "scenario_path": "simulator/scenarios/t1055_001.json",
+  "attack_event_count": 2,
+  "benign_event_count": 2,
+  "quality_tier": "auto_deploy",
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  }
 }
