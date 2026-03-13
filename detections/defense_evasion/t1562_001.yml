@@ -1,33 +1,57 @@
 title: AMSI Bypass via CLR Load in Unsigned Process [T1562.001]
 id: dcddb389-1d5b-49a4-aa76-0c96431124f5
 status: experimental
-description: Detects amsi bypass via clr load in unsigned process. Detection should flag clr.dll or amsi.dll loaded by processes
-  in temp/user paths. Exclude known .NET hosts (powershell, dotnet, devenv, msbuild).
+description: |
+  Detects clr.dll or amsi.dll loaded by processes running from suspicious user-writable
+  directories (AppData, Temp, ProgramData). Legitimate .NET hosts like powershell.exe,
+  dotnet.exe, devenv.exe, and msbuild.exe are excluded. This pattern indicates a
+  potential AMSI bypass where an attacker loads the CLR into a custom process to
+  execute .NET assemblies while patching AMSI. Fawkes C2 uses start-clr and autopatch
+  commands for this technique.
 author: blue-team-agent
-date: '2026-03-07'
-modified: '2026-03-07'
+date: 2026-03-07
+modified: 2026-03-13
 references:
-- https://attack.mitre.org/techniques/T1562/001/
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://github.com/galoryber/fawkes
 tags:
-- attack.execution
-- attack.t1562.001
+  - attack.defense_evasion
+  - attack.t1562.001
+  - detection.fawkes
 logsource:
   category: image_load
   product: windows
 detection:
-  selection:
+  selection_dll:
     event.code: '7'
     file.name:
-    - amsi.dll
-    - clr.dll
-    process.name: update_helper.exe
-    process.executable|contains: update_helper.exe
-  condition: selection and not filter_legitimate
+      - amsi.dll
+      - clr.dll
+  selection_suspicious_path:
+    process.executable|contains:
+      - 'AppData'
+      - 'Temp'
+      - 'ProgramData'
+      - 'Users\Public'
+      - 'Downloads'
   filter_legitimate:
     process.name:
-    - devenv.exe
-    - powershell.exe
+      - powershell.exe
+      - pwsh.exe
+      - dotnet.exe
+      - devenv.exe
+      - msbuild.exe
+      - csc.exe
+      - vbc.exe
+      - MSBuild.exe
+  condition: selection_dll and selection_suspicious_path and not filter_legitimate
+fields:
+  - file.name
+  - process.name
+  - process.executable
+  - user.name
+  - host.name
 falsepositives:
-- Detection should flag clr.dll or amsi.dll loaded by processes in temp/user paths. Exclude known .NET hosts (powershell,
-  dotnet, devenv, msbuild).
+  - Custom .NET applications deployed to user directories during development
+  - Portable .NET tools run from Downloads folder by developers
 level: high

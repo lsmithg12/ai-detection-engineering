@@ -1,1 +1,2 @@
-event.code="7" file.name IN ("amsi.dll", "clr.dll") process.name="update_helper.exe" process.executable="*update_helper.exe*" NOT (process.name IN ("devenv.exe", "powershell.exe"))
+Parsing Sigma rules
+event.code="7" file.name IN ("amsi.dll", "clr.dll") process.executable IN ("*AppData*", "*Temp*", "*ProgramData*", "*Users\\Public*", "*Downloads*") NOT (process.name IN ("powershell.exe", "pwsh.exe", "dotnet.exe", "devenv.exe", "msbuild.exe", "csc.exe", "vbc.exe", "MSBuild.exe")) | table file.name,process.name,process.executable,user.name,host.name

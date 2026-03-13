@@ -1,1 +1,2 @@
-(event.code:7 AND (file.name:(amsi.dll OR clr.dll)) AND process.name:update_helper.exe AND process.executable:*update_helper.exe*) AND (NOT (process.name:(devenv.exe OR powershell.exe)))
+Parsing Sigma rules
+(event.code:7 AND (file.name:(amsi.dll OR clr.dll))) AND (process.executable:(*AppData* OR *Temp* OR *ProgramData* OR *Users\\Public* OR *Downloads*)) AND (NOT (process.name:(powershell.exe OR pwsh.exe OR dotnet.exe OR devenv.exe OR msbuild.exe OR csc.exe OR vbc.exe OR MSBuild.exe)))
