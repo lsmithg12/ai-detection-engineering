@@ -1,0 +1,36 @@
+{
+  "technique_id": "T1569.002",
+  "date": "2026-03-13T14:43:43Z",
+  "sigma_rule": "detections/execution/t1569_002.yml",
+  "validated_at": "2026-03-13T14:43:43Z",
+  "validated_by": "blue-team-agent",
+  "validation_method": "manual_review",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections/execution/t1569_002.yml",
+  "scenario_path": "simulator/scenarios/t1569_002.json",
+  "attack_event_count": 1,
+  "benign_event_count": 2,
+  "metrics": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "tn": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "total_attack": 1,
+    "total_benign": 2
+  },
+  "quality_tier": "auto_deploy",
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  },
+  "notes": "Rule rewritten from scratch (original was corrupted by rate-limit error). TP: sc.exe create with binPath in ProgramData. Benign correctly excluded: svchost parent, Program Files path."
+}

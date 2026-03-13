@@ -11,5 +11,21 @@
     "tn": 6088
   },
   "quality_tier": "auto_deploy",
-  "date": "2026-03-01T00:00:00Z"
+  "date": "2026-03-01T00:00:00Z",
+  "validated_at": "2026-03-01T00:00:00Z",
+  "validated_by": "blue-team-agent",
+  "validation_method": "local_json",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections/credential_access/t1134_001_lsass_token_theft.yml",
+  "scenario_path": "",
+  "attack_event_count": 0,
+  "benign_event_count": 0,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  }
 }
