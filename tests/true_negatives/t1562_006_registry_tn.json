@@ -1,0 +1,44 @@
+[
+  {
+    "@timestamp": "2026-03-10T07:45:50.229Z",
+    "event": {
+      "category": "registry",
+      "type": "change",
+      "action": "Registry value set (rule: RegistryEvent)",
+      "code": "13"
+    },
+    "process": {
+      "pid": 692,
+      "name": "services.exe",
+      "executable": "C:\\Windows\\System32\\services.exe",
+      "command_line": "C:\\Windows\\System32\\services.exe",
+      "parent": {
+        "pid": 564,
+        "name": "wininit.exe",
+        "executable": "C:\\Windows\\System32\\wininit.exe"
+      }
+    },
+    "registry": {
+      "path": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Security\\MaxSize",
+      "value": "209715200"
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1562.006",
+      "description": "services.exe applying GPO-pushed registry value to increase Security event log maximum size \u00e2\u20ac\u201d routine log management, not suppression"
+    }
+  }
+]
