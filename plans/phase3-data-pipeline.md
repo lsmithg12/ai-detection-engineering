@@ -1,8 +1,8 @@
 # Phase 3: Data Pipeline — Raw Logs through Cribl
 
-**Status**: NOT STARTED
+**Status**: COMPLETED — Branch `infra/phase3-data-pipeline` (2026-03-14)
 **Priority**: HIGH
-**Estimated effort**: 8-12 hours (multi-session)
+**Actual effort**: ~4 hours (single session)
 **Dependencies**: Phase 2 (SIEM validation) — DONE (PR #54). Docker + Cribl running.
 **Branch**: `infra/phase3-data-pipeline`
 
@@ -13,281 +13,144 @@
 Current flow skips the normalization layer where most real-world detection failures occur:
 
 ```
-Current:  Red-team → pre-normalized ECS JSON → direct to ES → Lucene query → F1
-Problem:  Fields are always correct because they're hand-crafted
-Reality:  Raw logs → parsing → normalization → SIEM (failures at every step)
+Before (Phase 2):  Red-team → pre-normalized ECS JSON → direct to ES → Lucene query → F1
+Problem:           Fields are always correct because they're hand-crafted
+After (Phase 3):   Red-team → raw Sysmon text → Cribl HEC → normalize → ES → Lucene → F1
 ```
 
-This phase implements the full pipeline: raw vendor events → Cribl normalization → SIEM.
+In production, events arrive as raw vendor text (Sysmon key=value, Windows Event XML).
+Cribl Stream sits in the data path as a streaming pipeline — events flow through it to the
+SIEM, not through it as a standalone normalizer. Phase 3 implements this full path.
 
 ### What Phase 2 Already Built (Leverage Points)
 
-Phase 2 delivered `validation.py` with an `ingestion_method` parameter designed for this:
-
+Phase 2 delivered `validation.py` with an `ingestion_method` parameter:
 ```python
 validate_against_elasticsearch(
     ...,
-    ingestion_method="direct",  # Phase 2 default — bulk ingest to ES
-    # ingestion_method="cribl"  # Phase 3 — route through Cribl HEC first
+    ingestion_method="direct",  # Phase 2 — bulk ingest to ES
+    ingestion_method="cribl",   # Phase 3 — route through Cribl HEC → pipeline → ES
 )
 ```
 
-The ephemeral index pattern (`sim-validation-*`), ILM cleanup, and scoring logic all
-carry over unchanged. Phase 3 only needs to add the Cribl routing path.
+The ephemeral index pattern (`sim-validation-*`), ILM cleanup, and scoring logic carry over.
 
 ## Architecture
 
 ```
 Red-Team Agent
-  ↓ generates raw vendor-format events (NEW)
-  ↓ (Sysmon text, Windows Event XML, HEC JSON with _raw field)
-simulator/raw/<source_type>/<technique_id>.json
+  ↓ generates ECS events (unchanged)
+simulator/raw_events.py (NEW)
+  ↓ converts ECS → raw Sysmon text / Windows XML
+  ↓ wraps in HEC envelope {event: "<raw text>", sourcetype: ..., _validation_index: ...}
   ↓
-Cribl Stream (cim_normalize pipeline)
-  ↓ regex_extract: parse fields from _raw
-  ↓ eval: map to ECS field names
-  ↓ drop: filter noise events
+Cribl Stream (HEC input, port 8088)
+  ↓ route: _validation_index exists → elastic_validation output
+  ↓ pipeline: cim_normalize
+  ↓   1. serde (JSON parse — fails silently on raw text)
+  ↓   2. regex_extract (fires when serde didn't parse — extracts fields from raw text)
+  ↓   3. eval (maps extracted fields to ECS dotted notation)
+  ↓   4. eval (CIM aliases + cleanup)
   ↓
-Elasticsearch (sim-validation-* index via Phase 2 infrastructure)
+Elasticsearch (sim-validation-{uuid} index — inherits sim-* template)
   ↓
-validation.py (reused from Phase 2)
+validation.py (Phase 2 scoring logic, unchanged)
   ↓ runs Lucene query → measures TP/FP
+  ↓ cleanup: delete ephemeral index
   ↓
-Detection validated end-to-end
+Detection validated end-to-end through full streaming pipeline
 ```
 
-## Tasks
+### Key Design Decisions
 
-### Task 3.1: Define Raw Event Formats
+1. **Full streaming path, not preview-only**: Events flow through Cribl HEC → pipeline → ES
+   output, matching the real-world data path. Cribl is a streaming pipeline, not a normalizer
+   you call on demand.
 
-Create reference formats for each data source the lab uses.
+2. **Dedicated validation route**: A Cribl route (`validation_to_elastic`) catches events with
+   `_validation_index` set and routes them to a dedicated `elastic_validation` output that uses
+   a dynamic index name. This keeps validation events isolated from sim-attack/sim-baseline.
 
-**Steps**:
-1. Create `simulator/raw/README.md` documenting supported raw formats
-2. Create example raw events for the 3 most common sources:
+3. **Conditional regex parsing**: Pipeline functions use filter `!__e.event || !__e.event.code`
+   so raw text parsers only fire when the JSON serde didn't produce ECS fields. Existing ECS
+   JSON flow is completely unaffected.
 
-**Sysmon EID 1 (Process Create)** — raw HEC format:
-```json
-{
-  "event": "EventID: 1\nUtcTime: 2026-03-13 10:00:00.123\nProcessGuid: {12345}\nProcessId: 4321\nImage: C:\\Users\\victim\\AppData\\Local\\Temp\\malware.exe\nCommandLine: malware.exe --inject --pid 1234\nParentImage: C:\\Windows\\explorer.exe\nParentProcessId: 1000\nUser: CORP\\jsmith\nLogonId: 0x12345\nHashes: SHA256=abc123...",
-  "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
-  "host": "WS-FINANCE-01",
-  "source": "WinEventLog:Microsoft-Windows-Sysmon/Operational",
-  "time": 1710316800
-}
-```
+4. **Graceful fallback**: When Cribl is offline, `ingestion_method="cribl"` falls back to
+   direct ES ingest with an error note. CI environments work without Cribl.
 
-**Windows Security 4688 (Process Create)** — raw HEC format:
-```json
-{
-  "event": "<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><EventID>4688</EventID><Computer>WS-FINANCE-01</Computer><TimeCreated SystemTime='2026-03-13T10:00:00.123Z'/></System><EventData><Data Name='NewProcessName'>C:\\Users\\victim\\malware.exe</Data><Data Name='CommandLine'>malware.exe --payload</Data><Data Name='ParentProcessName'>C:\\Windows\\explorer.exe</Data><Data Name='SubjectUserName'>jsmith</Data></EventData></Event>",
-  "sourcetype": "WinEventLog:Security",
-  "host": "WS-FINANCE-01",
-  "time": 1710316800
-}
-```
+5. **_simulation tag preservation**: The `_simulation.type` tag is included in the HEC
+   envelope and survives Cribl normalization, enabling TP/FP scoring.
 
-**Sysmon EID 3 (Network Connection)** — raw HEC format:
-```json
-{
-  "event": "EventID: 3\nUtcTime: 2026-03-13 10:01:00.000\nImage: C:\\Users\\victim\\AppData\\Local\\Temp\\malware.exe\nDestinationIp: 185.220.101.42\nDestinationPort: 443\nSourceIp: 10.0.1.50\nSourcePort: 54321\nProtocol: tcp",
-  "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
-  "host": "WS-FINANCE-01",
-  "time": 1710316860
-}
-```
+## What Was Built
 
-### Task 3.2: Add Raw Event Generator to Red-Team Agent
+### simulator/raw_events.py (~300 lines)
+- `ecs_to_raw_sysmon()` — ECS → raw Sysmon text for EIDs 1, 3, 7, 8, 10, 11, 13, 17, 18, 22
+- `ecs_to_raw_windows_security()` — ECS → Windows Event XML for EIDs 4624, 4688, 7045
+- `ecs_to_raw()` — dispatcher by event.code and agent.type
+- `convert_scenario_to_raw()` — converts full scenario (attack + benign arrays)
 
-Modify `red_team_agent.py` to generate raw events alongside ECS events.
+### validation.py additions
+- `_check_cribl_reachable()` — health check
+- `_cribl_auth()` — authenticate, get bearer token
+- `_send_to_cribl_hec()` — send raw events via HEC to Cribl streaming path
+- `ingestion_method="cribl"` path in `validate_against_elasticsearch()`
+  - Converts ECS events to raw format
+  - Tags with `_validation_index` for Cribl routing
+  - Sends to Cribl HEC (full streaming path)
+  - Creates ephemeral ES index with ILM
+  - Waits for events to appear in ES
+  - Runs Lucene query against normalized events
+  - Falls back to direct ingest if Cribl is offline
 
-**Steps**:
-1. Add `ecs_to_raw_sysmon()` function that converts ECS events to raw vendor format
-2. For each scenario, generate both:
-   - `simulator/scenarios/<technique_id>.json` (current ECS format — for local/direct validation)
-   - `simulator/raw/sysmon/<technique_id>.json` (raw HEC format — for Cribl pipeline)
-3. Include `_raw` field with the unstructured log text
-4. Include HEC metadata: `sourcetype`, `host`, `source`, `time`
+### pipeline/configure-cribl.sh updates
+- 8 new `regex_extract` functions for raw Sysmon text parsing (EIDs 1/4688, 3, 7, 8, 10, 13, 22)
+- 1 new `eval` function mapping regex-extracted fields to ECS dotted notation
+- `elastic_validation` output with dynamic index name
+- `validation_to_elastic` route (first in priority, final=true)
 
-**Conversion logic** (ECS → raw Sysmon):
-```python
-def ecs_to_raw_sysmon(ecs_event: dict) -> dict:
-    """Convert an ECS-formatted event to raw Sysmon HEC format."""
-    eid = ecs_event.get("event", {}).get("code", "1")
+### gaps/data-sources/ (9 YAML files)
+- Structured gap tracking replacing free-text markdown
+- Fields: gap_id, source_type, event_id, status, priority, affected_techniques,
+  simulator_support, cribl_pipeline, ecs_fields_expected, resolution_notes
+- Updated status based on actual simulator capabilities (EIDs 11, 17/18, 22, 7045
+  are `partially_available`, not `gap`)
 
-    # Build raw Sysmon text
-    raw_lines = [f"EventID: {eid}"]
-    if "process" in ecs_event:
-        raw_lines.append(f"Image: {ecs_event['process'].get('executable', '')}")
-        raw_lines.append(f"CommandLine: {ecs_event['process'].get('command_line', '')}")
-        if "parent" in ecs_event["process"]:
-            raw_lines.append(f"ParentImage: {ecs_event['process']['parent'].get('executable', '')}")
-    # ... map remaining fields
+### intel_agent.py additions
+- `TECHNIQUE_DATA_SOURCES` mapping — data source requirements per technique
+- `get_data_source_requirements()` — look up requirements by technique ID
+- `check_data_source_gaps()` — cross-reference against gaps/data-sources/*.yml
+- Tags new detection requests with `data_source_requirements` and `data_source_gaps`
 
-    return {
-        "event": "\n".join(raw_lines),
-        "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
-        "host": ecs_event.get("host", {}).get("name", "WORKSTATION-01"),
-        "time": int(datetime.now().timestamp()),
-        "_simulation": ecs_event.get("_simulation", {})
-    }
-```
+### CLI additions
+- `python orchestration/cli.py data-sources` — reports gap status by category
 
-### Task 3.3: Build Cribl Normalization Pipeline
+### config.yml additions
+- `cribl.user`, `cribl.pass`, `cribl.hec_url`, `cribl.hec_token`, `cribl.pipeline`
 
-Use the existing Cribl MCP tools to build/verify the `cim_normalize` pipeline.
-
-**Steps**:
-1. Check Cribl health: `cribl_health()`
-2. Get current pipeline: `cribl_get_pipeline('cim_normalize')`
-3. Sample raw events: `cribl_get_input_samples('lab_hec_in', count=10)`
-4. Add parsing functions for each Sysmon EID:
-
-**Function 1: Extract EventID**
-```javascript
-cribl_add_pipeline_function('cim_normalize', {
-  type: 'regex_extract',
-  filter: 'true',
-  conf: { field: '_raw', regex: 'EventID[=:]\\s*(?<event_code>\\d+)' },
-  description: 'Extract Sysmon EventID from raw event'
-})
-```
-
-**Function 2: Extract Process Fields (EID 1)**
-```javascript
-cribl_add_pipeline_function('cim_normalize', {
-  type: 'regex_extract',
-  filter: "event_code == '1'",
-  conf: { field: '_raw', regex: 'Image:\\s*(?<process_executable>.+?)\\n' },
-  description: 'Extract process image path from Sysmon EID 1'
-})
-```
-
-**Function 3: Map to ECS**
-```javascript
-cribl_add_pipeline_function('cim_normalize', {
-  type: 'eval',
-  filter: 'true',
-  conf: { add: [
-    { name: 'process.executable', value: 'process_executable' },
-    { name: 'process.command_line', value: 'command_line' },
-    { name: 'process.name', value: "process_executable ? process_executable.split('\\\\').pop() : undefined" },
-    { name: 'event.code', value: 'event_code' },
-    { name: 'process.parent.executable', value: 'parent_image' }
-  ]},
-  description: 'Map extracted fields to ECS dotted notation'
-})
-```
-
-5. Preview pipeline with raw samples: `cribl_preview_pipeline('cim_normalize', raw_samples)`
-6. Verify all required ECS fields are present in output
-7. Check metrics: `cribl_get_metrics()`
-
-### Task 3.4: Implement Cribl Ingestion Method in validation.py
-
-Extend `validate_against_elasticsearch()` to support `ingestion_method="cribl"`.
-
-**Steps**:
-1. When `ingestion_method="cribl"`:
-   - Convert ECS events to raw format using `ecs_to_raw_sysmon()`
-   - Send raw events to Cribl HEC input (not directly to ES)
-   - Wait for Cribl to process and forward to ES
-   - Query the same `sim-validation-*` index via existing scoring logic
-2. Add Cribl HEC config to `config.yml`:
-   ```yaml
-   cribl:
-     hec_url: "http://localhost:8288"
-     hec_token: "blue-team-lab-hec-token"
-   ```
-3. The `_simulation.type` tag must survive Cribl normalization — verify the pipeline
-   passes it through (add passthrough rule if not)
-
-**Key difference from direct ingest**: Events land in ES via Cribl's output, not via
-our Bulk API. The index name is determined by Cribl's routing rules, so we need Cribl
-configured to route `sim-validation-*` events to the correct index.
-
-**Alternative approach** (simpler): Keep direct ES ingest but compare field values
-post-Cribl-normalization. Send raw events through Cribl separately, capture the
-normalized output via `cribl_preview_pipeline`, then ingest the normalized result
-directly into ES. This avoids needing Cribl routing changes.
-
-### Task 3.5: Data Source Gap Tracking (Structured YAML)
-
-Replace free-text `gaps/data-source-gaps.md` with structured YAML files.
-
-**Steps**:
-1. Create `gaps/data-sources/` directory
-2. For each identified gap, create a YAML file:
-
-```yaml
-# gaps/data-sources/sysmon_eid_19.yml
-source_type: sysmon
-event_id: 19
-event_name: WmiEventFilter
-status: gap  # gap | in_progress | onboarded
-priority: high
-affected_techniques:
-  - T1047  # WMI Execution
-  - T1546.003  # WMI Event Subscription
-simulator_support: false
-cribl_pipeline: null
-ecs_fields_expected:
-  - wmi.filter.name
-  - wmi.filter.query
-  - user.name
-  - event.code
-resolution_notes: |
-  Need to add WMI event generator to simulator.
-  Raw format: Windows Event XML with EventID 19-21.
-  Requires Sysmon config to enable WMI logging.
-created_date: 2026-03-13
-```
-
-3. Create files for all 9 identified gaps (GAP-001 through GAP-009)
-4. Add `check_data_sources()` to `cli.py` that scans these files and reports status
-
-### Task 3.6: Intel Agent — Tag Data Source Requirements
-
-Modify `intel_agent.py` to include `data_source_requirements` in detection requests.
-
-**Steps**:
-1. When creating a detection request, look up required data sources from the Fawkes TTP mapping
-2. Add to the request YAML:
-   ```yaml
-   data_source_requirements:
-     - source: sysmon
-       event_ids: [1]
-       fields_needed: [process.executable, process.command_line]
-     - source: sysmon
-       event_ids: [8]
-       fields_needed: [source.process.executable, target.process.executable]
-   ```
-3. Cross-reference against `gaps/data-sources/*.yml` to check availability
-4. If a required source has `status: gap`, note it on the request:
-   ```yaml
-   data_source_gaps: ["sysmon_eid_19"]
-   ```
-
----
+### Tuning changelog
+- `tuning/changelog/cribl-pipeline-2026-03-14.md` — documents all pipeline changes
 
 ## Verification Checklist
 
-- [ ] Raw event formats documented for Sysmon EID 1, 3, 7, 8, 10, 13
-- [ ] Red-team agent generates raw HEC events alongside ECS events
-- [ ] Cribl `cim_normalize` pipeline parses raw Sysmon → ECS fields
-- [ ] `cribl_preview_pipeline` shows correct field extraction
-- [ ] Events flow: raw → Cribl HEC → pipeline → Elasticsearch
-- [ ] Blue-team validation works against Cribl-normalized data
-- [ ] Data source gap files exist in `gaps/data-sources/` for all 9 gaps
-- [ ] Intel agent tags requests with `data_source_requirements`
-- [ ] Pipeline change log created: `tuning/changelog/cribl-pipeline-<date>.md`
+- [x] Raw event formats documented for Sysmon EID 1, 3, 7, 8, 10, 13, 22
+- [x] `ecs_to_raw()` converter handles all active EIDs
+- [x] Cribl `cim_normalize` pipeline parses both ECS JSON and raw Sysmon text
+- [x] Validation route sends events through full Cribl streaming path
+- [x] `_simulation.type` tag survives Cribl normalization
+- [x] Fallback to direct ES ingest when Cribl is offline
+- [x] Data source gap files exist in `gaps/data-sources/` for all 9 gaps
+- [x] Intel agent tags requests with `data_source_requirements`
+- [x] CLI `data-sources` command reports gap status
+- [x] Pipeline change log created: `tuning/changelog/cribl-pipeline-2026-03-14.md`
+- [x] Config.yml has Cribl HEC configuration
 
 ---
 
 ## Commit Strategy
 
-1. `feat(simulator): add raw vendor event format support`
-2. `feat(cribl): build cim_normalize pipeline for Sysmon events`
-3. `feat(validation): add Cribl ingestion method to ES validation`
+1. `feat(simulator): add raw vendor event format converter (ecs_to_raw)`
+2. `feat(cribl): add raw Sysmon parsing + validation route to pipeline`
+3. `feat(validation): add Cribl streaming path to ES validation`
 4. `feat(gaps): structured data source gap tracking (YAML)`
 5. `feat(intel): tag detection requests with data source requirements`
+6. `docs: update Phase 3 plan, ROADMAP, STATUS, CLAUDE.md`

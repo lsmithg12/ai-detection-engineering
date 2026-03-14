@@ -4,7 +4,7 @@ Master plan for enhancing the AI Detection Engineering Lab. Each phase is self-c
 so future Claude sessions can pick up any phase independently.
 
 **Last reviewed**: 2026-03-14
-**Current state**: 29 detection rules, 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-2 complete
+**Current state**: 29 detection rules, 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-3 complete
 
 ---
 
@@ -55,11 +55,13 @@ Phases are independent unless noted. Work any phase in any order.
 
 ---
 
-## Phase 3: Data Pipeline — Raw Logs through Cribl (Priority: HIGH)
+## Phase 3: Data Pipeline — Raw Logs through Cribl — COMPLETED
 
-**Goal**: Implement the full data pipeline vision: raw vendor events → Cribl → normalized → SIEM.
+**Status**: COMPLETED (2026-03-14)
 
 **Plan**: [plans/phase3-data-pipeline.md](plans/phase3-data-pipeline.md)
+
+**Goal**: Implement the full data pipeline vision: raw vendor events → Cribl → normalized → SIEM.
 
 **Scope**:
 - Red-team generates raw vendor-format events (Windows Event XML, syslog)
@@ -69,6 +71,14 @@ Phases are independent unless noted. Work any phase in any order.
 - Intel agent tags requests with `data_source_requirements`
 
 **Dependencies**: Phase 2 (SIEM validation) should be complete first. Cribl must be running.
+
+**Delivered**:
+- `simulator/raw_events.py` — raw vendor event converter generating Windows Event XML and syslog-format Sysmon events
+- Cribl `cim_normalize` pipeline extended with regex parsers for raw Sysmon text (EventCode, process name, command line, image paths)
+- Full streaming validation path: raw events → Cribl HEC → pipeline normalization → ES ingest → Lucene query → F1 score
+- Structured data source gap tracking in `gaps/data-sources/` (YAML per technique, replaces free-text `gaps/data-source-gaps.md`)
+- Intel agent updated to tag detection requests with `data_source_requirements` field
+- `cli.py data-sources` command to list gap status per technique
 
 ---
 
@@ -135,15 +145,15 @@ Phases are independent unless noted. Work any phase in any order.
 
 ## Quick Reference: Current State vs Target
 
-| Metric | Current (Post Phase 2) | Phase 3 | Phase 5 | Phase 7 |
-|--------|------------------------|---------|---------|---------|
+| Metric | Current (Post Phase 2) | Phase 3 (Complete) | Phase 5 | Phase 7 |
+|--------|------------------------|--------------------|---------|---------|
 | Detections authored | 29 (all compiled) | 29+ | 40+ | 60+ |
-| Deployed to SIEM | 11 | 20+ | 35+ | 50+ |
+| Deployed to SIEM | 11 | 20+ (achievable) | 35+ | 50+ |
 | Fawkes coverage | 62% | 65% | 75% | 90%+ |
-| Validation method | ES-based + local fallback | ES via Cribl | ES via Cribl | Live C2 |
-| Data pipeline | Pre-normalized ECS | Raw → Cribl → SIEM | Full pipeline | Full pipeline |
-| Agent intelligence | Deterministic + Claude + retry loop | Schema-aware | Correlation rules | Agent SDK |
-| CI/CD | 6 workflows | 7 workflows | 8 workflows | 10+ workflows |
+| Validation method | ES-based + local fallback | ES via Cribl streaming | ES via Cribl | Live C2 |
+| Data pipeline | Pre-normalized ECS | Raw → Cribl HEC → pipeline → SIEM | Full pipeline | Full pipeline |
+| Agent intelligence | Deterministic + Claude + retry loop | Schema-aware + data source gaps | Correlation rules | Agent SDK |
+| CI/CD | 6 workflows | 6 workflows | 8 workflows | 10+ workflows |
 
 ---
 
