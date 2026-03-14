@@ -1,0 +1,28 @@
+# gaps/data-sources/network_flow_logs.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-007
+source_type: zeek_or_suricata
+event_id: null
+event_name: NetworkFlowLogs
+status: gap  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1090.004
+  - T1071.001
+  - T1572
+simulator_support: false
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - http.request.header.host
+  - tls.client.server_name
+  - network.bytes
+  - network.duration
+resolution_notes: |
+  No network flow data source is currently available. Zeek or Suricata logs
+  would enable detection of Fawkes SOCKS5 proxy tunneling (T1090.004), domain
+  fronting via HTTP Host header mismatches (T1071.001), and protocol tunneling
+  (T1572). Phase 3 work: evaluate adding Zeek to the Docker lab stack, or
+  generate synthetic network flow events in the simulator. A Cribl pipeline
+  would then normalize Zeek conn.log / http.log / ssl.log fields to ECS.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

@@ -66,6 +66,11 @@ infrastructure:
     pass: "BlueTeamLab1!"
   cribl:
     url: "http://localhost:9000"
+    user: "admin"
+    pass: "admin"
+    hec_url: "http://localhost:8088"
+    hec_token: "blue-team-lab-hec-token"
+    pipeline: "cim_normalize"
 
 # GitHub
 github:

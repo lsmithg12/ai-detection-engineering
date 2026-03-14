@@ -1,0 +1,25 @@
+# gaps/data-sources/sysmon_eid_11.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-001
+source_type: sysmon
+event_id: 11
+event_name: FileCreate
+status: partially_available  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1547.001
+  - T1105
+simulator_support: true
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - file.name
+  - file.path
+  - file.directory
+  - process.name
+  - event.code
+resolution_notes: |
+  Already present in the simulator since PR #17. Needs a Cribl raw log parser
+  for Sysmon EID 11 to normalize FileCreate events flowing through the Cribl
+  pipeline into ECS-compliant fields before indexing into Elasticsearch.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

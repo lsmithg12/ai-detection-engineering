@@ -1,0 +1,26 @@
+# gaps/data-sources/sysmon_eid_22.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-004
+source_type: sysmon
+event_id: 22
+event_name: DNSQuery
+status: partially_available  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1071.001
+  - T1071.004
+  - T1568
+simulator_support: true
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - dns.question.name
+  - dns.question.type
+  - process.name
+  - event.code
+resolution_notes: |
+  Added to the simulator in PR #17. Needed for detecting Fawkes domain fronting
+  (T1071.001), DNS C2 (T1071.004), and dynamic resolution (T1568). Needs a
+  Cribl raw log parser for Sysmon EID 22 to normalize DNS query fields into ECS
+  before indexing. Critical path for C2 detection coverage.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

@@ -1,0 +1,28 @@
+# gaps/data-sources/sysmon_eid_19_20_21.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-003
+source_type: sysmon
+event_id:
+  - 19
+  - 20
+  - 21
+event_name: WmiEvent
+status: gap  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1047
+  - T1546.003
+simulator_support: false
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - wmi.filter.name
+  - wmi.filter.query
+  - user.name
+  - event.code
+resolution_notes: |
+  No simulator support yet for WMI subscription events (EID 19 WmiEventFilter,
+  EID 20 WmiEventConsumer, EID 21 WmiEventConsumerToFilter). Required to detect
+  Fawkes WMI persistence and lateral movement. Phase 3 work: add simulator
+  scenarios for T1047 and T1546.003, then build Cribl parser for EID 19/20/21.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

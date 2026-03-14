@@ -102,7 +102,10 @@ else
 fi
 
 # ─── 2. Create CIM Normalization Pipeline ────────────────────────
-# Pipeline functions must be inside conf.functions wrapper.
+# Pipeline functions handle both formats:
+#   - ECS JSON in _raw (existing flow): serde parses JSON → ECS fields available
+#   - Raw Sysmon text in _raw (Phase 3): regex_extract parses text → builds ECS fields
+# Order: rename → serde (JSON) → regex fallback (raw text) → ECS mapping → CIM aliases
 log_info "Creating CIM normalization pipeline..."
 RESULT=$(cribl_api POST "/pipelines" '{
   "id": "cim_normalize",
@@ -125,6 +128,104 @@ RESULT=$(cribl_api POST "/pipelines" '{
           "mode": "extract",
           "type": "json",
           "srcField": "_raw"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "!__e.event || !__e.event.code",
+        "description": "Phase 3: Extract EventID from raw Sysmon text (only if serde did not parse JSON)",
+        "conf": {
+          "field": "_raw",
+          "regex": "EventID[=:]\\s*(?<_raw_event_code>\\d+)"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code && /^(1|4688)$/.test(_raw_event_code)",
+        "description": "Phase 3: Extract process fields from raw Sysmon EID 1 / Win 4688",
+        "conf": {
+          "field": "_raw",
+          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?CommandLine:\\s*(?<_raw_cmdline>.+?)\\n[\\s\\S]*?ParentImage:\\s*(?<_raw_parent_image>.+?)\\n"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '3'",
+        "description": "Phase 3: Extract network fields from raw Sysmon EID 3",
+        "conf": {
+          "field": "_raw",
+          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?DestinationIp:\\s*(?<_raw_dest_ip>[\\d\\.]+)[\\s\\S]*?DestinationPort:\\s*(?<_raw_dest_port>\\d+)[\\s\\S]*?SourceIp:\\s*(?<_raw_src_ip>[\\d\\.]+)"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '7'",
+        "description": "Phase 3: Extract image load fields from raw Sysmon EID 7",
+        "conf": {
+          "field": "_raw",
+          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?ImageLoaded:\\s*(?<_raw_image_loaded>.+?)\\n"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '8' || _raw_event_code == '10'",
+        "description": "Phase 3: Extract injection fields from raw Sysmon EID 8/10",
+        "conf": {
+          "field": "_raw",
+          "regex": "SourceImage:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?TargetImage:\\s*(?<_raw_target_image>.+?)\\n"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '10'",
+        "description": "Phase 3: Extract GrantedAccess from raw Sysmon EID 10",
+        "conf": {
+          "field": "_raw",
+          "regex": "GrantedAccess:\\s*(?<_raw_granted_access>0x[0-9A-Fa-f]+)"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '13'",
+        "description": "Phase 3: Extract registry fields from raw Sysmon EID 13",
+        "conf": {
+          "field": "_raw",
+          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?TargetObject:\\s*(?<_raw_target_object>.+?)\\n[\\s\\S]*?Details:\\s*(?<_raw_details>.+?)\\n"
+        }
+      },
+      {
+        "id": "regex_extract",
+        "filter": "_raw_event_code == '22'",
+        "description": "Phase 3: Extract DNS fields from raw Sysmon EID 22",
+        "conf": {
+          "field": "_raw",
+          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?QueryName:\\s*(?<_raw_query_name>.+?)\\n"
+        }
+      },
+      {
+        "id": "eval",
+        "filter": "_raw_event_code && !__e.event",
+        "description": "Phase 3: Map raw-extracted fields to ECS dotted notation",
+        "conf": {
+          "add": [
+            {"name": "event.code",                       "value": "_raw_event_code"},
+            {"name": "event.category",                   "value": "_raw_event_code == '3' ? 'network' : _raw_event_code == '7' ? 'process' : _raw_event_code == '13' ? 'registry' : 'process'"},
+            {"name": "process.executable",               "value": "_raw_image || undefined"},
+            {"name": "process.name",                     "value": "_raw_image ? _raw_image.split('\\\\').pop() : undefined"},
+            {"name": "process.command_line",             "value": "_raw_cmdline || undefined"},
+            {"name": "process.parent.executable",        "value": "_raw_parent_image || undefined"},
+            {"name": "file.path",                        "value": "_raw_image_loaded || undefined"},
+            {"name": "file.name",                        "value": "_raw_image_loaded ? _raw_image_loaded.split('\\\\').pop() : undefined"},
+            {"name": "destination.ip",                   "value": "_raw_dest_ip || undefined"},
+            {"name": "destination.port",                 "value": "_raw_dest_port ? parseInt(_raw_dest_port) : undefined"},
+            {"name": "source.ip",                        "value": "_raw_src_ip || undefined"},
+            {"name": "registry.path",                    "value": "_raw_target_object || undefined"},
+            {"name": "registry.value",                   "value": "_raw_details || undefined"},
+            {"name": "winlog.event_data.TargetImage",    "value": "_raw_target_image || undefined"},
+            {"name": "winlog.event_data.GrantedAccess",  "value": "_raw_granted_access || undefined"},
+            {"name": "dns.question.name",                "value": "_raw_query_name || undefined"}
+          ],
+          "remove": ["_raw_event_code", "_raw_image", "_raw_cmdline", "_raw_parent_image", "_raw_image_loaded", "_raw_target_image", "_raw_granted_access", "_raw_target_object", "_raw_details", "_raw_dest_ip", "_raw_dest_port", "_raw_src_ip", "_raw_query_name"]
         }
       },
       {
@@ -153,7 +254,7 @@ RESULT=$(cribl_api POST "/pipelines" '{
   }
 }')
 if echo "$RESULT" | grep -q '"cim_normalize"'; then
-    log_ok "CIM normalization pipeline created (serde + markers + CIM aliases)"
+    log_ok "CIM normalization pipeline created (serde + raw regex fallback + CIM aliases)"
 else
     log_warn "Pipeline may already exist (re-run is idempotent)"
 fi
@@ -196,6 +297,26 @@ else
     log_warn "ES attack output may already exist"
 fi
 
+# Phase 3: Validation output — routes through full Cribl pipeline to ephemeral ES index.
+# Uses a dynamic index name based on the _validation_index field set by validation.py.
+# This enables end-to-end testing: raw events → Cribl HEC → normalize → ES → Lucene query.
+RESULT=$(cribl_api POST "/system/outputs" '{
+  "id": "elastic_validation",
+  "type": "elastic",
+  "url": "http://elasticsearch:9200",
+  "index": "`_validation_index || \"sim-validation\"`",
+  "authType": "basic",
+  "username": "elastic",
+  "password": "changeme",
+  "compress": false,
+  "description": "Phase 3: Validation events — dynamic index from _validation_index field"
+}')
+if echo "$RESULT" | grep -q '"elastic_validation"'; then
+    log_ok "Elasticsearch validation output → sim-validation-* (dynamic)"
+else
+    log_warn "ES validation output may already exist"
+fi
+
 # ─── 4. Create Splunk HEC Output ─────────────────────────────────
 # Token field is "token" (not "hecToken" or "authType").
 log_info "Creating Splunk HEC output..."
@@ -222,6 +343,15 @@ log_info "Configuring routing rules..."
 RESULT=$(cribl_api PATCH "/routes/default" '{
   "id": "default",
   "routes": [
+    {
+      "id": "validation_to_elastic",
+      "name": "Phase 3: Validation Events → Elastic (sim-validation-*)",
+      "filter": "__e._validation_index",
+      "pipeline": "cim_normalize",
+      "output": "elastic_validation",
+      "final": true,
+      "disabled": false
+    },
     {
       "id": "attack_to_elastic",
       "name": "Attack Events → Elastic (sim-attack)",
@@ -261,7 +391,7 @@ RESULT=$(cribl_api PATCH "/routes/default" '{
   ]
 }')
 if echo "$RESULT" | grep -q '"attack_to_elastic"'; then
-    log_ok "Routes configured (attack → sim-attack, baseline → sim-baseline, both → Splunk)"
+    log_ok "Routes configured (validation → sim-validation-*, attack → sim-attack, baseline → sim-baseline, all → Splunk)"
 else
     log_err "Failed to configure routes: $RESULT"
 fi
@@ -284,7 +414,8 @@ echo -e "  ${CYAN}Login${NC}:         admin / admin"
 echo ""
 echo -e "  ${CYAN}Data flow:${NC}"
 echo "    Simulator → Cribl HEC (8088)"
-echo "    ├── CIM normalize pipeline (ECS → Splunk field aliases)"
-echo "    ├── Attack events  → Elastic (sim-attack) + Splunk (sysmon)"
-echo "    └── Baseline events → Elastic (sim-baseline) + Splunk (sysmon)"
+echo "    ├── CIM normalize pipeline (ECS JSON + raw Sysmon text → ECS fields)"
+echo "    ├── Validation events → Elastic (sim-validation-*) [Phase 3]"
+echo "    ├── Attack events     → Elastic (sim-attack) + Splunk (sysmon)"
+echo "    └── Baseline events   → Elastic (sim-baseline) + Splunk (sysmon)"
 echo ""

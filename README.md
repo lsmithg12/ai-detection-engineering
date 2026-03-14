@@ -30,13 +30,13 @@ For each detection the agent:
 │                                                                    │
 │  ┌──────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
 │  │ Log Simulator│───▶│  Cribl Stream   │───▶│ Elasticsearch   │  │
-│  │ Fawkes TTPs  │    │ :9000 (optional)│    │ :9200           │  │
+│  │ Fawkes TTPs  │    │ :9000 (Phase 3) │    │ :9200           │  │
 │  │ + baseline   │    │ CIM normalize   │───▶│ Kibana :5601    │  │
 │  └──────────────┘    │ Log reduction   │    └─────────────────┘  │
 │         │             │ Route by tactic │                          │
-│         │             └─────────────────┘    ┌─────────────────┐  │
-│         └───────────────────────────────────▶│ Splunk          │  │
-│                                              │ :8000 (optional)│  │
+│         │             │ (streaming path)│    ┌─────────────────┐  │
+│         │             └────────┬────────┘───▶│ Splunk          │  │
+│         └───────────────────────────────────▶│ :8000 (optional)│  │
 │                      ┌───────────────┐       └─────────────────┘  │
 │                      │  Claude Code  │                            │
 │                      │  (AI Agent)   │ ◀── MCP: Elasticsearch     │
@@ -192,6 +192,16 @@ Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision 
 
 29 detection rules authored (11 deployed to SIEM, 12 validated, 2 authored, 4 need rework), covering 13/21 Fawkes techniques (62%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
 
+| Phase | Status | Key Deliverable |
+|-------|--------|-----------------|
+| Phase 1 | COMPLETED | Fixed stuck detections, compiled all outputs |
+| Phase 2 | COMPLETED | Elasticsearch-based SIEM validation |
+| Phase 3 | COMPLETED | Raw logs → Cribl Stream → normalized → SIEM data pipeline |
+| Phase 4 | NOT STARTED | Agent intelligence upgrades (EQL, thresholds) |
+| Phase 5 | NOT STARTED | Coverage expansion to 75%+ Fawkes |
+| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
+| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+
 ## MCP Configuration
 
 The AI agent uses MCP (Model Context Protocol) for direct Elasticsearch access and
@@ -206,13 +216,17 @@ cp mcp-config.example.json .mcp.json
 
 The Elasticsearch MCP server runs as a Docker container on the `blue-team-lab` network.
 
-## Cribl Stream (Optional)
+## Cribl Stream (Phase 3 — Completed 2026-03-14)
 
-When running with `--cribl`, Cribl Stream provides:
+When running with `--cribl`, Cribl Stream provides a full end-to-end data pipeline:
+raw vendor events → Cribl Stream normalization → indexed in SIEM(s).
+
+- **Full data pipeline**: raw vendor events → Cribl Stream → normalized → SIEM
 - **CIM normalization**: ECS fields mapped to Splunk CIM aliases
 - **Log reduction**: Drop noisy baseline events before indexing
 - **Routing**: Attack events to both SIEMs, baseline to Elastic only
 - **Attack enrichment**: MITRE technique tags added to events
+- **Structured data source gap tracking (YAML)**: gaps documented in `gaps/data-source-gaps.md`
 
 Configure Cribl: `./pipeline/configure-cribl.sh`
 
