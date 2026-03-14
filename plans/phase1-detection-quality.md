@@ -1,9 +1,10 @@
 # Phase 1: Detection Quality Remediation
 
+**Status**: COMPLETED — Merged to main via PR #52 (2026-03-13)
 **Priority**: IMMEDIATE
 **Estimated effort**: 2-3 hours
 **Dependencies**: None (works offline, no SIEM needed)
-**Branch**: `infra/phase1-detection-quality`
+**Branch**: `infra/phase1-detection-quality` (merged + deleted)
 
 ---
 
@@ -158,15 +159,15 @@ Current result files (`tests/results/*.json`) are sparse. Add operational metada
 
 ## Verification Checklist
 
-- [ ] All 28 Sigma rules pass `sigma check <rule>.yml`
-- [ ] All 28 rules have compiled Lucene output
-- [ ] All 28 rules have compiled SPL output
-- [ ] No test file has more than 1 event per TP test (multi-event → integration/)
-- [ ] All result files have `validated_at` timestamp
-- [ ] coverage/attack-matrix.md reflects actual detection states
-- [ ] tuning/changelog/ has at least entries for deployed detections
-- [ ] T1046, T1562.006, T1569.002 are no longer stuck at AUTHORED
-- [ ] T1562.001 uses path-based patterns (no hard-coded process names)
+- [x] All 28 Sigma rules pass `sigma check <rule>.yml`
+- [x] All 28 rules have compiled Lucene output
+- [x] All 28 rules have compiled SPL output
+- [x] No test file has more than 1 event per TP test (multi-event → integration/)
+- [x] All result files have `validated_at` timestamp
+- [x] coverage/attack-matrix.md reflects actual detection states
+- [x] tuning/changelog/ has at least entries for deployed detections
+- [x] T1046, T1562.006, T1569.002 are no longer stuck at AUTHORED
+- [x] T1562.001 uses path-based patterns (no hard-coded process names)
 
 ---
 

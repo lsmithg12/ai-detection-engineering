@@ -1,8 +1,9 @@
 # Phase 7: Advanced Capabilities
 
+**Status**: NOT STARTED
 **Priority**: LOW — STRATEGIC (research and innovation)
 **Estimated effort**: 40+ hours (multi-week)
-**Dependencies**: Phases 1-4 complete, stable pipeline
+**Dependencies**: Phases 1-4 complete, stable pipeline. Phase 1-2 DONE.
 **Branch**: Various per feature
 
 ---
@@ -111,12 +112,10 @@ Validation agent checks: did the detection fire?
 **Upgrade**: Abstract SIEM interface for pluggable backends.
 
 ### Target SIEMs
-- Elasticsearch (current)
-- Splunk (current)
+- Elasticsearch (current — primary, with SIEM validation from Phase 2)
+- Splunk Free (current — basic saved searches, no Enterprise Security)
 - Microsoft Sentinel (Azure Log Analytics)
 - Google Chronicle (BigQuery backend)
-- IBM QRadar
-- Sumo Logic
 
 ### Implementation Plan
 
@@ -274,7 +273,7 @@ Validation agent checks: did the detection fire?
 |-----------|-------|--------|------|----------------|
 | 1. Agent SDK | High | Medium | Low | Start when API access available |
 | 2. Live C2 | Very High | Very High | Medium | Research project — requires significant infra |
-| 3. Multi-SIEM | Medium | High | Low | Only if users request specific SIEM support |
+| 3. Multi-SIEM | Medium | High | Low | Only if users request specific SIEM support (no Splunk ES) |
 | 4. Marketplace | Medium | Medium | Low | Good for portfolio/community value |
 | 5. SOAR | Medium | High | Medium | Only valuable with real SOC workflow |
 | 6. Threat Swap | High | Low | Low | Quick win — mostly config changes |

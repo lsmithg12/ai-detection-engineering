@@ -1,8 +1,9 @@
 # Phase 4: Agent Intelligence Upgrades
 
+**Status**: NOT STARTED
 **Priority**: MEDIUM
 **Estimated effort**: 12-16 hours (multi-session)
-**Dependencies**: Phases 1-2 recommended first
+**Dependencies**: Phase 1 (DONE), Phase 2 (DONE — PR #54)
 **Branch**: `infra/phase4-agent-upgrades` (or per-agent branches)
 
 ---
@@ -12,6 +13,18 @@
 All 5 agents are functional but operate at a basic level. Each has clear upgrade paths
 that would improve detection quality, reduce manual intervention, and enable more
 sophisticated threat coverage.
+
+### Phase 2 Unlocks (What's New)
+
+Phase 2 delivered SIEM-based validation. This changes several Phase 4 tasks:
+- **Blue-team (3A, 3B)**: EQL and threshold rules can now be validated directly against
+  ES using the `validate_against_elasticsearch()` function — just swap the query type
+- **Quality agent (4A)**: Result files now include `validation_method` — quality agent
+  can flag `local_json`-only detections for SIEM re-validation
+- **Quality agent (4B)**: Tuning PRs can use SIEM validation to measure before/after FP
+  rates against real ES queries
+- **Quality agent (4C)**: Regression tracking can compare `local_json` vs `elasticsearch`
+  scores to detect SIEM-specific regressions (rule works locally but fails in ES)
 
 ## Agent 1: Intel Agent Upgrades
 
@@ -154,6 +167,9 @@ priority_score = (
 **Current**: Single-event Sigma rules only.
 **Upgrade**: Support Elastic EQL for multi-event correlation.
 
+**Phase 2 leverage**: `validation.py` already ingests events into ES and queries them.
+For EQL, swap the `query_string` query for `POST /{index}/_eql/search`.
+
 **Steps**:
 1. Identify techniques requiring correlation:
    - T1087.002: Discovery burst (5+ recon commands in 60 seconds)
@@ -170,12 +186,24 @@ priority_score = (
        [process where process.name == "systeminfo.exe"]
    ```
 3. Blue-team agent generates EQL rules for multi-event techniques
-4. Validation uses Elasticsearch EQL API: `POST /{index}/_eql/search`
+4. Add `validate_eql_against_elasticsearch()` to `validation.py`:
+   ```python
+   def validate_eql_against_elasticsearch(
+       eql_query: str,
+       events: list[dict],  # All events in sequence
+       ...
+   ) -> dict | None:
+       # Same ingest pattern as validate_against_elasticsearch
+       # Use POST /{index}/_eql/search instead of _search
+   ```
 
 ### 3B: Threshold Rule Support
 
 **Current**: All rules are simple match rules.
 **Upgrade**: Support threshold/aggregation rules.
+
+**Phase 2 leverage**: Threshold validation can reuse ES ingest from `validation.py`,
+then use ES aggregation queries to count events meeting threshold criteria.
 
 **Examples**:
 - Failed logon threshold: >5 failed logons from same source in 10 minutes
@@ -195,13 +223,17 @@ priority_score = (
      "from": "now-10m"
    }
    ```
-2. Transpile threshold rules to both Elastic Detection Engine and Splunk format
+2. Add `validate_threshold_against_elasticsearch()` to `validation.py`
 3. Validate threshold triggers against scenario event volumes
 
 ### 3C: Automated Exclusion Suggestions
 
 **Current**: FP reduction requires manual tuning.
 **Upgrade**: Blue-team agent suggests exclusions during validation.
+
+**Phase 2 leverage**: When SIEM validation returns FP events, their full ES document
+is available (including all fields). This gives richer data for exclusion analysis
+compared to local JSON matching.
 
 **Steps**:
 1. During validation, collect all false positive events
@@ -221,7 +253,7 @@ priority_score = (
 ### 4A: Live SIEM Alert Metrics
 
 **Current**: Quality agent uses hardcoded `alert_volume_24h` from request YAML.
-**Upgrade**: Query actual alert counts from Elasticsearch/Splunk.
+**Upgrade**: Query actual alert counts from Elasticsearch.
 
 **Steps**:
 1. Query Elastic alerts index:
@@ -249,12 +281,15 @@ priority_score = (
 **Current**: Quality agent recommends tuning but doesn't implement changes.
 **Upgrade**: Generate tuning PRs automatically.
 
+**Phase 2 leverage**: Use `validate_against_elasticsearch()` to measure before/after
+FP rates with real ES queries, not just local matching.
+
 **Steps**:
 1. When quality agent identifies TUNE-worthy detection:
    - Read current Sigma rule
    - Identify specific FP pattern (from alert details or scenario analysis)
    - Add targeted exclusion to filter block
-   - Re-validate with SIEM
+   - Re-validate with SIEM (using Phase 2 validation module)
 2. Create tuning branch: `tuning/{date}-{technique_id}`
 3. Commit modified rule + updated test results
 4. Create PR with:
@@ -267,15 +302,20 @@ priority_score = (
 **Current**: No automated check when a rule change degrades performance.
 **Upgrade**: Track F1/FP history and alert on regression.
 
+**Phase 2 leverage**: Result files now include `validation_method`. Quality agent can:
+- Compare `local_json` vs `elasticsearch` scores to detect SIEM-specific regressions
+- Flag rules that pass locally but fail against real ES (field mapping issues)
+
 **Steps**:
 1. Store historical metrics in `monitoring/metrics/<technique_id>.jsonl`:
    ```jsonl
-   {"date": "2026-03-08", "f1": 0.95, "fp_rate": 0.03, "tp_rate": 1.0, "method": "local"}
-   {"date": "2026-03-10", "f1": 0.90, "fp_rate": 0.05, "tp_rate": 0.95, "method": "elasticsearch"}
+   {"date": "2026-03-08", "f1": 0.95, "fp_rate": 0.03, "tp_rate": 1.0, "method": "local_json"}
+   {"date": "2026-03-13", "f1": 0.90, "fp_rate": 0.05, "tp_rate": 0.95, "method": "elasticsearch"}
    ```
 2. Quality agent reads history, flags regressions:
    - F1 dropped >0.10 since last measurement → REGRESSION
    - FP rate increased >5% → REGRESSION
+   - `local_json` passes but `elasticsearch` fails → SIEM_MISMATCH
 3. Create GitHub issue for regressions:
    - Title: `[Regression] <rule name> F1 dropped from X to Y`
    - Label: `regression`, `needs-review`
@@ -313,6 +353,7 @@ priority_score = (
 - Rule uses `|re` modifier (regex) without testing compilation → WARN
 - Rule references EID not available in lab data sources → INFO
 - Rule condition is just `selection` with no filter → WARN for high-severity rules
+- Result file has `validation_method: "local_json"` only → INFO (suggest SIEM re-validation)
 
 ---
 
@@ -322,10 +363,11 @@ priority_score = (
 - [ ] Intel agent tracks source diversity
 - [ ] Red-team generates 3 variants per technique (standard, obfuscated, LOTL)
 - [ ] Blue-team can author EQL correlation rules
+- [ ] EQL rules validated via `validate_eql_against_elasticsearch()`
 - [ ] Blue-team suggests exclusions during validation
 - [ ] Quality agent queries real alert counts from SIEM
-- [ ] Quality agent creates tuning PRs
-- [ ] Quality agent tracks F1 history and detects regressions
+- [ ] Quality agent creates tuning PRs with before/after SIEM metrics
+- [ ] Quality agent tracks F1 history and detects regressions + SIEM mismatches
 - [ ] Security agent auto-fixes low-risk issues
 - [ ] Security agent checks detection rule quality
 
