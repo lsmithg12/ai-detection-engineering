@@ -1,0 +1,26 @@
+# gaps/data-sources/sysmon_eid_25.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-009
+source_type: sysmon
+event_id: 25
+event_name: ProcessTampering
+status: gap  # gap | partially_available | onboarded
+priority: medium  # critical | high | medium | low
+affected_techniques:
+  - T1055
+simulator_support: false
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - process.name
+  - process.executable
+  - event.code
+resolution_notes: |
+  No simulator support yet for Sysmon EID 25 (ProcessTampering), which fires
+  when a process image is modified in memory — a key indicator of process
+  hollowing and other injection techniques used by Fawkes (T1055). Requires
+  Sysmon v13+ with ProcessTampering event collection enabled in the Sysmon
+  config. Phase 3 work: update the simulator to generate synthetic EID 25
+  events for injection scenarios, then build a Cribl raw log parser to extract
+  process.name and process.executable into ECS fields.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

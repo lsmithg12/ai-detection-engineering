@@ -1,0 +1,24 @@
+# gaps/data-sources/windows_eid_7045.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-002
+source_type: windows_system
+event_id: 7045
+event_name: ServiceInstall
+status: partially_available  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1543.003
+simulator_support: true
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - winlog.event_data.ServiceName
+  - winlog.event_data.ImagePath
+  - winlog.event_data.ServiceType
+  - winlog.event_data.StartType
+resolution_notes: |
+  Added to the simulator in PR #17. Needs a Cribl raw log parser to extract
+  service installation fields (ServiceName, ImagePath, ServiceType, StartType)
+  from Windows System event 7045 and map them to the appropriate winlog ECS
+  fields before indexing.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

@@ -1,0 +1,26 @@
+# gaps/data-sources/sysmon_eid_2.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-006
+source_type: sysmon
+event_id: 2
+event_name: FileCreateTime
+status: gap  # gap | partially_available | onboarded
+priority: medium  # critical | high | medium | low
+affected_techniques:
+  - T1070.006
+simulator_support: false
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - file.path
+  - file.created
+  - file.mtime
+  - process.name
+  - event.code
+resolution_notes: |
+  No simulator support yet for file timestomping events. Required to detect
+  Fawkes `timestomp` command (T1070.006 — Indicator Removal: Timestomp).
+  Phase 3 work: add a simulator scenario that generates EID 2 events reflecting
+  file creation time modification, then build a Cribl raw log parser to extract
+  file.path, file.created, and file.mtime into ECS fields.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"

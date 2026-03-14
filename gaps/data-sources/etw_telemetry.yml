@@ -1,0 +1,28 @@
+# gaps/data-sources/etw_telemetry.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-008
+source_type: elastic_endpoint
+event_id: null
+event_name: ETWProcessTelemetry
+status: gap  # gap | partially_available | onboarded
+priority: high  # critical | high | medium | low
+affected_techniques:
+  - T1056.001
+  - T1620
+  - T1027.009
+simulator_support: false
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - process.Ext.api.name
+  - process.Ext.api.parameters
+resolution_notes: |
+  ETW (Event Tracing for Windows) process telemetry is only available via the
+  Elastic Endpoint agent, which is not deployed in the current lab stack.
+  Required to detect Fawkes keylogging (T1056.001 — Keylogging), reflective
+  code loading (T1620), and embedded payloads (T1027.009 — Embedded Payloads).
+  The process.Ext.api.name and process.Ext.api.parameters fields are Elastic
+  Endpoint extensions not present in Sysmon or Windows event logs.
+  Phase 3+ work: evaluate adding Elastic Endpoint to the lab, or create
+  synthetic ETW events in the simulator for detection authoring purposes.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"
