@@ -412,6 +412,53 @@ To conserve API usage, batch your work:
 - Commit frequently with descriptive messages
 - Provide brief status updates as you work through the detection lifecycle
 
+## Persistent Memory Architecture
+
+This project uses a **hub-and-spoke memory system** to maintain context across Claude sessions.
+The auto-memory system stores files at `~/.claude/projects/<project-hash>/memory/`.
+
+### How It Works
+
+1. **MEMORY.md** (the hub) is auto-loaded into every conversation. It's kept under 200 lines
+   and serves as a **pure index** — no detailed content, just pointers with keyword descriptions.
+2. **Topic files** (the spokes) hold actual content, organized by concern. They're only read
+   when the index keywords suggest relevance to the current task.
+
+### Memory File Layout
+
+```
+memory/
+├── MEMORY.md                  # Index — always loaded, <200 lines, keyword-tagged links
+├── user_preferences.md        # Who the user is, coding style, workflow preferences
+├── lessons_learned.md         # Don't-repeat-this mistakes (backslash bugs, ES templates, CLI)
+├── infrastructure.md          # Credentials, versions, ports, Docker gotchas
+├── pipeline_state.md          # Agent runner, state transitions, CLI commands, fixed bugs
+└── detection_authoring.md     # ECS fields, Sigma patterns, validation tiers, transpilation
+```
+
+### Rules for Memory Maintenance
+
+- **Index descriptions must contain task-relevant keywords** so relevance can be judged from
+  the index alone. E.g., `"lessons_learned.md — backslash bugs, ES template shadowing,
+  keyword vs text, Splunk API"` — not just `"lessons_learned.md — technical lessons"`.
+- **Never put detailed content directly in MEMORY.md** — it will be truncated. Move details
+  to a topic file and add a link to the index.
+- **Update the "Current State" section in MEMORY.md** after completing any phase or major change
+  (detection count, coverage %, phase status, PR numbers).
+- **Create new topic files** when a concern grows beyond what fits in an existing file.
+- **Remove or update stale memories** — wrong memories are worse than no memories.
+- **Don't duplicate what's in the repo** — coverage/attack-matrix.md, STATUS.md, and ROADMAP.md
+  are the source of truth for detection state. Memory should only point to these, not repeat them.
+
+### When to Read Memory
+
+- **Always**: MEMORY.md index (auto-loaded)
+- **Starting new work**: Read `user_preferences.md` to calibrate approach
+- **Writing detections**: Read `detection_authoring.md` for field names, patterns, gotchas
+- **Debugging infrastructure**: Read `infrastructure.md` for credentials, versions, known issues
+- **Running pipeline**: Read `pipeline_state.md` for CLI commands, state machine, agent behavior
+- **Encountering errors**: Read `lessons_learned.md` for previously solved problems
+
 ## Environment Variables
 
 These should be set in your environment:
