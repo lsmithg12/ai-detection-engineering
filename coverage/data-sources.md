@@ -1,6 +1,6 @@
 # Data Source Inventory — Blue Team Detection Lab
 
-**Last updated**: 2026-03-07
+**Last updated**: 2026-03-14
 **SIEM status**: Elasticsearch 8.17.0 ONLINE | Splunk 9.3.9 ONLINE
 **Cluster**: blue-team-lab (single node)
 
@@ -54,6 +54,12 @@ curl -u elastic:changeme http://localhost:9200/sim-attack/_count
 | 10 | `"10"` | Process Access | `process.name`, `process.executable`, `winlog.event_data.TargetImage`, `winlog.event_data.GrantedAccess` | T1055.001, T1134.001 |
 | 13 | `"13"` | Registry Value Set | `registry.path`, `registry.value`, `process.name`, `process.command_line` | T1547.001 |
 | 4624 | `"4624"` | Windows Logon | `winlog.logon.type`, `winlog.logon.id`, `user.name`, `user.domain`, `source.ip`, `event.outcome` | T1134.003 |
+| 4104 | `"4104"` | PowerShell ScriptBlock | `powershell.file.script_block_text`, `event.code` | T1059.001 (enhanced) |
+| 11 | `"11"` | File Create | `file.path`, `file.name`, `process.name`, `process.executable` | T1219, T1547.001 |
+| 22 | `"22"` | DNS Query | `dns.question.name`, `process.name`, `process.executable` | T1071.001 (enhanced) |
+| 17 | `"17"` | Pipe Created | `file.name` (pipe name), `process.name`, `process.executable` | T1559, T1021.002 |
+| 18 | `"18"` | Pipe Connected | `file.name` (pipe name), `process.name`, `process.executable` | T1559, T1021.002 |
+| 7045 | `"7045"` | Service Install | `winlog.event_data.ServiceName`, `winlog.event_data.ImagePath` | T1543.003 |
 
 ### Missing from Simulation (Gap)
 
@@ -61,14 +67,10 @@ curl -u elastic:changeme http://localhost:9200/sim-attack/_count
 |---|---|---|---|
 | 2 | File creation time change | T1070.006 timestomping | Medium |
 | 5 | Process terminate | Process lifecycle correlation | Low |
-| 11 | File create | Startup folder persistence (T1547.001), file drops | High |
 | 12/14 | Registry create/delete | Registry persistence (T1547.001) full coverage | Medium |
-| 17/18 | Pipe created/connected | Named pipe-based C2, lateral movement | High |
 | 19/20/21 | WMI events | T1047 WMI execution | High |
-| 22 | DNS query | T1071.001 domain fronting, C2 DNS | High |
 | 23 | File delete | Anti-forensics, timestomping | Low |
 | 25 | Process tampering | T1055 injection detection aid | High |
-| 7045 | Service install | T1543.003 Windows service creation | High |
 
 ---
 
@@ -81,7 +83,7 @@ The simulation uses ECS (Elastic Common Schema) with these core field groups:
 process.pid              (long)
 process.name             (keyword)
 process.executable       (keyword)
-process.command_line     (text + keyword)
+process.command_line     (keyword)
 process.parent.pid       (long)
 process.parent.name      (keyword)
 process.parent.executable (keyword)
@@ -169,8 +171,8 @@ _simulation.label             (keyword) — short human label
 | start-clr/autopatch (T1562.001) | Sysmon EID 7 | AVAILABLE |
 | net-enum/whoami (T1087.002) | Sysmon EID 1 | AVAILABLE |
 | apc-injection (T1055.004) | Sysmon EID 8 | PARTIAL — EID 8 not explicitly labelled |
-| service (T1543.003) | Windows EID 7045 | GAP — not in simulation |
-| persist startup-folder (T1547.001) | Sysmon EID 11 | GAP — not in simulation |
+| service (T1543.003) | Windows EID 7045 | AVAILABLE (PR #17) |
+| persist startup-folder (T1547.001) | Sysmon EID 11 | AVAILABLE (PR #17) |
 | timestomp (T1070.006) | Sysmon EID 2 | GAP — not in simulation |
 | wmi (T1047) | Sysmon EID 19/20/21 | GAP — not in simulation |
 | keylog (T1056.001) | ETW / Sysmon EID 10 | GAP — not in simulation |
@@ -182,13 +184,13 @@ _simulation.label             (keyword) — short human label
 
 ---
 
-## Live Validation Results (2026-02-25)
+## Live Validation Results (2026-03-14)
 
 **Baseline index** (`sim-baseline`):
 - ~5 EPS continuous
-- Event codes: `1` (ProcessCreate), `3` (NetworkConnect), `13` (RegistryValueSet), `4624` (Logon)
-- Categories: process, network, registry, authentication
-- Labels: normal_process_create, normal_network, normal_linux, normal_logon, normal_registry
+- Event codes: `1` (ProcessCreate), `3` (NetworkConnect), `7` (ImageLoad), `11` (FileCreate), `13` (RegistryValueSet), `17/18` (NamedPipe), `22` (DNSQuery), `4104` (ScriptBlock), `4624` (Logon), `7045` (ServiceInstall)
+- Categories: process, network, registry, authentication, file, dns
+- Labels: normal_process_create, normal_network, normal_linux, normal_logon, normal_registry, normal_file, normal_dns
 - Agent types: sysmon, winlogbeat, auditbeat
 
 **Attack index** (`sim-attack`):
@@ -204,8 +206,10 @@ _simulation.label             (keyword) — short human label
 
 ## Next Steps
 
-All foundational setup is complete. 8 detections deployed, 1 in monitoring, 1 in progress.
+All foundational setup complete. 29 rules authored, 11 deployed (MONITORING), 62% Fawkes coverage.
+Phases 1-2 complete. SIEM validation via Elasticsearch is now the primary validation method.
 - See `coverage/detection-backlog.md` for prioritized build list
 - See `coverage/attack-matrix.md` for MITRE ATT&CK coverage
+- See `ROADMAP.md` for Phase 3+ improvement plans
 - **(Optional)** Load Attack Range data: `./pipeline/fetch-attack-range-data.sh samples`
 - **(Optional)** Enable Cribl: `./setup.sh --cribl` then `./pipeline/configure-cribl.sh`

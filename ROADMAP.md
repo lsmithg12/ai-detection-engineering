@@ -3,8 +3,8 @@
 Master plan for enhancing the AI Detection Engineering Lab. Each phase is self-contained
 so future Claude sessions can pick up any phase independently.
 
-**Last reviewed**: 2026-03-13
-**Current state**: 28 detections authored, 8 deployed, 5 agents operational, 2 SIEMs active
+**Last reviewed**: 2026-03-14
+**Current state**: 29 detection rules, 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-2 complete
 
 ---
 
@@ -20,42 +20,38 @@ Phases are independent unless noted. Work any phase in any order.
 
 ---
 
-## Phase 1: Detection Quality Remediation (Priority: IMMEDIATE)
+## Phase 1: Detection Quality Remediation — COMPLETED
 
-**Goal**: Fix broken/stuck detections, compile missing outputs, get all 28 rules deployable.
+**Status**: COMPLETED — Merged to main via PR #52 (2026-03-13)
 
 **Plan**: [plans/phase1-detection-quality.md](plans/phase1-detection-quality.md)
 
-**Scope**:
-- Re-run T1046, T1562.006, T1569.002 (stuck at AUTHORED due to bugs now fixed)
-- Fix T1562.001 malformed Sigma rule (hard-coded process name, broken filter)
-- Compile missing Elastic JSON for 25/28 rules
-- Split multi-event test scenarios (T1046, T1027) into single-event TP tests
-- Populate tuning changelog with audit trail
-- Enrich result files with timestamps and SIEM metadata
-- Update coverage/attack-matrix.md to reflect actual state
-
-**Success criteria**: All 28 rules pass sigma-cli transpilation. All have compiled Lucene + SPL.
+**Delivered**:
+- Fixed T1046, T1562.006, T1569.002 (stuck at AUTHORED due to backslash + non-dict bugs)
+- Rewrote T1562.001 AMSI bypass rule with path-based patterns
+- Compiled Lucene + SPL for all 29 rules
+- Split multi-event scenarios into single-event TP tests + integration/ kill chains
+- Populated tuning changelog with audit trail
+- Enriched all 29 result files with operational metadata
+- Updated coverage/attack-matrix.md to reflect actual state
 
 ---
 
-## Phase 2: SIEM-Based Validation (Priority: HIGH)
+## Phase 2: SIEM-Based Validation — COMPLETED
 
-**Goal**: Replace local JSON matching with actual Elasticsearch/Splunk query validation.
+**Status**: COMPLETED — Merged to main via PR #54 (2026-03-14)
 
 **Plan**: [plans/phase2-siem-validation.md](plans/phase2-siem-validation.md)
 
-**Scope**:
-- Blue-team agent ingests scenario events into `sim-validation` index
-- Runs compiled Lucene query against ingested data
-- Counts TP/FP from actual search results (not local JSON matching)
-- Falls back to local validation when SIEMs offline (CI environment)
-- Splunk parallel validation using SPL saved searches
-
-**Why**: Current local JSON matching misses field mapping errors, Lucene syntax issues,
-and normalization failures — the exact problems that cause detections to fail in production.
-
-**Dependencies**: Docker services must be running for SIEM validation path.
+**Delivered**:
+- `validation.py` module (~280 lines) with `validate_against_elasticsearch()`
+- Scenario JSON -> ES bulk ingest -> Lucene query -> F1 score
+- Falls back to local JSON validation when ES offline (CI environments)
+- Fixed critical template shadowing bug (ES composable template priority)
+- Fixed `process.command_line` mapping (text -> keyword for wildcard queries)
+- ILM policy for automatic validation index cleanup (1-hour safety net)
+- SIEM query errors fed into retry-with-feedback loop
+- Splunk validation permanently deferred (Elastic-only)
 
 ---
 
@@ -139,15 +135,15 @@ and normalization failures — the exact problems that cause detections to fail 
 
 ## Quick Reference: Current State vs Target
 
-| Metric | Current | Phase 1 | Phase 3 | Phase 5 | Phase 7 |
-|--------|---------|---------|---------|---------|---------|
-| Detections authored | 28 | 28 (all fixed) | 28 | 40+ | 60+ |
-| Deployed to SIEM | 8 | 20+ | 25+ | 35+ | 50+ |
-| Fawkes coverage | 43% | 43% | 50% | 75% | 90%+ |
-| Validation method | Local JSON | Local JSON | SIEM queries | SIEM queries | Live C2 |
-| Data pipeline | Pre-normalized | Pre-normalized | Raw → Cribl → SIEM | Full pipeline | Full pipeline |
-| Agent intelligence | Deterministic + Claude | Improved prompts | Schema-aware | Correlation rules | Agent SDK |
-| CI/CD | 6 workflows | 6 workflows | 7 workflows | 8 workflows | 10+ workflows |
+| Metric | Current (Post Phase 2) | Phase 3 | Phase 5 | Phase 7 |
+|--------|------------------------|---------|---------|---------|
+| Detections authored | 29 (all compiled) | 29+ | 40+ | 60+ |
+| Deployed to SIEM | 11 | 20+ | 35+ | 50+ |
+| Fawkes coverage | 62% | 65% | 75% | 90%+ |
+| Validation method | ES-based + local fallback | ES via Cribl | ES via Cribl | Live C2 |
+| Data pipeline | Pre-normalized ECS | Raw → Cribl → SIEM | Full pipeline | Full pipeline |
+| Agent intelligence | Deterministic + Claude + retry loop | Schema-aware | Correlation rules | Agent SDK |
+| CI/CD | 6 workflows | 7 workflows | 8 workflows | 10+ workflows |
 
 ---
 

@@ -1,11 +1,11 @@
 # MITRE ATT&CK Coverage Matrix — Fawkes C2 Detections
 
-**Last updated**: 2026-03-13
+**Last updated**: 2026-03-14
 **Total detections**: 29 Sigma rules (28 techniques + 1 companion registry rule)
-**Deployed to SIEM**: 9 (MONITORING state)
+**Deployed to SIEM**: 11 (MONITORING state)
 **Validated (deploy-ready)**: 12 (F1 >= 0.75)
 **Needs rework**: 4 (F1 < 0.75)
-**Authored (pending validation)**: 4
+**Authored (pending validation)**: 2
 **Fawkes technique coverage**: 13 / 21 core techniques (62%)
 
 Legend: ✅ Monitoring | ✓ Validated | 🔨 Authored | ❌ No coverage | ⚠️ Data gap
@@ -26,6 +26,7 @@ Quality: 🟢 auto_deploy (F1>=0.90) | 🟡 validated (F1>=0.75) | 🔴 needs_re
 | Discovery (TA0007) | 2 | 0 | 1 | 1 | 0 |
 | Command & Control (TA0011) | 1 | 1 | 0 | 0 | 0 |
 | **Total** | **29** | **11** | **12** | **2** | **4** |
+<!-- Note: 11 MONITORING confirmed via quality report 2026-03-13 -->
 
 ---
 

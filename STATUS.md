@@ -3,11 +3,13 @@
 ## Pipeline State
 
 - **Status**: Active
-- **Detections tracked**: 9
-- **Detections deployed**: 8
-- **Detections in monitoring**: 1 (T1059.001)
-- **Detections validated**: 1 (T1055.001 — F1=1.0, awaiting SIEM deploy)
-- **Coverage**: 9/21 techniques (43%)
+- **Detections authored**: 29 (28 techniques + 1 companion registry rule)
+- **Detections monitoring (SIEM)**: 11
+- **Detections validated (deploy-ready)**: 12 (F1 >= 0.75)
+- **Detections needs rework**: 4 (F1 < 0.75)
+- **Detections authored (pending validation)**: 2
+- **Fawkes coverage**: 13/21 core techniques (62%)
+- **Validation method**: Elasticsearch-based (local JSON fallback for CI)
 
 ## Agent Summary
 
@@ -15,23 +17,45 @@
 |-------|------|---------|
 | Intel | Ingests threat reports, creates detection requests | Daily / manual |
 | Red Team | Generates attack + benign scenarios per technique | On intel merge |
-| Blue Team | Authors Sigma rules, validates, transpiles, deploys | On intel/red-team merge |
+| Blue Team | Authors Sigma rules, validates against ES, transpiles, deploys | On intel/red-team merge |
 | Quality | Health scoring, daily reports, cross-agent journals | Daily |
 | Security | PR gate: secrets, code security, rule checks | Every PR to main |
 
-## Deployed Detections
+## Deployed Detections (MONITORING)
 
-| Technique | Name | State | SIEMs |
-|-----------|------|-------|-------|
-| T1059.001 | PowerShell Bypass | MONITORING | Elastic + Splunk |
-| T1547.001 | Registry Run Keys | DEPLOYED | Elastic + Splunk |
-| T1134.001 | LSASS Token Theft | DEPLOYED | Elastic + Splunk |
-| T1053.005 | Scheduled Task | DEPLOYED | Elastic + Splunk |
-| T1070.001 | Event Log Clearing | DEPLOYED | Elastic + Splunk |
-| T1078.004 | Cloud Account Abuse | DEPLOYED | Elastic + Splunk |
-| T1219 | Remote Access Software | DEPLOYED | Elastic + Splunk |
-| T1566.004 | Spearphishing Voice | DEPLOYED | Elastic + Splunk |
-| T1055.001 | CreateRemoteThread | VALIDATED (F1=1.0) | — (awaiting deploy) |
+| Technique | Name | SIEMs | Health |
+|-----------|------|-------|--------|
+| T1053.005 | Scheduled Task | Elastic + Splunk | 0.915 |
+| T1059.001 | PowerShell Bypass | Elastic + Splunk | 0.907 |
+| T1070.001 | Event Log Clearing | Elastic + Splunk | 0.915 |
+| T1071.001 | C2 Beaconing | Elastic + Splunk | 0.915 |
+| T1078.004 | Cloud Account Abuse | Elastic + Splunk | 0.915 |
+| T1134.001 | LSASS Token Theft | Elastic + Splunk | 0.915 |
+| T1219 | Remote Access Software | Elastic + Splunk | 0.915 |
+| T1486 | Data Encrypted for Impact | Elastic + Splunk | 0.915 |
+| T1547.001 | Registry Run Keys | Elastic + Splunk | 0.915 |
+| T1562.001 | AMSI Bypass CLR | Elastic + Splunk | 0.915 |
+| T1566.004 | Spearphishing Voice | Elastic + Splunk | 0.915 |
+
+## Validated (Deploy-Ready, F1 >= 0.75)
+
+| Technique | Name | F1 | Tier |
+|-----------|------|----|------|
+| T1027 | Obfuscated Files | 1.00 | auto_deploy |
+| T1046 | Network Service Discovery | 1.00 | auto_deploy |
+| T1055.001 | CreateRemoteThread | 1.00 | auto_deploy |
+| T1083 | File/Directory Discovery | 1.00 | auto_deploy |
+| T1490 | Inhibit System Recovery | 1.00 | auto_deploy |
+| T1562.006 | Indicator Blocking (auditpol) | 1.00 | auto_deploy |
+| T1562.006 | Indicator Blocking (registry) | 1.00 | auto_deploy |
+| T1569.002 | Service Execution | 1.00 | auto_deploy |
+| T1059.003 | Windows Command Shell | 0.75 | validated |
+| T1082 | System Info Discovery | 0.75 | validated |
+| T1133 | External Remote Services | 0.86 | validated |
+| T1190 | Exploit Public-Facing App | 0.75 | validated |
+| T1204.002 | Malicious File Execution | 0.75 | validated |
+| T1543.003 | Windows Service | 0.86 | validated |
+| T1562.004 | Firewall Disable | 0.86 | validated |
 
 ## Simulator Log Sources
 
@@ -50,6 +74,18 @@
 | 17/18 | Named Pipe | Yes | Yes | PR #17 |
 | 7045 | Service Install | Yes | Yes | PR #17 |
 
+## Improvement Phases
+
+| Phase | Status | Key Deliverable |
+|-------|--------|-----------------|
+| Phase 1 | COMPLETED (PR #52, 2026-03-13) | Fixed stuck detections, compiled all outputs |
+| Phase 2 | COMPLETED (PR #54, 2026-03-14) | Elasticsearch-based SIEM validation |
+| Phase 3 | NOT STARTED | Raw logs -> Cribl -> ES pipeline |
+| Phase 4 | NOT STARTED | Agent intelligence upgrades |
+| Phase 5 | NOT STARTED | Coverage expansion (75%+ Fawkes) |
+| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
+| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+
 ## Token Budget
 
 - **Daily cap**: 500,000 tokens
@@ -58,10 +94,12 @@
 
 ## Recent Changes
 
-- **PR #18**: `setup.sh` auto-rebuilds simulator on lab restart + synced index template
-- **PR #17**: 5 new log sources (EID 4104, 11, 22, 17/18, 7045) + CI workflow fixes
-- **PR #16**: T1055.001 rework — F1 improved from 0.667 to 1.0
-- **PR #15**: Repo consolidation — deduplicated detections, extracted SIEM module
+- **PR #54**: Phase 2 — Elasticsearch-based SIEM validation with local fallback
+- **PR #53**: Quality agent run — 11 detections healthy
+- **PR #52**: Phase 1 — Fixed stuck detections, compiled Lucene/SPL for all 29 rules
+- **PR #50**: Quality agent run — 11 detections healthy
+- **PR #49**: Intel agent run — processed 4 reports
+- **PR #47**: Pipeline run — backslash normalization fix + blue-team authored 4 detections
 
 ---
-*Updated 2026-03-07. See `autonomous/orchestration/config.yml` for agent configuration.*
+*Updated 2026-03-14. See `autonomous/orchestration/config.yml` for agent configuration.*
