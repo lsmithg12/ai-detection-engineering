@@ -1,4 +1,8 @@
-# Pipeline Improvement Plan — Patronus v2
+# Pipeline Improvement Plan — Patronus v2 (COMPLETED)
+
+> **Status**: ALL ISSUES RESOLVED as of 2026-03-14. Fixes 1-4 implemented in PR #44. Fix 5 (SIEM validation)
+> completed in Phase 2 (PR #54). Fix 6 (multi-block validator) done in Phase 1 (PR #52). Data pipeline
+> vision (Issue 5 raw logs) deferred to Phase 3. This file is retained as historical reference.
 
 Based on learnings from 3 full pipeline cycles (2026-03-08), 28 detections processed,
 17 intel requests, 15 scenarios generated, 10 rules authored, 1 deployed to SIEM.
@@ -340,32 +344,15 @@ condition = detection.get("condition", "selection")
 
 ---
 
-## Priority Order
+## Priority Order (ALL COMPLETED)
 
-| # | Fix | Impact | Effort | Dependencies |
-|---|-----|--------|--------|-------------|
-| 1 | Move deploy to post-merge | High — safety | Small | None |
-| 2 | Retry-with-feedback loop | High — F1 scores | Medium | None |
-| 3 | Fix validator multi-block | Medium — accuracy | Small | None |
-| 4 | `--pipeline` mode | Medium — workflow | Medium | None |
-| 5 | Standardize field names | High — F1 scores | Small | None |
-| 6 | Raw logs + Cribl normalize | Strategic — realism | Large | Docker + Cribl running |
-| 7 | Data source tracking | Medium — visibility | Medium | #6 |
-| 8 | SIEM-based validation | Strategic — accuracy | Large | #6, SIEMs running |
-
-### Recommended implementation order:
-1. **Fix 1a + 1b** (field standardization) — 30 min, immediately improves new detections
-2. **Fix 2** (post-merge deploy) — 1 hour, critical safety fix
-3. **Fix 1c** (retry loop) — 1 hour, fixes existing low-F1 detections
-4. **Fix 1d** (validator bug) — 30 min, prevents false confidence
-5. **Fix 3** (pipeline mode) — 2 hours, reduces manual work
-6. **Fix 5** (raw logs + Cribl) — multi-session, strategic upgrade
-
----
-
-## Notes for Future Sessions
-- All 5 agents are functional and tested end-to-end
-- Security gate now posts PR comments in GitHub Actions
-- Claude CLI fallback for red-team works reliably (15/15 scenario generations succeeded)
-- Token budget: 67,600 / 500,000 used (14%) after full pipeline
-- Data source gap tracking exists in `gaps/` but isn't structured/automated yet
+| # | Fix | Status | Completed In |
+|---|-----|--------|-------------|
+| 1 | Move deploy to post-merge | DONE | PR #44 (deploy-rules.yml + cli.py deploy) |
+| 2 | Retry-with-feedback loop | DONE | PR #44 (max 2 retries, FN/FP feedback to Claude) |
+| 3 | Fix validator multi-block | DONE | PR #44 (AND/OR/1-of/all-of parsing) |
+| 4 | `--pipeline` mode | DONE | PR #44 (presets: red-blue, red-blue-quality, full) |
+| 5 | Standardize field names | DONE | PR #44 (red-team + blue-team prompts) |
+| 6 | Raw logs + Cribl normalize | DEFERRED | Phase 3 (plans/phase3-data-pipeline.md) |
+| 7 | Data source tracking | DEFERRED | Phase 3 (plans/phase3-data-pipeline.md) |
+| 8 | SIEM-based validation | DONE | Phase 2 — PR #54 (validation.py) |

@@ -179,16 +179,18 @@ Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision 
 | Agent | Claude Task | Model | Fallback |
 |-------|------------|-------|----------|
 | Blue Team | Author Sigma rules from attack/benign event data | Opus | Deterministic field extraction |
+| Red Team | Generate attack scenarios dynamically | Sonnet | Hardcoded scenario generators |
 | Quality | Analyze fleet health, recommend tuning actions | Sonnet | Fixed threshold scoring |
-| Intel | Extract MITRE techniques from raw report text | Sonnet | Regex table parsing |
+| Intel | Extract MITRE techniques from raw report text + web search | Sonnet | Regex table parsing |
 
 - **Locally**: Uses your Claude Pro subscription (OAuth session in `~/.claude/`)
 - **In CI**: Falls back to deterministic Python logic automatically (no credentials needed)
-- **Security**: All invocations use `--tools ""` (pure reasoning, no file/shell access)
+- **Security**: Invocations use `--allowed-tools "Bash(curl:*)"` for web search or `--tools ""` for pure reasoning
+- **Validation**: Blue-team validates against Elasticsearch when available, falls back to local JSON in CI
 
 ### Current Detection Coverage
 
-9 detections deployed across 2 SIEMs, covering 9/21 Fawkes techniques (43%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
+29 detection rules authored (11 deployed to SIEM, 12 validated, 2 authored, 4 need rework), covering 13/21 Fawkes techniques (62%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
 
 ## MCP Configuration
 

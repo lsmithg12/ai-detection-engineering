@@ -67,14 +67,27 @@ Follow this cycle for every detection you build:
 - Store the transpiled KQL in `detections/<tactic>/compiled/`
 
 ### 4. VALIDATE — Test Against Real Data
-- Run the compiled KQL against Elastic using MCP search tool or curl
-- Check for true positives: does it fire on known-bad activity?
-- Check for false positives: does it fire on benign activity?
-- Record results in the detection's test file under `tests/`
-- Target metrics: TP rate > 90%, FP rate < 10%
+- **Primary (ES online)**: Use `validate_against_elasticsearch()` from `autonomous/orchestration/validation.py`:
+  1. Bulk ingest scenario events into a temporary `sim-validation-*` index
+  2. Run the compiled Lucene query against the ingested data
+  3. Count TP/FP/FN/TN from actual search results
+  4. Index auto-deletes after validation (ILM safety net: 1-hour cleanup)
+- **Fallback (ES offline/CI)**: Local JSON matching via `validate_detection()` in blue_team_agent.py
+- Record results in `tests/results/<technique>.json` with F1 score and operational metadata
+- Target metrics: F1 >= 0.90 for auto-deploy, F1 >= 0.75 for validated
+- **Retry loop**: If F1 < 0.90, pass FN/FP feedback to Claude for up to 2 rule refinements
+- **Critical**: `process.command_line` must be mapped as `keyword` (not `text`) for wildcard queries to work
 
-### 5. DEPLOY — Push to Elastic Security
-- Use the Elastic Detection Engine API to create/update the rule:
+### 5. DEPLOY — Push to Elastic Security (Post-Merge Only)
+- **Do NOT auto-deploy from feature branches.** Deployment happens after PR merge to main.
+- **Post-merge deploy** (automated via `.github/workflows/deploy-rules.yml`):
+  - Detects changed files in `detections/**` on push to main
+  - Deploys VALIDATED rules to Elastic + Splunk via `autonomous/orchestration/siem.py`
+- **Manual deploy** (local lab):
+  ```bash
+  cd autonomous && python3 orchestration/cli.py deploy --validated
+  ```
+- **Direct API** (when needed):
   ```bash
   curl -X POST "${KIBANA_URL}/api/detection_engine/rules" \
     -H "kbn-xsrf: true" \
@@ -211,34 +224,58 @@ When choosing what to detect next, prioritize by:
 ## File Organization
 
 ```
-blue-team-agent/
+ai-detection-engineering/
 ├── CLAUDE.md                          # This file — agent instructions
 ├── README.md                          # Project overview
+├── STATUS.md                          # Current pipeline state + deployed detections
+├── ROADMAP.md                         # Improvement phases (1-7)
+├── QUICKSTART.md                      # New user walkthrough
+├── PROMPTS.md                         # Agent system prompts
 ├── docker-compose.yml                 # Lab infrastructure
+├── setup.sh                           # One-command setup (--elastic/--splunk/--both/--cribl/--full)
+├── Makefile                           # Quick commands (make setup, make agent, etc.)
 ├── mcp-config.example.json            # MCP server configuration template
-├── detections/                        # Detection-as-Code rules
-│   ├── credential_access/
-│   ├── defense_evasion/
-│   ├── discovery/
-│   ├── execution/
-│   ├── lateral_movement/
-│   ├── persistence/
-│   ├── privilege_escalation/
-│   ├── collection/
-│   └── command_and_control/
+├── detections/                        # Detection-as-Code rules (29 Sigma rules)
+│   ├── <tactic>/                      # One directory per MITRE tactic
+│   │   ├── <technique>.yml            # Sigma rule
+│   │   └── compiled/                  # Transpiled outputs
+│   │       ├── <technique>.lucene     # Elasticsearch query
+│   │       ├── <technique>.spl        # Splunk query
+│   │       └── <technique>_elastic.json # Elastic Detection Engine format
+│   └── (credential_access, defense_evasion, discovery, execution,
+│        initial_access, persistence, privilege_escalation, command_and_control)
 ├── tests/                             # Test cases for detections
-│   ├── true_positives/
-│   └── true_negatives/
+│   ├── true_positives/                # Single-event TP tests (1 per technique)
+│   ├── true_negatives/                # TN tests (1 per technique)
+│   ├── results/                       # Validation results with F1 scores + metadata
+│   └── integration/                   # Multi-event kill chain tests
+├── autonomous/                        # Patronus multi-agent pipeline
+│   ├── orchestration/                 # Agent runner, state machine, validation, SIEM deploy
+│   │   ├── validation.py              # ES-based SIEM validation (Phase 2)
+│   │   ├── siem.py                    # Elasticsearch/Splunk deployment
+│   │   ├── agents/                    # 5 autonomous agents (intel, red, blue, quality, security)
+│   │   └── config.yml                 # Agent config + infrastructure credentials
+│   └── detection-requests/            # Detection lifecycle tracking (YAML per technique)
+├── simulator/                         # Log generator (attack + baseline scenarios)
+│   ├── simulator.py                   # Event generation engine
+│   └── scenarios/                     # Per-technique scenario JSON files
+├── .github/workflows/                 # CI/CD — 6 workflows (daily agents + deploy + security gate)
+├── cribl/                             # Cribl Stream MCP server
+├── splunk/                            # Splunk custom app (ECS field extractions)
+├── pipeline/                          # Deployment & validation scripts
 ├── templates/                         # Rule and test templates
 ├── threat-intel/                      # Threat intelligence inputs
-│   └── fawkes/                        # Fawkes C2 agent intel
-├── coverage/                          # Coverage tracking
-├── gaps/                              # Identified gaps
-├── pipeline/                          # Deployment & validation scripts
-├── tuning/                            # Tuning logs and exclusion lists
+│   ├── fawkes/                        # Fawkes C2 agent TTP mapping
+│   ├── analysis/                      # APT analysis (Scattered Spider)
+│   └── reports/                       # Intel reports from external sources
+├── coverage/                          # ATT&CK matrix, data sources, detection backlog
+├── gaps/                              # Data source gaps
+├── tuning/                            # Exclusion lists & tuning changelog
 │   ├── exclusions.yml                 # Global exclusion list
-│   └── changelog/                     # Per-rule tuning history
-└── monitoring/                        # Performance metrics (stretch goal)
+│   └── changelog/                     # Per-rule tuning history + deployment log
+├── monitoring/                        # Daily quality agent reports
+│   └── reports/                       # YYYY-MM-DD.md health reports
+└── plans/                             # Improvement phase plans (1-7)
 ```
 
 ## Git Workflow & Branch Strategy
@@ -304,6 +341,60 @@ You have access to GitHub MCP tools. Use them to:
 | `high-priority` | Operator-flagged or critical technique |
 | `needs-review` | Agent is uncertain and wants human input |
 
+## Autonomous Pipeline (Patronus)
+
+Five AI agents run the detection lifecycle end-to-end:
+
+| Agent | Role | Trigger | Key File |
+|-------|------|---------|----------|
+| Intel | Ingest threat reports, create detection requests | Daily | `autonomous/orchestration/agents/intel_agent.py` |
+| Red Team | Generate attack + benign scenarios per technique | On intel merge | `autonomous/orchestration/agents/red_team_agent.py` |
+| Blue Team | Author Sigma rules, validate against ES, transpile | On red-team merge | `autonomous/orchestration/agents/blue_team_agent.py` |
+| Quality | Health scoring, daily monitoring reports | Daily | `autonomous/orchestration/agents/quality_agent.py` |
+| Security | PR gate — secrets, code security, rule quality | Every PR to main | `autonomous/orchestration/agents/security_agent.py` |
+
+**Run agents locally**:
+```bash
+cd autonomous && python3 orchestration/agent_runner.py --agent <name> [--dry-run]
+cd autonomous && python3 orchestration/agent_runner.py --pipeline red-blue-quality
+```
+
+**Check pipeline state**:
+```bash
+cd autonomous && python3 orchestration/cli.py status
+```
+
+**Deploy validated detections**:
+```bash
+cd autonomous && python3 orchestration/cli.py deploy --validated
+```
+
+### Current Detection State (2026-03-14)
+
+- **29 Sigma rules** across 8 MITRE tactics (all have compiled Lucene + SPL)
+- **11 MONITORING** (deployed to Elastic + Splunk, all healthy)
+- **12 VALIDATED** (F1 >= 0.75, deploy-ready)
+- **2 AUTHORED** (pending validation)
+- **4 needs rework** (F1 < 0.75: T1003.001, T1021.001, T1105, T1059.003/T1082/T1190/T1204.002 are borderline)
+- **Fawkes coverage**: 13/21 core techniques (62%)
+- **Validation method**: Elasticsearch-based (local JSON fallback for CI)
+
+See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed detection health.
+
+### Improvement Phases
+
+| Phase | Status | Key Deliverable |
+|-------|--------|-----------------|
+| Phase 1 | COMPLETED (PR #52) | Fixed stuck detections, compiled all outputs |
+| Phase 2 | COMPLETED (PR #54) | Elasticsearch-based SIEM validation |
+| Phase 3 | NOT STARTED | Raw logs -> Cribl -> ES pipeline |
+| Phase 4 | NOT STARTED | Agent intelligence upgrades (EQL, thresholds) |
+| Phase 5 | NOT STARTED | Coverage expansion to 75%+ Fawkes |
+| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
+| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+
+See `ROADMAP.md` for details and `plans/` for step-by-step instructions.
+
 ## Batch Operations
 
 To conserve API usage, batch your work:
@@ -344,8 +435,12 @@ All Kibana API calls require auth header: `-u elastic:changeme`
 |---|---|---|
 | `sim-baseline` | Normal enterprise activity | FP baseline queries |
 | `sim-attack` | Fawkes TTP simulations | TP validation queries |
+| `sim-validation-*` | Temporary validation events | Created/deleted per test run by validation.py; ILM auto-cleanup 1h |
 | `attack-range-samples` | Supplemental ATT&CK data | Load via `pipeline/fetch-attack-range-data.sh` |
 | `sim-*` (via Cribl) | Cribl-normalized events | Same indices, routed through Cribl pipeline when `--cribl` active |
+
+**Index template**: `sim-logs` (priority 500) applies to all `sim-*` indices including validation.
+Do NOT create a separate `sim-validation-*` template — it would shadow `sim-*` due to ES composable template priority rules (higher priority wins entirely, no merging).
 
 ## Cribl Stream MCP Tools
 
