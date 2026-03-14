@@ -9,6 +9,7 @@ Usage:
   python orchestration/cli.py create T1055.001 --title "..." --priority high --intel path/to/report.yml
   python orchestration/cli.py transition T1055.001 VALIDATED --agent blue-team --details "TP 1/1, FP 0"
   python orchestration/cli.py update T1055.001 --agent blue-team --set fp_rate=0.0 tp_rate=1.0
+  python orchestration/cli.py data-sources                        # report data source gaps
 """
 
 import argparse
@@ -196,6 +197,62 @@ def cmd_deploy(args):
     print(f"\n  Deployed {deployed}/{len(eligible)} detections")
 
 
+def cmd_data_sources(args):
+    """Report on data source gap status from gaps/data-sources/*.yml files."""
+    import yaml
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    gaps_dir = repo_root / "gaps" / "data-sources"
+
+    if not gaps_dir.exists():
+        print("  No gaps/data-sources/ directory found.")
+        return
+
+    gap_files = sorted(gaps_dir.glob("*.yml"))
+    if not gap_files:
+        print("  No data source gap files found.")
+        return
+
+    # Categorize by status
+    by_status = {"gap": [], "partially_available": [], "onboarded": []}
+    for gap_file in gap_files:
+        try:
+            with open(gap_file, encoding="utf-8") as f:
+                gap = yaml.safe_load(f) or {}
+            status = gap.get("status", "gap")
+            entry = {
+                "gap_id": gap.get("gap_id", gap_file.stem),
+                "event_name": gap.get("event_name", "?"),
+                "event_id": gap.get("event_id", "?"),
+                "priority": gap.get("priority", "?"),
+                "affected": gap.get("affected_techniques", []),
+                "simulator": gap.get("simulator_support", False),
+                "cribl": gap.get("cribl_pipeline") is not None,
+            }
+            by_status.setdefault(status, []).append(entry)
+        except Exception as e:
+            print(f"  Error reading {gap_file.name}: {e}")
+
+    total = sum(len(v) for v in by_status.values())
+    print(f"\n  Data Source Gaps ({total} tracked)")
+
+    for status, label in [("gap", "GAPS (missing)"),
+                          ("partially_available", "PARTIAL (in simulator, no Cribl parser)"),
+                          ("onboarded", "ONBOARDED (fully available)")]:
+        entries = by_status.get(status, [])
+        if entries:
+            print(f"\n  {label} ({len(entries)})")
+            for e in entries:
+                sim = "sim:Y" if e["simulator"] else "sim:N"
+                cribl = "cribl:Y" if e["cribl"] else "cribl:N"
+                techs = ", ".join(e["affected"][:3])
+                if len(e["affected"]) > 3:
+                    techs += f" +{len(e['affected'])-3}"
+                print(f"    [{e['priority'].upper():8s}] {e['gap_id']:8s} "
+                      f"EID {str(e['event_id']):5s} {e['event_name']:20s} "
+                      f"[{sim} {cribl}] → {techs}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patronus",
@@ -241,6 +298,9 @@ def main():
     # deploy
     sub.add_parser("deploy", help="Deploy VALIDATED detections to SIEMs (post-merge)")
 
+    # data-sources (Phase 3)
+    sub.add_parser("data-sources", help="Report data source gap status")
+
     args = parser.parse_args()
     cmd_map = {
         "status": cmd_status,
@@ -250,6 +310,7 @@ def main():
         "transition": cmd_transition,
         "update": cmd_update,
         "deploy": cmd_deploy,
+        "data-sources": cmd_data_sources,
     }
     cmd_map[args.command](args)
 
