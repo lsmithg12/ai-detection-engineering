@@ -191,6 +191,25 @@ def validate_against_elasticsearch(
     errors = []
 
     try:
+        # ─── 0. Create index explicitly with ILM settings ──────────
+        # Do NOT use a separate sim-validation-* index template — it would
+        # shadow the sim-* template (priority 500) and lose all ECS field
+        # mappings. Instead, create the index with ILM settings inline and
+        # let the sim-* template provide keyword/text/ip field mappings.
+        try:
+            _es_request(
+                f"{es_url}/{index_name}",
+                method="PUT",
+                data={"settings": {
+                    "number_of_shards": 1,
+                    "number_of_replicas": 0,
+                    "index.lifecycle.name": "validation-cleanup",
+                }},
+                auth=es_auth,
+            )
+        except Exception:
+            pass  # Index may already exist or ILM policy may not exist — non-fatal
+
         # ─── 1. Bulk ingest events ──────────────────────────────────
         bulk_body = _build_bulk_body(index_name, attack_events, benign_events, technique_id)
 
@@ -366,7 +385,7 @@ def create_validation_infrastructure(es_url: str | None = None,
     if not _check_es_reachable(es_url, es_auth):
         return False
 
-    # Create ILM policy
+    # Create ILM policy (safety net for orphaned validation indices)
     ilm_policy = {
         "policy": {
             "phases": {
@@ -381,31 +400,24 @@ def create_validation_infrastructure(es_url: str | None = None,
             f"{es_url}/_ilm/policy/validation-cleanup",
             method="PUT", data=ilm_policy, auth=es_auth,
         )
+        print("    [validation] ILM policy 'validation-cleanup' created")
     except Exception as e:
         print(f"    [validation] ILM policy creation failed: {e}")
         # Non-fatal — validation works without ILM
 
-    # Create override template (higher priority than sim-*)
-    # Inherits all mappings from sim-* template, just adds ILM policy reference
-    override_template = {
-        "index_patterns": ["sim-validation-*"],
-        "priority": 600,  # Higher than sim-* (500)
-        "template": {
-            "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 0,
-                "index.lifecycle.name": "validation-cleanup",
-            }
-        }
-    }
+    # NOTE: We do NOT create a separate sim-validation-* index template.
+    # A higher-priority template would shadow the sim-* template's ECS field
+    # mappings (keyword/text/ip types), causing Lucene wildcard queries to fail
+    # against dynamic text mappings. Instead, ILM is applied per-index at
+    # creation time in validate_against_elasticsearch().
 
+    # Clean up any previously-created override template that would shadow sim-*
     try:
         _es_request(
             f"{es_url}/_index_template/sim-validation",
-            method="PUT", data=override_template, auth=es_auth,
+            method="DELETE", auth=es_auth,
         )
-        print("    [validation] Validation index template and ILM policy created")
-        return True
-    except Exception as e:
-        print(f"    [validation] Override template creation failed: {e}")
-        return False
+    except Exception:
+        pass  # Template may not exist — that's fine
+
+    return True
