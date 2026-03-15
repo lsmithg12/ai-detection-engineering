@@ -1,0 +1,169 @@
+{
+  "id": "zeek_normalize",
+  "conf": {
+    "asyncFuncTimeout": 1000,
+    "output": "default",
+    "streamtags": ["zeek", "bro", "network", "ecs"],
+    "groups": {},
+    "functions": [
+      {
+        "id": "func_zeek_regex_conn",
+        "filter": "sourcetype == 'bro:conn'",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "^(?<ts>[\\d.]+)\\t(?<uid>[^\\t]+)\\t(?<src_ip>[^\\t]+)\\t(?<src_port>\\d+)\\t(?<dst_ip>[^\\t]+)\\t(?<dst_port>\\d+)\\t(?<proto>[^\\t]+)\\t(?<service>[^\\t]*)\\t(?<duration>[^\\t]*)\\t(?<orig_bytes>[^\\t]*)\\t(?<resp_bytes>[^\\t]*)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Parse Zeek conn.log TSV format: ts uid id.orig_h id.orig_p id.resp_h id.resp_p proto service duration orig_bytes resp_bytes"
+      },
+      {
+        "id": "func_zeek_regex_dns",
+        "filter": "sourcetype == 'bro:dns'",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "^(?<ts>[\\d.]+)\\t(?<uid>[^\\t]+)\\t(?<src_ip>[^\\t]+)\\t(?<src_port>\\d+)\\t(?<dst_ip>[^\\t]+)\\t(?<dst_port>\\d+)\\t(?<proto>[^\\t]+)\\t(?<trans_id>[^\\t]*)\\t(?<query>[^\\t]*)\\t(?<qtype>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Parse Zeek dns.log TSV format: ts uid id.orig_h id.orig_p id.resp_h id.resp_p proto trans_id query qtype_name"
+      },
+      {
+        "id": "func_zeek_ecs_conn",
+        "filter": "sourcetype == 'bro:conn'",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "source.ip",
+              "value": "src_ip"
+            },
+            {
+              "name": "destination.ip",
+              "value": "dst_ip"
+            },
+            {
+              "name": "source.port",
+              "value": "src_port ? Number(src_port) : undefined"
+            },
+            {
+              "name": "destination.port",
+              "value": "dst_port ? Number(dst_port) : undefined"
+            },
+            {
+              "name": "network.transport",
+              "value": "proto ? proto.toLowerCase() : undefined"
+            },
+            {
+              "name": "network.protocol",
+              "value": "service && service !== '-' ? service.toLowerCase() : undefined"
+            },
+            {
+              "name": "zeek.connection.duration",
+              "value": "duration && duration !== '-' ? Number(duration) : undefined"
+            },
+            {
+              "name": "source.bytes",
+              "value": "orig_bytes && orig_bytes !== '-' ? Number(orig_bytes) : undefined"
+            },
+            {
+              "name": "destination.bytes",
+              "value": "resp_bytes && resp_bytes !== '-' ? Number(resp_bytes) : undefined"
+            },
+            {
+              "name": "zeek.connection.uid",
+              "value": "uid"
+            },
+            {
+              "name": "event.category",
+              "value": "'network'"
+            },
+            {
+              "name": "event.dataset",
+              "value": "'zeek.conn'"
+            },
+            {
+              "name": "event.module",
+              "value": "'zeek'"
+            },
+            {
+              "name": "event.type",
+              "value": "'connection'"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map Zeek conn.log fields to ECS network schema"
+      },
+      {
+        "id": "func_zeek_ecs_dns",
+        "filter": "sourcetype == 'bro:dns'",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "source.ip",
+              "value": "src_ip"
+            },
+            {
+              "name": "destination.ip",
+              "value": "dst_ip"
+            },
+            {
+              "name": "source.port",
+              "value": "src_port ? Number(src_port) : undefined"
+            },
+            {
+              "name": "destination.port",
+              "value": "dst_port ? Number(dst_port) : undefined"
+            },
+            {
+              "name": "dns.question.name",
+              "value": "query && query !== '-' ? query : undefined"
+            },
+            {
+              "name": "dns.question.type_code",
+              "value": "qtype && qtype !== '-' ? Number(qtype) : undefined"
+            },
+            {
+              "name": "zeek.connection.uid",
+              "value": "uid"
+            },
+            {
+              "name": "event.category",
+              "value": "'network'"
+            },
+            {
+              "name": "event.dataset",
+              "value": "'zeek.dns'"
+            },
+            {
+              "name": "event.module",
+              "value": "'zeek'"
+            },
+            {
+              "name": "event.type",
+              "value": "'protocol'"
+            },
+            {
+              "name": "network.transport",
+              "value": "proto ? proto.toLowerCase() : 'udp'"
+            },
+            {
+              "name": "network.protocol",
+              "value": "'dns'"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map Zeek dns.log fields to ECS DNS schema"
+      }
+    ]
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "id": "windows_security_normalize",
+  "conf": {
+    "asyncFuncTimeout": 1000,
+    "output": "default",
+    "streamtags": ["windows", "security", "ecs"],
+    "groups": {},
+    "functions": [
+      {
+        "id": "func_winsec_serde",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "mode": "extract",
+          "type": "json",
+          "srcField": "_raw",
+          "dstField": "_parsed",
+          "cleanFields": false
+        },
+        "description": "Attempt JSON parse of _raw; promotes fields if event arrived as JSON envelope"
+      },
+      {
+        "id": "func_winsec_regex_event_id",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)(?:EventID|<EventID>)(?:[=>:\\s]+)(?<event_id>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract EventID from key=value or XML format"
+      },
+      {
+        "id": "func_winsec_regex_subject_user",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)SubjectUserName(?:[=>:\\s]+)(?<subject_user_name>[^\\r\\n\\t<]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract SubjectUserName (acting account)"
+      },
+      {
+        "id": "func_winsec_regex_target_user",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)TargetUserName(?:[=>:\\s]+)(?<target_user_name>[^\\r\\n\\t<]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract TargetUserName (target account for 4624, 4625, 4672)"
+      },
+      {
+        "id": "func_winsec_regex_ip",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)IpAddress(?:[=>:\\s]+)(?<ip_address>[^\\r\\n\\t<\\s]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract IpAddress (source IP for logon events)"
+      },
+      {
+        "id": "func_winsec_regex_logon_type",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)LogonType(?:[=>:\\s]+)(?<logon_type>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract LogonType (2=Interactive, 3=Network, 10=RemoteInteractive)"
+      },
+      {
+        "id": "func_winsec_regex_process_4688",
+        "filter": "event_id == '4688' || event_id == '4689'",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)NewProcessName(?:[=>:\\s]+)(?<new_process_name>[^\\r\\n\\t<]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract NewProcessName for process create/terminate events (4688/4689)"
+      },
+      {
+        "id": "func_winsec_regex_parent_4688",
+        "filter": "event_id == '4688'",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)ParentProcessName(?:[=>:\\s]+)(?<parent_process_name>[^\\r\\n\\t<]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract ParentProcessName for 4688 process creation"
+      },
+      {
+        "id": "func_winsec_regex_cmdline_4688",
+        "filter": "event_id == '4688'",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)CommandLine(?:[=>:\\s]+)(?<cmd_line>[^\\r\\n\\t<]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract CommandLine for 4688 (requires audit process creation policy with command-line logging)"
+      },
+      {
+        "id": "func_winsec_ecs_map",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "event.code",
+              "value": "event_id"
+            },
+            {
+              "name": "event.module",
+              "value": "'security'"
+            },
+            {
+              "name": "event.provider",
+              "value": "'Microsoft-Windows-Security-Auditing'"
+            },
+            {
+              "name": "host.os.family",
+              "value": "'windows'"
+            },
+            {
+              "name": "user.name",
+              "value": "subject_user_name || target_user_name"
+            },
+            {
+              "name": "winlog.event_data.SubjectUserName",
+              "value": "subject_user_name"
+            },
+            {
+              "name": "winlog.event_data.TargetUserName",
+              "value": "target_user_name"
+            },
+            {
+              "name": "source.ip",
+              "value": "ip_address && ip_address !== '-' ? ip_address : undefined"
+            },
+            {
+              "name": "winlog.logon.type",
+              "value": "logon_type ? Number(logon_type) : undefined"
+            },
+            {
+              "name": "process.executable",
+              "value": "new_process_name"
+            },
+            {
+              "name": "process.name",
+              "value": "new_process_name ? new_process_name.split('\\\\').pop() : undefined"
+            },
+            {
+              "name": "process.parent.executable",
+              "value": "parent_process_name"
+            },
+            {
+              "name": "process.command_line",
+              "value": "cmd_line"
+            },
+            {
+              "name": "event.category",
+              "value": "event_id == '4624' || event_id == '4625' || event_id == '4634' || event_id == '4647' ? 'authentication' : event_id == '4688' || event_id == '4689' ? 'process' : 'iam'"
+            },
+            {
+              "name": "event.type",
+              "value": "event_id == '4624' ? 'start' : event_id == '4625' ? 'denied' : event_id == '4688' ? 'start' : 'info'"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map extracted fields to ECS schema; categorize by EventID"
+      },
+      {
+        "id": "func_winsec_cim_aliases",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "src_ip",
+              "value": "source.ip"
+            },
+            {
+              "name": "user",
+              "value": "user.name"
+            },
+            {
+              "name": "CommandLine",
+              "value": "process.command_line"
+            },
+            {
+              "name": "dest_nt_host",
+              "value": "host.name"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Add Splunk CIM field aliases for compatibility"
+      }
+    ]
+  }
+}

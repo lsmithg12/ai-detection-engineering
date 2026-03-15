@@ -1,0 +1,212 @@
+{
+  "id": "sysmon_normalize",
+  "conf": {
+    "asyncFuncTimeout": 1000,
+    "output": "default",
+    "streamtags": ["sysmon", "windows", "ecs"],
+    "groups": {},
+    "functions": [
+      {
+        "id": "func_sysmon_serde",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "mode": "extract",
+          "type": "json",
+          "srcField": "_raw",
+          "dstField": "_parsed",
+          "cleanFields": false
+        },
+        "description": "Attempt JSON parse of _raw envelope; fields promoted if present"
+      },
+      {
+        "id": "func_sysmon_regex_fields",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)Image: (?<process_executable>[^\\r\\n]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract Image (process executable path)"
+      },
+      {
+        "id": "func_sysmon_regex_cmdline",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)CommandLine: (?<process_command_line>[^\\r\\n]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract CommandLine"
+      },
+      {
+        "id": "func_sysmon_regex_pid",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)ProcessId: (?<process_pid>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract ProcessId"
+      },
+      {
+        "id": "func_sysmon_regex_user",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)User: (?<user_name>[^\\r\\n]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract User"
+      },
+      {
+        "id": "func_sysmon_regex_parent",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)ParentImage: (?<parent_executable>[^\\r\\n]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract ParentImage"
+      },
+      {
+        "id": "func_sysmon_regex_network",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)SourceIp: (?<source_ip>[^\\r\\n\\s]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract SourceIp for network events"
+      },
+      {
+        "id": "func_sysmon_regex_dst",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "(?m)DestinationIp: (?<destination_ip>[^\\r\\n\\s]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract DestinationIp for network events"
+      },
+      {
+        "id": "func_sysmon_ecs_map",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "process.executable",
+              "value": "process_executable"
+            },
+            {
+              "name": "process.name",
+              "value": "process_executable ? process_executable.split('\\\\').pop() : undefined"
+            },
+            {
+              "name": "process.command_line",
+              "value": "process_command_line"
+            },
+            {
+              "name": "process.pid",
+              "value": "process_pid ? Number(process_pid) : undefined"
+            },
+            {
+              "name": "user.name",
+              "value": "user_name"
+            },
+            {
+              "name": "process.parent.executable",
+              "value": "parent_executable"
+            },
+            {
+              "name": "process.parent.name",
+              "value": "parent_executable ? parent_executable.split('\\\\').pop() : undefined"
+            },
+            {
+              "name": "source.ip",
+              "value": "source_ip"
+            },
+            {
+              "name": "destination.ip",
+              "value": "destination_ip"
+            },
+            {
+              "name": "event.module",
+              "value": "'sysmon'"
+            },
+            {
+              "name": "event.provider",
+              "value": "'Microsoft-Windows-Sysmon'"
+            },
+            {
+              "name": "host.os.family",
+              "value": "'windows'"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map extracted fields to ECS schema"
+      },
+      {
+        "id": "func_sysmon_cim_aliases",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "CommandLine",
+              "value": "process.command_line"
+            },
+            {
+              "name": "src_ip",
+              "value": "source.ip"
+            },
+            {
+              "name": "dest_ip",
+              "value": "destination.ip"
+            },
+            {
+              "name": "user",
+              "value": "user.name"
+            },
+            {
+              "name": "process",
+              "value": "process.name"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Add Splunk CIM field aliases for compatibility"
+      }
+    ]
+  }
+}

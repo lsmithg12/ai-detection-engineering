@@ -1,0 +1,65 @@
+[
+  {
+    "id": "validation_to_elastic",
+    "name": "Validation events → ES (Phase 3 validation route)",
+    "filter": "__e['_validation_index'] != null",
+    "pipeline": null,
+    "output": "elastic_validation",
+    "final": true,
+    "description": "Route validation events directly to ES validation index"
+  },
+  {
+    "id": "sysmon_route",
+    "name": "Sysmon events → sysmon_normalize",
+    "filter": "sourcetype && sourcetype.startsWith('XmlWinEventLog:Microsoft-Windows-Sysmon')",
+    "pipeline": "sysmon_normalize",
+    "output": "default",
+    "final": false,
+    "description": "Route Sysmon events to dedicated normalization pipeline"
+  },
+  {
+    "id": "windows_security_route",
+    "name": "Windows Security events → windows_security_normalize",
+    "filter": "sourcetype == 'XmlWinEventLog:Security' || sourcetype == 'WinEventLog:Security'",
+    "pipeline": "windows_security_normalize",
+    "output": "default",
+    "final": false,
+    "description": "Route Windows Security events to dedicated normalization pipeline"
+  },
+  {
+    "id": "linux_auditd_route",
+    "name": "Linux audit events → linux_auditd_normalize",
+    "filter": "sourcetype == 'linux:audit' || sourcetype == 'linux_audit'",
+    "pipeline": "linux_auditd_normalize",
+    "output": "default",
+    "final": false,
+    "description": "Route Linux auditd events to dedicated normalization pipeline"
+  },
+  {
+    "id": "cloudtrail_route",
+    "name": "CloudTrail events → cloudtrail_normalize",
+    "filter": "sourcetype == 'aws:cloudtrail'",
+    "pipeline": "cloudtrail_normalize",
+    "output": "default",
+    "final": false,
+    "description": "Route AWS CloudTrail events to dedicated normalization pipeline"
+  },
+  {
+    "id": "zeek_route",
+    "name": "Zeek events → zeek_normalize",
+    "filter": "sourcetype && sourcetype.startsWith('bro:')",
+    "pipeline": "zeek_normalize",
+    "output": "default",
+    "final": false,
+    "description": "Route Zeek log events to dedicated normalization pipeline"
+  },
+  {
+    "id": "fallback_route",
+    "name": "Unrecognized events → passthrough",
+    "filter": "true",
+    "pipeline": "passthru",
+    "output": "default",
+    "final": true,
+    "description": "Catch-all: pass unrecognized events through unchanged"
+  }
+]

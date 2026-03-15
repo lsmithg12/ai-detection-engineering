@@ -1,0 +1,181 @@
+{
+  "id": "linux_auditd_normalize",
+  "conf": {
+    "asyncFuncTimeout": 1000,
+    "output": "default",
+    "streamtags": ["linux", "auditd", "ecs"],
+    "groups": {},
+    "functions": [
+      {
+        "id": "func_auditd_regex_syscall_comm",
+        "filter": "_raw.indexOf('type=SYSCALL') >= 0",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "type=SYSCALL.*?comm=\"(?<process_name>[^\"]+)\".*?exe=\"(?<process_executable>[^\"]+)\"",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract comm and exe from SYSCALL audit record"
+      },
+      {
+        "id": "func_auditd_regex_syscall_pids",
+        "filter": "_raw.indexOf('type=SYSCALL') >= 0",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "pid=(?<process_pid>\\d+)\\s+ppid=(?<parent_pid>\\d+).*?uid=(?<user_id>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract pid, ppid, uid from SYSCALL audit record"
+      },
+      {
+        "id": "func_auditd_regex_syscall_name",
+        "filter": "_raw.indexOf('type=SYSCALL') >= 0",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "\\bsyscall=(?<syscall_name>[^\\s]+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract syscall name (e.g. execve, open, connect)"
+      },
+      {
+        "id": "func_auditd_regex_execve_args",
+        "filter": "_raw.indexOf('type=EXECVE') >= 0",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "type=EXECVE.*?a0=\"(?<execve_arg0>[^\"]+)\"(?:.*?a1=\"(?<execve_arg1>[^\"]+)\")?(?:.*?a2=\"(?<execve_arg2>[^\"]+)\")?",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract EXECVE argument array (a0..a2) for command reconstruction"
+      },
+      {
+        "id": "func_auditd_regex_path_record",
+        "filter": "_raw.indexOf('type=PATH') >= 0",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "type=PATH.*?name=\"(?<file_path>[^\"]+)\"",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract file path from PATH audit record"
+      },
+      {
+        "id": "func_auditd_regex_auid",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "source": "_raw",
+          "iterations": 100,
+          "overwrite": false,
+          "regex": "\\bauid=(?<audit_uid>\\d+)",
+          "fieldNameExpression": "name",
+          "fieldValueExpression": "value"
+        },
+        "description": "Extract auid (audit user ID, loginuid — persists across su/sudo)"
+      },
+      {
+        "id": "func_auditd_ecs_map",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "process.name",
+              "value": "process_name"
+            },
+            {
+              "name": "process.executable",
+              "value": "process_executable"
+            },
+            {
+              "name": "process.pid",
+              "value": "process_pid ? Number(process_pid) : undefined"
+            },
+            {
+              "name": "process.parent.pid",
+              "value": "parent_pid ? Number(parent_pid) : undefined"
+            },
+            {
+              "name": "user.id",
+              "value": "user_id"
+            },
+            {
+              "name": "user.audit.id",
+              "value": "audit_uid"
+            },
+            {
+              "name": "process.args",
+              "value": "[execve_arg0, execve_arg1, execve_arg2].filter(a => a !== undefined)"
+            },
+            {
+              "name": "process.command_line",
+              "value": "[execve_arg0, execve_arg1, execve_arg2].filter(a => a !== undefined).join(' ')"
+            },
+            {
+              "name": "file.path",
+              "value": "file_path"
+            },
+            {
+              "name": "file.name",
+              "value": "file_path ? file_path.split('/').pop() : undefined"
+            },
+            {
+              "name": "auditd.data.syscall",
+              "value": "syscall_name"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map extracted auditd fields to ECS schema"
+      },
+      {
+        "id": "func_auditd_metadata",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "event.category",
+              "value": "'process'"
+            },
+            {
+              "name": "event.type",
+              "value": "syscall_name === 'execve' ? 'start' : 'info'"
+            },
+            {
+              "name": "event.module",
+              "value": "'auditd'"
+            },
+            {
+              "name": "host.os.family",
+              "value": "'linux'"
+            },
+            {
+              "name": "event.dataset",
+              "value": "'auditd.log'"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Add standard event metadata: category, type, module, OS family"
+      }
+    ]
+  }
+}
