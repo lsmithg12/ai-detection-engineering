@@ -24,6 +24,13 @@ import urllib.error
 from datetime import datetime, timezone
 from uuid import uuid4
 
+# --- Phase 5: Register multi-platform generators ---
+try:
+    from simulator.generators import register_all as _register_all
+    _register_all()
+except ImportError:
+    pass  # Generators not available — Windows-only mode
+
 # ─── Configuration ───────────────────────────────────────────────────
 ES_URL = os.getenv("ES_URL", "http://localhost:9200")
 ES_USER = os.getenv("ES_USER", "")

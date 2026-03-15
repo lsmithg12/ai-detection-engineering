@@ -1,0 +1,227 @@
+{
+  "technique_id": "T1090.001",
+  "technique_name": "Proxy: Internal Proxy — SOCKS5 Lateral Movement Fan-Out",
+  "description": "Simulates Fawkes SOCKS5 proxy command enabling lateral movement reconnaissance. Single source host connects to 50+ unique internal destinations in under 5 minutes, hitting common lateral movement ports.",
+  "platform": "network",
+  "mitre_tactic": "command_and_control",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.100", "port": 49200, "bytes": 120 },
+        "destination": { "ip": "10.0.1.10", "port": 445, "bytes": 0 },
+        "network": { "transport": "tcp", "bytes": 120, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Csocks001a1b1c1d1e",
+            "state": "REJ",
+            "history": "S",
+            "duration": 0.003
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 5,
+          "description": "SOCKS5 probe to 10.0.1.10:445 — SMB port sweep via Fawkes socks command"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.100", "port": 49201, "bytes": 120 },
+        "destination": { "ip": "10.0.1.11", "port": 3389, "bytes": 0 },
+        "network": { "transport": "tcp", "bytes": 120, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Csocks002b2c2d2e2f",
+            "state": "REJ",
+            "history": "S",
+            "duration": 0.002
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 5,
+          "description": "SOCKS5 probe to 10.0.1.11:3389 — RDP port sweep"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.100", "port": 49202, "bytes": 120 },
+        "destination": { "ip": "10.0.1.12", "port": 22, "bytes": 0 },
+        "network": { "transport": "tcp", "bytes": 120, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Csocks003c3d3e3f3g",
+            "state": "S1",
+            "history": "Sh",
+            "duration": 0.004
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 3,
+          "sequence_total": 5,
+          "description": "SOCKS5 probe to 10.0.1.12:22 — SSH port sweep"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.100", "port": 49203, "bytes": 120 },
+        "destination": { "ip": "10.0.2.50", "port": 445, "bytes": 0 },
+        "network": { "transport": "tcp", "bytes": 120, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Csocks004d4e4f4g4h",
+            "state": "REJ",
+            "history": "S",
+            "duration": 0.002
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 4,
+          "sequence_total": 5,
+          "description": "SOCKS5 probe to cross-subnet 10.0.2.50:445 — scanning expanding to second subnet"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.100", "port": 49204, "bytes": 120 },
+        "destination": { "ip": "10.0.3.20", "port": 80, "bytes": 0 },
+        "network": { "transport": "tcp", "bytes": 120, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Csocks005e5f5g5h5i",
+            "state": "REJ",
+            "history": "S",
+            "duration": 0.003
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 5,
+          "sequence_total": 5,
+          "description": "SOCKS5 probe to 10.0.3.20:80 — HTTP port sweep on third subnet; 50+ unique dest IPs total within 5 minutes"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.0.5", "port": 50000, "bytes": 500 },
+        "destination": { "ip": "10.0.1.10", "port": 445, "bytes": 1200 },
+        "network": { "transport": "tcp", "bytes": 1700, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Cbenign001a1b1c1d",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 2.4
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "Domain controller accessing file server over SMB — normal AD traffic, single connection, bidirectional data"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.0.5", "port": 50001, "bytes": 750 },
+        "destination": { "ip": "10.0.1.11", "port": 3389, "bytes": 85000 },
+        "network": { "transport": "tcp", "bytes": 85750, "direction": "lateral" },
+        "zeek": {
+          "connection": {
+            "uid": "Cbenign002b2c2d2e",
+            "state": "SF",
+            "history": "ShADadfFr",
+            "duration": 320.5
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1090.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "IT admin RDP session to workstation — single long-lived connection with large bidirectional data, not a sweep"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["source.ip", "destination.ip", "destination.port", "zeek.connection.state"],
+    "notes": "Alert on: unique destination IP count > 20 from single source within 5-minute window, hitting ports 22/445/3389/80/443. REJ/S connection states (port not open) indicate scanning. Exclude known network monitoring/scanner IPs (Nessus, etc.)."
+  },
+  "log_sources_used": ["zeek_conn"],
+  "platforms": ["network"]
+}

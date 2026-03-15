@@ -1,0 +1,128 @@
+{
+  "technique_id": "T1136.001",
+  "technique_name": "Create Account: Local Account (useradd backdoor)",
+  "description": "Simulates attacker creating a hidden backdoor local account on a Linux system using useradd, giving persistent access via a new user with a shell.",
+  "platform": "linux",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "useradd",
+          "executable": "/usr/sbin/useradd",
+          "args": ["--shell", "/bin/bash", "backdoor"],
+          "command_line": "useradd --shell /bin/bash backdoor",
+          "pid": 81000,
+          "parent": { "name": "bash", "pid": 80000 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1136.001",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "useradd creating account 'backdoor' with /bin/bash shell — malicious local account creation"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-APP-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "useradd",
+          "executable": "/usr/sbin/useradd",
+          "args": ["--system", "--no-create-home", "--shell", "/usr/sbin/nologin", "www-data2"],
+          "command_line": "useradd --system --no-create-home --shell /usr/sbin/nologin www-data2",
+          "pid": 91000,
+          "parent": { "name": "dpkg", "pid": 90000 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1136.001",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Package manager creating a system service account with nologin shell — normal software install"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-APP-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "useradd",
+          "executable": "/usr/sbin/useradd",
+          "args": ["-m", "-s", "/bin/bash", "-G", "sudo", "newdev"],
+          "command_line": "useradd -m -s /bin/bash -G sudo newdev",
+          "pid": 91001,
+          "parent": { "name": "ansible", "pid": 90001 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1136.001",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Ansible provisioning a developer account — legitimate account creation with expected naming convention"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["process.name", "process.args", "process.command_line", "process.parent.name"],
+    "notes": "Alert on useradd with interactive shell (/bin/bash, /bin/sh, /bin/zsh) that is NOT called from a package manager (dpkg, rpm, ansible with --system flag). Accounts named with suspicious patterns (single word, system-like names) are higher priority."
+  },
+  "log_sources_used": ["auditbeat"],
+  "platforms": ["linux"]
+}

@@ -1,0 +1,153 @@
+{
+  "technique_id": "T1530",
+  "technique_name": "Data from Cloud Storage — S3 GetObject Unusual Principal",
+  "description": "Simulates attacker with compromised cross-account role accessing sensitive S3 bucket objects containing PII and credential data from an unexpected external IP.",
+  "platform": "cloud",
+  "mitre_tactic": "collection",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "info",
+          "kind": "event",
+          "action": "GetObject",
+          "outcome": "success",
+          "provider": "s3.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-east-1",
+          "service": { "name": "s3" }
+        },
+        "source": { "ip": "203.0.113.75" },
+        "user": { "name": "ExternalAuditor", "id": "999888777666" },
+        "user_agent": { "original": "Boto3/1.26.0 Python/3.11.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "s3.amazonaws.com",
+            "event_name": "GetObject",
+            "request_parameters": {
+              "bucketName": "sensitive-data-bucket",
+              "key": "exports/employees.csv"
+            },
+            "user_identity": {
+              "type": "AssumedRole",
+              "user_name": "ExternalAuditor",
+              "account_id": "999888777666",
+              "arn": "arn:aws:sts::999888777666:assumed-role/ExternalAuditor/session"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1530",
+          "platform": "cloud",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "Cross-account role from external account 999888777666 accessing employees.csv from sensitive-data-bucket via external IP 203.0.113.75"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "info",
+          "kind": "event",
+          "action": "GetObject",
+          "outcome": "success",
+          "provider": "s3.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "s3" }
+        },
+        "source": { "ip": "10.0.1.50" },
+        "user": { "name": "svc-backup", "id": "123456789012" },
+        "user_agent": { "original": "aws-cli/2.15.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "s3.amazonaws.com",
+            "event_name": "GetObject",
+            "request_parameters": {
+              "bucketName": "corp-backups",
+              "key": "backups/2026-03-14.tar.gz"
+            },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "svc-backup",
+              "account_id": "123456789012"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1530",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "Backup service account reading from corp-backups bucket on internal IP — normal scheduled backup"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "info",
+          "kind": "event",
+          "action": "ListObjects",
+          "outcome": "success",
+          "provider": "s3.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "s3" }
+        },
+        "source": { "ip": "10.0.2.100" },
+        "user": { "name": "alice", "id": "123456789012" },
+        "user_agent": { "original": "aws-cli/2.15.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "s3.amazonaws.com",
+            "event_name": "ListObjects",
+            "request_parameters": { "bucketName": "dev-artifacts" },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "alice",
+              "account_id": "123456789012"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1530",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "Developer listing objects in dev bucket from corporate network — normal development activity"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["source.ip", "user.id", "aws.cloudtrail.request_parameters", "aws.cloudtrail.user_identity.type"],
+    "notes": "Alert on S3 GetObject/GetObjectAcl from AssumedRole identities in cross-account contexts OR from non-RFC1918 source IPs accessing buckets tagged as sensitive. Tag sensitive buckets in S3 resource policy for correlation."
+  },
+  "log_sources_used": ["aws_cloudtrail"],
+  "platforms": ["cloud"]
+}

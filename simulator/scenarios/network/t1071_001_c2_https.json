@@ -1,0 +1,277 @@
+{
+  "technique_id": "T1071.001",
+  "technique_name": "Application Layer Protocol: Web Protocols — C2 HTTPS Beaconing",
+  "description": "Simulates Fawkes C2 agent sending regular HTTPS beacon connections to a command-and-control server at 60-second intervals with an unusual JA3 TLS fingerprint.",
+  "platform": "network",
+  "mitre_tactic": "command_and_control",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 52001, "bytes": 350 },
+        "destination": { "ip": "203.0.113.50", "port": 443, "bytes": 220 },
+        "network": { "transport": "tcp", "bytes": 570, "direction": "outbound" },
+        "tls": {
+          "version": "1.2",
+          "cipher": "TLS_RSA_WITH_RC4_128_SHA",
+          "ja3": {
+            "hash": "e7d705a3286e19ea42f587b344ee6865",
+            "string": "769,47,0-65281-35,23-65281"
+          }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Ca1b2c3d4e5f6a7b8",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 0.182
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 5,
+          "description": "Fawkes HTTPS beacon #1 to 203.0.113.50:443, unusual JA3 hash e7d705a3286e19ea42f587b344ee6865"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 52002, "bytes": 348 },
+        "destination": { "ip": "203.0.113.50", "port": 443, "bytes": 225 },
+        "network": { "transport": "tcp", "bytes": 573, "direction": "outbound" },
+        "tls": {
+          "version": "1.2",
+          "cipher": "TLS_RSA_WITH_RC4_128_SHA",
+          "ja3": {
+            "hash": "e7d705a3286e19ea42f587b344ee6865",
+            "string": "769,47,0-65281-35,23-65281"
+          }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Cb2c3d4e5f6a7b8c9",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 0.195
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 5,
+          "description": "Fawkes HTTPS beacon #2 — same destination/JA3, consistent small payload size"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 52003, "bytes": 352 },
+        "destination": { "ip": "203.0.113.50", "port": 443, "bytes": 218 },
+        "network": { "transport": "tcp", "bytes": 570, "direction": "outbound" },
+        "tls": {
+          "version": "1.2",
+          "cipher": "TLS_RSA_WITH_RC4_128_SHA",
+          "ja3": {
+            "hash": "e7d705a3286e19ea42f587b344ee6865",
+            "string": "769,47,0-65281-35,23-65281"
+          }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Cc3d4e5f6a7b8c9d0",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 0.171
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 3,
+          "sequence_total": 5,
+          "description": "Fawkes HTTPS beacon #3 — regular interval pattern consistent with 60s sleep"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 52004, "bytes": 345 },
+        "destination": { "ip": "203.0.113.50", "port": 443, "bytes": 222 },
+        "network": { "transport": "tcp", "bytes": 567, "direction": "outbound" },
+        "tls": {
+          "version": "1.2",
+          "cipher": "TLS_RSA_WITH_RC4_128_SHA",
+          "ja3": {
+            "hash": "e7d705a3286e19ea42f587b344ee6865",
+            "string": "769,47,0-65281-35,23-65281"
+          }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Cd4e5f6a7b8c9d0e1",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 0.188
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 4,
+          "sequence_total": 5,
+          "description": "Fawkes HTTPS beacon #4 — fourth beacon in sequence"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 52005, "bytes": 355 },
+        "destination": { "ip": "203.0.113.50", "port": 443, "bytes": 230 },
+        "network": { "transport": "tcp", "bytes": 585, "direction": "outbound" },
+        "tls": {
+          "version": "1.2",
+          "cipher": "TLS_RSA_WITH_RC4_128_SHA",
+          "ja3": {
+            "hash": "e7d705a3286e19ea42f587b344ee6865",
+            "string": "769,47,0-65281-35,23-65281"
+          }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Ce5f6a7b8c9d0e1f2",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 0.201
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 5,
+          "sequence_total": 5,
+          "description": "Fawkes HTTPS beacon #5 — five consistent beacons confirm C2 pattern"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.50", "port": 50100, "bytes": 12500 },
+        "destination": { "ip": "52.96.132.190", "port": 443, "bytes": 245000 },
+        "network": { "transport": "tcp", "bytes": 257500, "direction": "outbound" },
+        "tls": {
+          "version": "1.3",
+          "cipher": "TLS_AES_256_GCM_SHA384",
+          "ja3": { "hash": "cd08e31494f9531f560d64c695473da9" }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Cf6a7b8c9d0e1f2g3",
+            "state": "SF",
+            "history": "ShADadfF",
+            "duration": 45.3
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "Normal HTTPS connection to Microsoft Office 365 — large payload, long duration, TLS 1.3, standard JA3"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "kind": "event",
+          "dataset": "zeek.conn",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.2.10", "port": 51200, "bytes": 8000 },
+        "destination": { "ip": "140.82.112.4", "port": 443, "bytes": 150000 },
+        "network": { "transport": "tcp", "bytes": 158000, "direction": "outbound" },
+        "tls": {
+          "version": "1.3",
+          "cipher": "TLS_AES_128_GCM_SHA256",
+          "ja3": { "hash": "773906b0efdefa24a7f2b8eb6985bf37" }
+        },
+        "zeek": {
+          "connection": {
+            "uid": "Cg7b8c9d0e1f2g3h4",
+            "state": "SF",
+            "history": "ShADadfFr",
+            "duration": 12.7
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1071.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "GitHub HTTPS connection from developer workstation — variable payload, standard TLS 1.3"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["destination.ip", "tls.ja3.hash", "network.bytes", "zeek.connection.duration"],
+    "notes": "Alert on: (1) repeated connections to same non-CDN IP:port with consistent small byte counts and short duration, OR (2) known malicious JA3 hashes (e7d705a3286e19ea42f587b344ee6865 is associated with Cobalt Strike/Mythic). Beacon detection requires time-series aggregation — threshold: 3+ connections to same dest within 5 minutes with stddev(bytes) < 100."
+  },
+  "log_sources_used": ["zeek_conn", "zeek_ssl"],
+  "platforms": ["network"]
+}
