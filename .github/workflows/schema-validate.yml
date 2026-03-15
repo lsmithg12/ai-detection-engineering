@@ -1,0 +1,109 @@
+name: Schema Validation
+
+on:
+  pull_request:
+    paths:
+      - 'detections/**/*.yml'
+      - 'data-sources/schemas/**/*.json'
+
+jobs:
+  validate-schema:
+    name: Validate detections against registered schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install pyyaml
+      - name: Run schema validation
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import json
+          import sys
+          import re
+          from pathlib import Path
+
+          schema_dir = Path("data-sources/schemas")
+          detections_dir = Path("detections")
+
+          if not schema_dir.exists():
+              print("No schemas registered yet — skipping validation")
+              sys.exit(0)
+
+          if not detections_dir.exists():
+              print("No detections directory — skipping")
+              sys.exit(0)
+
+          # Load all schemas, collect known ECS fields
+          known_fields = set()
+          for schema_file in schema_dir.glob("*.json"):
+              try:
+                  schema = json.loads(schema_file.read_text())
+                  for event_type in schema.get("event_types", {}).values():
+                      for field in event_type.get("ecs_fields", {}):
+                          known_fields.add(field)
+              except Exception as e:
+                  print(f"Warning: Could not parse {schema_file.name}: {e}")
+
+          if not known_fields:
+              print("No ECS fields found in schemas — skipping")
+              sys.exit(0)
+
+          print(f"Loaded {len(known_fields)} known ECS fields from schemas")
+
+          # Check changed detection files
+          import subprocess
+          result = subprocess.run(
+              ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+              capture_output=True, text=True
+          )
+          changed = [f for f in result.stdout.splitlines() if f.startswith("detections/") and f.endswith(".yml") and "compiled" not in f]
+
+          if not changed:
+              changed = list(detections_dir.rglob("*.yml"))
+              changed = [str(f) for f in changed if "compiled" not in str(f)]
+
+          errors = []
+          warnings = []
+          for rule_file in changed:
+              try:
+                  rule = yaml.safe_load(Path(rule_file).read_text())
+                  if not rule:
+                      continue
+                  # Extract field names referenced in the detection section
+                  detection = rule.get("detection", {})
+                  rule_text = Path(rule_file).read_text()
+                  # Extract dotted field names from Sigma rule body (e.g. process.name, file.path)
+                  candidate_fields = re.findall(r'\b([a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+)\b', rule_text)
+                  for field in candidate_fields:
+                      # Skip MITRE tags, YAML anchors, and known non-field patterns
+                      if field.startswith(("attack.", "detection.", "logsource.", "tags.", "mitre.")):
+                          continue
+                      # Warn if field looks like an ECS path but is not in any schema
+                      parts = field.split(".")
+                      if len(parts) >= 2 and field not in known_fields:
+                          # Allow common ECS root namespaces even if specific field not in schema
+                          root = parts[0]
+                          if root in ("process", "file", "registry", "network", "source", "destination",
+                                      "user", "host", "event", "dns", "tls", "http", "winlog", "cloud",
+                                      "aws", "zeek", "auditd"):
+                              warnings.append(f"{rule_file}: field '{field}' not in any registered schema")
+              except Exception as e:
+                  errors.append(f"{rule_file}: parse error — {e}")
+
+          if warnings:
+              print(f"Schema warnings ({len(warnings)}):")
+              for w in warnings[:20]:  # cap output
+                  print(f"  {w}")
+
+          if errors:
+              print("Schema validation errors:")
+              for e in errors:
+                  print(f"  {e}")
+              sys.exit(1)
+
+          print(f"Schema validation passed — {len(changed)} rules checked")
+          EOF

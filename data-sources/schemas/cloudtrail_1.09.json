@@ -1,0 +1,223 @@
+{
+  "source": "aws-cloudtrail",
+  "version": "1.09",
+  "description": "AWS CloudTrail management and data event schema version 1.09 mapped to Elastic Common Schema (ECS). Covers IAM, S3, and EC2 event types relevant to detection engineering.",
+  "updated": "2026-03-15",
+  "event_types": {
+    "ConsoleLogin": {
+      "name": "ConsoleLogin",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "user_agent.original": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "userAgent"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "event.outcome": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "responseElements.ConsoleLogin"
+        }
+      }
+    },
+    "CreateAccessKey": {
+      "name": "CreateAccessKey",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "cloud.region": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "awsRegion"
+        },
+        "aws.cloudtrail.request_parameters": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "requestParameters"
+        }
+      }
+    },
+    "GetObject": {
+      "name": "GetObject",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "cloud.region": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "awsRegion"
+        },
+        "cloud.service.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventSource"
+        },
+        "aws.s3.bucket.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "requestParameters.bucketName"
+        }
+      }
+    },
+    "PutBucketPolicy": {
+      "name": "PutBucketPolicy",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "cloud.region": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "awsRegion"
+        },
+        "aws.s3.bucket.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "requestParameters.bucketName"
+        },
+        "aws.cloudtrail.request_parameters": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "requestParameters"
+        }
+      }
+    },
+    "RunInstances": {
+      "name": "RunInstances",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "cloud.region": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "awsRegion"
+        },
+        "cloud.instance.id": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "responseElements.instancesSet.items.instanceId"
+        }
+      }
+    },
+    "AssumeRole": {
+      "name": "AssumeRole",
+      "ecs_fields": {
+        "event.action": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "eventName"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.userName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "sourceIPAddress"
+        },
+        "cloud.account.id": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "userIdentity.accountId"
+        },
+        "aws.cloudtrail.user_identity": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "userIdentity"
+        }
+      }
+    }
+  }
+}
