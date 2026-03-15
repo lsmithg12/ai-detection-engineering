@@ -1,0 +1,29 @@
+# Intel Source Rotation Tracker
+# Used by intel_agent.py to ensure diverse source querying.
+# The intel agent queries the least-recently-queried source first each run.
+
+sources:
+  dfir_report:
+    last_queried: "2026-03-15"
+    reports_found: 4
+    techniques_discovered: 17
+  cisa:
+    last_queried: "2026-03-06"
+    reports_found: 1
+    techniques_discovered: 4
+  mandiant:
+    last_queried: null
+    reports_found: 0
+    techniques_discovered: 0
+  microsoft_threat_intelligence:
+    last_queried: null
+    reports_found: 0
+    techniques_discovered: 0
+  unit42:
+    last_queried: null
+    reports_found: 0
+    techniques_discovered: 0
+  recorded_future:
+    last_queried: null
+    reports_found: 0
+    techniques_discovered: 0

@@ -12,9 +12,13 @@ Shared framework that handles boilerplate for all agents:
 Usage:
   python orchestration/agent_runner.py --agent intel
   python orchestration/agent_runner.py --agent red-team
-  python orchestration/agent_runner.py --agent blue-team
-  python orchestration/agent_runner.py --agent quality
+  python orchestration/agent_runner.py --agent author
+  python orchestration/agent_runner.py --agent validation
+  python orchestration/agent_runner.py --agent deployment
+  python orchestration/agent_runner.py --agent tuning
+  python orchestration/agent_runner.py --agent coverage
   python orchestration/agent_runner.py --agent security --pr 42
+  python orchestration/agent_runner.py --pipeline full
 """
 
 import argparse
@@ -37,13 +41,25 @@ AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
 CONFIG_PATH = AUTONOMOUS_DIR / "orchestration" / "config.yml"
 
-# Agent module mapping
+# Agent module mapping (Phase 4 topology: 8 specialized agents)
 AGENT_MODULES = {
     "intel": "orchestration.agents.intel_agent",
     "red-team": "orchestration.agents.red_team_agent",
+    "author": "orchestration.agents.author_agent",
+    "validation": "orchestration.agents.validation_agent",
+    "deployment": "orchestration.agents.deployment_agent",
+    "tuning": "orchestration.agents.tuning_agent",
+    "coverage": "orchestration.agents.coverage_agent",
+    "security": "orchestration.agents.security_agent",
+    # Backward compatibility aliases (resolve to new modules)
     "blue-team": "orchestration.agents.blue_team_agent",
     "quality": "orchestration.agents.quality_agent",
-    "security": "orchestration.agents.security_agent",
+}
+
+# Map old agent names to their new equivalents
+AGENT_ALIASES = {
+    "blue-team": "author",
+    "quality": "tuning",
 }
 
 
@@ -184,7 +200,7 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     # Scheduled agents (intel, quality) always run --they create work or review fleet.
     # Triggered agents (red-team, blue-team) need pending items.
     # Security agent requires a PR number.
-    SCHEDULED_AGENTS = {"intel", "quality"}
+    SCHEDULED_AGENTS = {"intel", "tuning", "quality", "coverage"}
 
     if agent_name == "security":
         if not pr_number:
@@ -401,11 +417,11 @@ def run_pipeline(pipeline_agents: list[str], dry_run: bool = False):
     print(f"\n  [pipeline] Pipeline {run_id} complete.")
 
 
-# Pre-defined pipeline sequences
+# Pre-defined pipeline sequences (Phase 4 topology)
 PIPELINE_PRESETS = {
-    "red-blue": ["red-team", "blue-team"],
-    "red-blue-quality": ["red-team", "blue-team", "quality"],
-    "full": ["intel", "red-team", "blue-team", "quality"],
+    "red-blue": ["red-team", "author", "validation"],
+    "red-blue-quality": ["red-team", "author", "validation", "tuning"],
+    "full": ["intel", "red-team", "author", "validation", "tuning", "coverage"],
 }
 
 
@@ -413,7 +429,9 @@ def main():
     parser = argparse.ArgumentParser(description="Patronus Agent Runner")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--agent",
-                       choices=["intel", "red-team", "blue-team", "quality", "security"])
+                       choices=["intel", "red-team", "author", "validation",
+                                "deployment", "tuning", "coverage", "security",
+                                "blue-team", "quality"])
     group.add_argument("--pipeline",
                        help="Run agents sequentially on one branch. "
                             "Use preset name (red-blue, red-blue-quality, full) "

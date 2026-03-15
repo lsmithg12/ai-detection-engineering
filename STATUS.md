@@ -84,7 +84,7 @@ See `plans/architecture-scalable-detection-platform.md` for the architectural vi
 | Phase 1 | COMPLETED (PR #52, 2026-03-13) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54, 2026-03-14) | Elasticsearch-based SIEM validation |
 | Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl → ES streaming validation + data source gap tracking |
-| Phase 4 | NOT STARTED | Scalable architecture: 10 agents, threat model registry, log source registry |
+| Phase 4 | IN PROGRESS | Scalable architecture: 10 agents, threat model registry, log source registry |
 | Phase 5 | NOT STARTED | Data engineering: multi-platform simulation, data quality, schema evolution |
 | Phase 6 | NOT STARTED | Detection content: content packs, EQL, threshold rules, evasion testing |
 | Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |

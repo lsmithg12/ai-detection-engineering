@@ -54,6 +54,20 @@ level: <informational|low|medium|high|critical>
 # Data Source: <DS category from ATT&CK data sources>
 # Data Comp:   <component — e.g., "Process: Process Creation">
 
+# ─── Triage Notes ────────────────────────────────────────────────────────────
+# triage_notes: |
+#   When this alert fires:
+#   1. Check <what to verify first>
+#   2. Correlate with <what other data to look at>
+#   3. Escalate if <escalation condition>
+#   Benign causes: <list common FP scenarios here>
+#
+# ─── Compliance Mapping ───────────────────────────────────────────────────────
+# compliance_controls:
+#   - PCI-DSS-10.6.1     # Review logs for security events
+#   - SOC2-CC6.1         # Logical and physical access controls
+#   - HIPAA-164.312.b    # Audit controls
+#
 # ─── Deployment Notes ────────────────────────────────────────────────────────
 # Transpile to Lucene: sigma convert -t lucene -p ecs_windows <this_file>
 # Transpile to SPL:    sigma convert -t splunk --without-pipeline <this_file>

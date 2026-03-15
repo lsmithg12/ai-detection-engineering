@@ -1,0 +1,28 @@
+# Log Source Registry Template
+# Copy this file to data-sources/registry/<source_id>.yml and fill in.
+# See data-sources/registry/schema.yml for field definitions.
+
+source_id: ""               # Unique ID (lowercase, underscores)
+vendor: ""
+product: ""
+version: ""
+platform: ""                # windows | linux | macos | cloud | network | identity
+transport: []               # [wef, syslog, cribl_forwarder, hec, s3, api_poll, filebeat, winlogbeat]
+normalization: ecs           # ecs | cim | raw | custom
+status: planned              # active | planned | degraded | retired
+description: ""
+
+event_types:
+  # event_name:
+  #   description: ""
+  #   ecs_category: ""
+  #   ecs_type: ""
+  #   fields:
+  #     - { raw: "FieldName", ecs: "field.name", type: keyword }
+  #   detection_value: medium
+  #   volume_estimate: "100/host/day"
+
+health_check:
+  method: query_latest_event
+  query: ""
+  stale_threshold: "15m"

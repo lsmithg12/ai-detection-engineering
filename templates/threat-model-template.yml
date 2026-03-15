@@ -1,0 +1,19 @@
+# Threat Model Template
+# Copy this file to threat-intel/models/<name>.yml and fill in.
+# See threat-intel/models/schema.yml for field definitions.
+
+name: ""
+type: ""                    # c2_framework | apt_group | ransomware | commodity | insider_threat
+platform: []                # [windows, linux, macos, cloud, identity, network]
+priority: medium            # critical | high | medium | low
+source: ""                  # Primary reference URL
+last_updated: ""            # YYYY-MM-DD
+description: ""
+
+techniques:
+  # T1059.001:
+  #   description: "PowerShell Execution"
+  #   commands: []
+  #   artifacts: [process_create, script_block]
+  #   data_sources: ["sysmon:eid_1", "windows_security:eid_4104"]
+  #   detection_complexity: low

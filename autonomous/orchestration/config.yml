@@ -9,6 +9,8 @@
 #   - Model aliases: "opus" -> claude-opus-4-6, "sonnet" -> claude-sonnet-4-6
 #   - All invocations use --tools "" (no file/shell access, pure reasoning)
 
+# Phase 4 topology: 8 specialized agents (refactored from 5)
+# Legacy names (blue-team, quality) still work via AGENT_ALIASES in agent_runner.py
 agents:
   intel:
     schedule: "daily"
@@ -27,22 +29,40 @@ agents:
     max_scenarios_per_run: 5
     max_tokens_estimate: 30000
 
-  blue-team:
-    trigger: "intel_merge OR red_merge"
+  author:
+    trigger: "red_merge"
     model: "opus"                  # Best model for detection authoring
     max_detections_per_run: 5
-    max_tokens_estimate: 100000
-    auto_deploy_threshold: 0.90
+    max_tokens_estimate: 80000
     claude_tasks:
       - "Author Sigma detection rules from attack/benign event data"
-      - "Improve rules that fail validation (F1 < threshold)"
 
-  quality:
+  validation:
+    trigger: "author_merge"
+    model: "sonnet"
+    max_tokens_estimate: 30000
+    auto_deploy_threshold: 0.90
+    max_tune_retries: 2
+    claude_tasks:
+      - "Suggest rule improvements when F1 < threshold"
+
+  deployment:
+    trigger: "validation_merge OR manual"
+    model: "sonnet"
+    max_tokens_estimate: 10000
+
+  tuning:
     schedule: "daily"
     model: "sonnet"                # Fast model for fleet analysis
     max_tokens_estimate: 40000
+    max_exclusions_per_rule: 3
     claude_tasks:
       - "Analyze fleet health and recommend tuning actions"
+
+  coverage:
+    schedule: "daily"
+    model: "sonnet"
+    max_tokens_estimate: 20000
 
   security:
     trigger: "every_agent_pr"

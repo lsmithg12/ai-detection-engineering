@@ -1,0 +1,71 @@
+source_id: windows_security
+vendor: Microsoft
+product: "Windows Security Audit"
+platform: windows
+transport: [wef, winlogbeat]
+normalization: ecs
+status: active
+description: >
+  Windows Security event log providing authentication, authorization,
+  and audit events. Essential for logon monitoring, privilege tracking,
+  and compliance requirements.
+
+event_types:
+  eid_4624:
+    description: "Successful Logon"
+    ecs_category: authentication
+    ecs_type: start
+    fields:
+      - { raw: TargetUserName, ecs: user.name, type: keyword }
+      - { raw: TargetDomainName, ecs: user.domain, type: keyword }
+      - { raw: LogonType, ecs: winlog.event_data.LogonType, type: keyword }
+      - { raw: IpAddress, ecs: source.ip, type: ip }
+      - { raw: WorkstationName, ecs: source.domain, type: keyword }
+    detection_value: high
+    volume_estimate: "200/host/day"
+  eid_4625:
+    description: "Failed Logon"
+    ecs_category: authentication
+    ecs_type: start
+    fields:
+      - { raw: TargetUserName, ecs: user.name, type: keyword }
+      - { raw: FailureReason, ecs: winlog.event_data.FailureReason, type: keyword }
+      - { raw: IpAddress, ecs: source.ip, type: ip }
+    detection_value: high
+    volume_estimate: "50/host/day"
+  eid_4648:
+    description: "Explicit Credential Logon"
+    ecs_category: authentication
+    detection_value: high
+    volume_estimate: "10/host/day"
+  eid_4672:
+    description: "Special Privileges Assigned"
+    ecs_category: iam
+    detection_value: medium
+    volume_estimate: "100/host/day"
+  eid_4688:
+    description: "Process Creation (legacy)"
+    ecs_category: process
+    ecs_type: start
+    detection_value: medium
+    volume_estimate: "500/host/day"
+  eid_4706:
+    description: "New Trust Created"
+    ecs_category: iam
+    detection_value: critical
+    volume_estimate: "0.01/host/day"
+  eid_4720:
+    description: "User Account Created"
+    ecs_category: iam
+    detection_value: high
+    volume_estimate: "0.1/host/day"
+  eid_4732:
+    description: "Member Added to Local Group"
+    ecs_category: iam
+    detection_value: high
+    volume_estimate: "0.5/host/day"
+
+health_check:
+  method: query_latest_event
+  query: "winlog.channel:Security"
+  stale_threshold: "15m"

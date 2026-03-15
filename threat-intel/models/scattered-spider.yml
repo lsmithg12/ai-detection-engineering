@@ -1,0 +1,83 @@
+name: "Scattered Spider (UNC3944)"
+type: apt_group
+platform: [windows, cloud, identity]
+priority: high
+source: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a"
+last_updated: "2026-03-15"
+description: >
+  Financially motivated threat group targeting large organizations via
+  social engineering, SIM swapping, MFA fatigue, and cloud/identity abuse.
+  Known for ransomware deployment (ALPHV/BlackCat) and data extortion.
+
+techniques:
+  T1566.004:
+    description: "Spearphishing Voice (Vishing)"
+    commands: []
+    artifacts: []
+    data_sources: ["identity:okta_logs", "identity:azure_ad_signin"]
+    detection_complexity: high
+    priority_override: critical
+
+  T1078.004:
+    description: "Cloud Account Abuse (Compromised Credentials)"
+    commands: []
+    artifacts: [logon]
+    data_sources: ["aws:cloudtrail", "identity:azure_ad_signin", "identity:okta_logs"]
+    detection_complexity: medium
+
+  T1621:
+    description: "MFA Request Generation (MFA Fatigue/Bombing)"
+    commands: []
+    artifacts: []
+    data_sources: ["identity:okta_logs", "identity:azure_ad_mfa"]
+    detection_complexity: medium
+    priority_override: high
+
+  T1059.001:
+    description: "PowerShell for Reconnaissance and Tool Deployment"
+    commands: []
+    artifacts: [process_create, script_block]
+    data_sources: ["sysmon:eid_1", "windows_security:eid_4104"]
+    detection_complexity: low
+
+  T1219:
+    description: "Remote Access Software (AnyDesk, ScreenConnect, Splashtop)"
+    commands: []
+    artifacts: [process_create, network_connection]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_3"]
+    detection_complexity: low
+
+  T1003.001:
+    description: "LSASS Credential Dumping"
+    commands: []
+    artifacts: [process_access]
+    data_sources: ["sysmon:eid_10"]
+    detection_complexity: medium
+
+  T1484.002:
+    description: "Domain Trust Modification"
+    commands: []
+    artifacts: []
+    data_sources: ["identity:azure_ad_audit", "windows_security:eid_4706"]
+    detection_complexity: high
+
+  T1098:
+    description: "Account Manipulation (Privilege Escalation in Cloud)"
+    commands: []
+    artifacts: []
+    data_sources: ["aws:cloudtrail", "identity:azure_ad_audit"]
+    detection_complexity: medium
+
+  T1486:
+    description: "Data Encrypted for Impact (ALPHV/BlackCat Ransomware)"
+    commands: []
+    artifacts: [file_write, process_create]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_11"]
+    detection_complexity: medium
+
+  T1567.002:
+    description: "Exfiltration to Cloud Storage"
+    commands: []
+    artifacts: [network_connection]
+    data_sources: ["sysmon:eid_3", "network:proxy_logs"]
+    detection_complexity: high

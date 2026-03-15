@@ -3,15 +3,23 @@ Detection Lifecycle State Manager
 
 Reads/writes detection request YAML files in detection-requests/.
 Manages state transitions, artifact validation, and audit trails.
+
+Phase 4 additions:
+  - USE_SQLITE feature flag for dual-write (YAML + SQLite)
+  - Updated query_pending with new agent topology
 """
 
 import os
 import glob
 import datetime
+import json
 from pathlib import Path
 from typing import Optional
 
 import yaml
+
+# Feature flag: when true, writes go to both YAML and SQLite
+USE_SQLITE = os.environ.get("PATRONUS_USE_SQLITE", "false").lower() == "true"
 
 # Resolve paths relative to the autonomous/ directory
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +41,45 @@ def _load_request(path: Path) -> dict:
 def _save_request(path: Path, data: dict):
     with open(path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False, width=120)
+
+    # Shadow write to SQLite when feature flag is enabled
+    if USE_SQLITE:
+        _sqlite_shadow_write(data)
+
+
+def _sqlite_shadow_write(data: dict):
+    """Write a detection request to SQLite for faster queries (Phase 4 dual-write)."""
+    try:
+        import sqlite3
+        db_path = AUTONOMOUS_DIR / "detection-requests.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS detection_requests (
+                technique_id TEXT PRIMARY KEY,
+                status TEXT,
+                priority TEXT,
+                title TEXT,
+                data_json TEXT,
+                updated_at TEXT
+            )
+        """)
+        conn.execute("""
+            INSERT OR REPLACE INTO detection_requests
+                (technique_id, status, priority, title, data_json, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            data.get("technique_id", ""),
+            data.get("status", ""),
+            data.get("priority", "medium"),
+            data.get("title", ""),
+            json.dumps(data, default=str),
+            _now_iso(),
+        ))
+        conn.commit()
+        conn.close()
+    except Exception:
+        # SQLite shadow write is best-effort; YAML is source of truth
+        pass
 
 
 def _now_iso() -> str:
@@ -73,11 +120,18 @@ class StateManager:
     def query_pending(self, agent: str) -> list[dict]:
         """Return detections that need work from a specific agent."""
         agent_states = {
+            # Phase 4 agents
             "intel": ["REQUESTED"],
             "red-team": ["REQUESTED"],
+            "author": ["SCENARIO_BUILT"],
+            "validation": ["AUTHORED"],
+            "deployment": ["VALIDATED"],
+            "tuning": ["DEPLOYED", "MONITORING"],
+            "coverage": [],
+            "security": [],
+            # Backward compatibility (legacy agent names)
             "blue-team": ["SCENARIO_BUILT", "AUTHORED"],
             "quality": ["DEPLOYED", "MONITORING"],
-            "security": [],
         }
         target_states = agent_states.get(agent, [])
         results = []
