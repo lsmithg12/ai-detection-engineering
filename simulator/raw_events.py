@@ -41,6 +41,7 @@ Stdlib only — no external dependencies.
 
 import datetime
 import json
+import random as _random
 import uuid
 
 
@@ -71,6 +72,16 @@ def _parse_timestamp(ecs_event: dict) -> datetime.datetime:
         except ValueError:
             pass
     return _now_utc()
+
+
+def _random_serial() -> int:
+    """Random audit serial number."""
+    return _random.randint(100, 9999)
+
+
+def _random_inode() -> int:
+    """Random inode number."""
+    return _random.randint(100000, 999999)
 
 
 def _ts_str(ts: datetime.datetime) -> str:
@@ -782,6 +793,173 @@ def ecs_to_raw_windows_security(ecs_event: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Linux auditd converter
+# ---------------------------------------------------------------------------
+
+def ecs_to_raw_linux_auditd(ecs_event: dict) -> str:
+    """Convert ECS process event to Linux auditd multi-record format.
+
+    Returns a multi-line auditd log string containing SYSCALL, EXECVE, and
+    PATH records, as written by the Linux Audit daemon (auditd) to
+    ``/var/log/audit/audit.log``.
+
+    Args:
+        ecs_event: A single ECS event dictionary with process.*, user.*,
+            and host.* fields.
+
+    Returns:
+        Multi-line string with SYSCALL, EXECVE, and PATH records joined by
+        newlines.
+    """
+    process = ecs_event.get("process", {})
+    user = ecs_event.get("user", {})
+    ts = _parse_timestamp(ecs_event)
+    ts_float = ts.timestamp()
+
+    pid = process.get("pid", 1234)
+    ppid = process.get("parent", {}).get("pid", 1)
+    comm = process.get("name", "unknown")
+    exe = process.get("executable", f"/usr/bin/{comm}")
+    uid = user.get("id", "0")
+    args = process.get("args", [comm])
+
+    serial = _random_serial()
+
+    lines = [
+        f'type=SYSCALL msg=audit({ts_float:.3f}:{serial}): arch=c000003e syscall=59 success=yes exit=0 '
+        f'ppid={ppid} pid={pid} auid={uid} uid={uid} gid={uid} euid={uid} '
+        f'comm="{comm}" exe="{exe}"',
+
+        f'type=EXECVE msg=audit({ts_float:.3f}:{serial}): argc={len(args)} ' +
+        " ".join(f'a{i}="{a}"' for i, a in enumerate(args)),
+
+        f'type=PATH msg=audit({ts_float:.3f}:{serial}): item=0 name="{exe}" '
+        f'inode={_random_inode()} dev=08:01 mode=0100755 ouid=0 ogid=0'
+    ]
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# AWS CloudTrail converter
+# ---------------------------------------------------------------------------
+
+def ecs_to_raw_cloudtrail(ecs_event: dict) -> str:
+    """Convert ECS cloud event to AWS CloudTrail JSON format.
+
+    Returns a single CloudTrail record as JSON string.
+
+    Args:
+        ecs_event: A single ECS event dictionary with cloud.*, event.*,
+            source.*, user.*, and aws.cloudtrail.* fields.
+
+    Returns:
+        JSON string representing a single CloudTrail event record.
+    """
+    cloud = ecs_event.get("cloud", {})
+    event_meta = ecs_event.get("event", {})
+    source = ecs_event.get("source", {})
+    user = ecs_event.get("user", {})
+    aws = ecs_event.get("aws", {}).get("cloudtrail", {})
+
+    record = {
+        "eventVersion": "1.09",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": user.get("id", "AIDACKCEVSQ6C2EXAMPLE"),
+            "arn": f"arn:aws:iam::{cloud.get('account', {}).get('id', '123456789012')}:user/{user.get('name', 'unknown')}",
+            "accountId": cloud.get("account", {}).get("id", "123456789012"),
+            "userName": user.get("name", "unknown")
+        },
+        "eventTime": ecs_event.get("@timestamp", _now_utc().isoformat().replace("+00:00", "Z")),
+        "eventSource": aws.get("event_source", f"{event_meta.get('provider', 'iam')}.amazonaws.com"),
+        "eventName": event_meta.get("action", aws.get("event_name", "Unknown")),
+        "awsRegion": cloud.get("region", "us-east-1"),
+        "sourceIPAddress": source.get("ip", "198.51.100.1"),
+        "userAgent": ecs_event.get("user_agent", {}).get("original", "aws-cli/2.15.0"),
+        "requestParameters": json.loads(aws.get("request_parameters", "{}")),
+        "responseElements": None,
+        "eventType": aws.get("event_type", "AwsApiCall"),
+        "recipientAccountId": cloud.get("account", {}).get("id", "123456789012")
+    }
+
+    return json.dumps(record)
+
+
+# ---------------------------------------------------------------------------
+# Zeek converter
+# ---------------------------------------------------------------------------
+
+def ecs_to_raw_zeek(ecs_event: dict) -> str:
+    """Convert ECS network event to Zeek tab-separated log format.
+
+    Handles ``zeek.conn`` and ``zeek.dns`` datasets.
+    Returns empty string for unsupported datasets.
+
+    Args:
+        ecs_event: A single ECS event dictionary with source.*, destination.*,
+            network.*, zeek.*, and dns.* fields.
+
+    Returns:
+        Tab-separated Zeek log line, or empty string for unsupported datasets.
+    """
+    source = ecs_event.get("source", {})
+    dest = ecs_event.get("destination", {})
+    network = ecs_event.get("network", {})
+    zeek = ecs_event.get("zeek", {}).get("connection", {})
+    dataset = ecs_event.get("event", {}).get("dataset", "zeek.conn")
+
+    ts = _parse_timestamp(ecs_event)
+    ts_float = ts.timestamp()
+    uid = zeek.get("uid", f"C{uuid.uuid4().hex[:16]}")
+
+    if dataset == "zeek.conn":
+        fields = [
+            f"{ts_float:.6f}",
+            uid,
+            str(source.get("ip", "-")),
+            str(source.get("port", "-")),
+            str(dest.get("ip", "-")),
+            str(dest.get("port", "-")),
+            str(network.get("transport", "tcp")),
+            str(network.get("protocol", "-")),
+            str(zeek.get("duration", "-")),
+            str(source.get("bytes", "-")),
+            str(dest.get("bytes", "-")),
+            str(zeek.get("state", "SF")),
+            "T",    # local_orig
+            "F",    # local_resp
+            "0",    # missed_bytes
+            str(zeek.get("history", "ShADadfF")),
+            "1",    # orig_pkts
+            str(int(source.get("bytes", 0)) + 52),    # orig_ip_bytes
+            "1",    # resp_pkts
+            str(int(dest.get("bytes", 0)) + 52),      # resp_ip_bytes
+            "-"     # tunnel_parents
+        ]
+        return "\t".join(fields)
+
+    elif dataset == "zeek.dns":
+        dns = ecs_event.get("dns", {})
+        fields = [
+            f"{ts_float:.6f}",
+            uid,
+            str(source.get("ip", "-")),
+            str(source.get("port", "-")),
+            str(dest.get("ip", "-")),
+            str(dest.get("port", "53")),
+            str(network.get("transport", "udp")),
+            str(dns.get("id", "-")),
+            str(dns.get("question", {}).get("name", "-")),
+            str(dns.get("question", {}).get("type_code", 1)),
+            str(dns.get("question", {}).get("class", "C_INTERNET")),
+        ]
+        return "\t".join(fields)
+
+    return ""  # Unsupported dataset
+
+
+# ---------------------------------------------------------------------------
 # Public dispatcher
 # ---------------------------------------------------------------------------
 
@@ -803,10 +981,17 @@ def ecs_to_raw(ecs_event: dict) -> dict:
     1. If ``agent.type == "sysmon"`` → ``ecs_to_raw_sysmon``
     2. If ``event.code`` is a known Windows Security/System EID → ``ecs_to_raw_windows_security``
     3. If ``event.code`` is in the 4600-4999 range → ``ecs_to_raw_windows_security``
-    4. Otherwise → ``ecs_to_raw_sysmon`` (best-effort, produces a fallback envelope)
+    4. If ``agent.type == "auditbeat"`` or ``event.dataset`` starts with ``"auditd"``
+       → ``ecs_to_raw_linux_auditd``
+    5. If ``event.dataset`` starts with ``"aws.cloudtrail"`` → ``ecs_to_raw_cloudtrail``
+    6. If ``event.dataset`` starts with ``"zeek."`` → ``ecs_to_raw_zeek``
+    7. Otherwise → ``ecs_to_raw_sysmon`` (best-effort, produces a fallback envelope)
 
     The ``_simulation`` metadata block is preserved in the returned envelope so
     that downstream TP/FP scoring works correctly.
+
+    For non-Windows converters (auditd, CloudTrail, Zeek) the raw log string is
+    wrapped in a HEC envelope before being returned.
 
     Args:
         ecs_event: A single ECS event dictionary.
@@ -823,6 +1008,7 @@ def ecs_to_raw(ecs_event: dict) -> dict:
 
     agent_type = _get(ecs_event, "agent", "type").lower()
     event_code = str(ecs_event.get("event", {}).get("code", "")).strip()
+    dataset = str(ecs_event.get("event", {}).get("dataset", "")).strip()
 
     if agent_type == "sysmon" or event_code in _SYSMON_EIDS:
         # Prefer Sysmon converter when agent.type is explicitly sysmon OR
@@ -834,6 +1020,31 @@ def ecs_to_raw(ecs_event: dict) -> dict:
 
     if event_code in _WIN_SEC_EIDS or event_code in _WIN_SEC_EID_RANGE:
         return ecs_to_raw_windows_security(ecs_event)
+
+    if agent_type == "auditbeat" or (dataset and dataset.startswith("auditd")):
+        raw = ecs_to_raw_linux_auditd(ecs_event)
+        sourcetype = "linux:audit"
+        source_str = f"simulator:{dataset or 'auditd.log'}"
+        ts = _parse_timestamp(ecs_event)
+        host = _get(ecs_event, "host", "name") or "linux-host-01"
+        return _hec_envelope(raw, sourcetype, source_str, host, ts, ecs_event)
+
+    if dataset and dataset.startswith("aws.cloudtrail"):
+        raw = ecs_to_raw_cloudtrail(ecs_event)
+        sourcetype = "aws:cloudtrail"
+        source_str = "simulator:aws.cloudtrail"
+        ts = _parse_timestamp(ecs_event)
+        host = _get(ecs_event, "host", "name") or _get(ecs_event, "cloud", "region") or "aws"
+        return _hec_envelope(raw, sourcetype, source_str, host, ts, ecs_event)
+
+    if dataset and dataset.startswith("zeek."):
+        raw = ecs_to_raw_zeek(ecs_event)
+        zeek_type = dataset.split(".")[1]  # conn, dns, http, ssl
+        sourcetype = f"bro:{zeek_type}"
+        source_str = f"simulator:{dataset}"
+        ts = _parse_timestamp(ecs_event)
+        host = _get(ecs_event, "host", "name") or "zeek-sensor-01"
+        return _hec_envelope(raw, sourcetype, source_str, host, ts, ecs_event)
 
     # Unknown / generic — fall back to Sysmon envelope with minimal content
     return ecs_to_raw_sysmon(ecs_event)
