@@ -26,7 +26,7 @@
         "source": { "ip": "198.51.100.1" },
         "user": { "name": "alice", "id": "123456789012" },
         "user_agent": {
-          "original": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
+          "original": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.6099.130"
         },
         "aws": {
           "cloudtrail": {
@@ -74,7 +74,7 @@
         "source": { "ip": "10.0.1.50" },
         "user": { "name": "alice", "id": "123456789012" },
         "user_agent": {
-          "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) Chrome/120.0.0.0"
+          "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) Chrome/120.0.6099.130"
         },
         "aws": {
           "cloudtrail": {

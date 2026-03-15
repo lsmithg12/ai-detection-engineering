@@ -6,6 +6,9 @@ on:
       - 'detections/**/*.yml'
       - 'data-sources/schemas/**/*.json'
 
+permissions:
+  contents: read
+
 jobs:
   validate-schema:
     name: Validate detections against registered schemas
