@@ -774,19 +774,19 @@ siem_backends:
   elasticsearch:
     enabled: true
     params:
-      url: "http://localhost:9200"
-      username: "elastic"
-      password: "changeme"
-      kibana_url: "http://localhost:5601"
+      url: "${ES_URL}"
+      username: "${ES_USER}"
+      password: "${ES_PASS}"
+      kibana_url: "${KIBANA_URL}"
     sigma_target: "lucene"
     sigma_pipeline: "ecs_windows"
 
   splunk:
     enabled: true
     params:
-      url: "https://localhost:8089"
-      username: "admin"
-      password: "BlueTeamLab1!"
+      url: "${SPLUNK_URL}"
+      username: "${SPLUNK_USER}"
+      password: "${SPLUNK_PASS}"
       verify_ssl: false
     sigma_target: "splunk"
     sigma_pipeline: null
