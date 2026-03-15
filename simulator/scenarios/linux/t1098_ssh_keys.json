@@ -102,8 +102,8 @@
         "process": {
           "name": "ssh-keygen",
           "executable": "/usr/bin/ssh-keygen",
-          "args": ["-t", "ed25519", "-C", "alice@corp.com"],
-          "command_line": "ssh-keygen -t ed25519 -C alice@corp.com",
+          "args": ["-t", "ed25519", "-C", "alice@example.com"],
+          "command_line": "ssh-keygen -t ed25519 -C alice@example.com",
           "pid": 71000,
           "parent": { "name": "bash", "pid": 70000 }
         },
