@@ -413,6 +413,162 @@ def cmd_compliance(args):
             print(f"    {fw}: {len(items)} detections")
 
 
+# ---------------------------------------------------------------------------
+# Phase 5 commands
+# ---------------------------------------------------------------------------
+
+def cmd_data_quality(args):
+    """Run data quality checks. Usage: cli.py data-quality [--source ID] [--export]"""
+    import yaml  # noqa: F401 — ensure yaml is importable before engine init
+    from orchestration.data_quality import DataQualityEngine
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    expectations_path = Path(__file__).resolve().parent / "source_expectations.yml"
+
+    es_url  = os.getenv("ES_URL",  "http://localhost:9200")
+    es_user = os.getenv("ES_USER", "elastic")
+    es_pass = os.getenv("ES_PASS", "changeme")
+
+    engine  = DataQualityEngine(es_url, (es_user, es_pass), expectations_path)
+    results = engine.run_checks(source_id=getattr(args, "source", None))
+
+    # Print summary table
+    print(f"\n  Data Quality Report ({len(results)} sources)")
+    print(f"  {'Source':<30} {'Composite':>10} {'Status':<8} {'Freshness':<10} "
+          f"{'Completeness':<14} {'Volume':<8}")
+    print(f"  {'-'*80}")
+    for r in sorted(results, key=lambda x: x.get("composite", 0)):
+        status       = r.get("composite_status", "?")
+        composite    = r.get("composite", 0)
+        freshness    = r.get("freshness", {}).get("status", "?")
+        completeness = r.get("completeness", {}).get("score", 0)
+        volume       = r.get("volume", {}).get("status", "?")
+        print(
+            f"  {r['source_id']:<30} {composite:>10.3f} {status:<8} "
+            f"{freshness:<10} {completeness:>13.1%} {volume:<8}"
+        )
+
+    if getattr(args, "export", False):
+        output_dir = str(repo_root / "monitoring" / "data-quality")
+        engine.export_json(results, output_dir)
+        print(f"\n  Exported to {output_dir}")
+
+
+def cmd_schema_diff(args):
+    """Compare schema versions. Usage: cli.py schema-diff <source> <old_version> <new_version>"""
+    import json as _json
+
+    repo_root  = Path(__file__).resolve().parent.parent.parent
+    schema_dir = repo_root / "data-sources" / "schemas"
+
+    if not schema_dir.exists():
+        print("  No data-sources/schemas/ directory found.")
+        return
+
+    old_path = schema_dir / f"{args.source}_{args.old_version}.json"
+    new_path = schema_dir / f"{args.source}_{args.new_version}.json"
+
+    if not old_path.exists():
+        print(f"  Schema not found: {old_path.name}")
+        return
+    if not new_path.exists():
+        print(f"  Schema not found: {new_path.name}")
+        return
+
+    old_schema = _json.loads(old_path.read_text())
+    new_schema = _json.loads(new_path.read_text())
+
+    changes = []
+    for eid, old_type in old_schema.get("event_types", {}).items():
+        new_type = new_schema.get("event_types", {}).get(eid)
+        if not new_type:
+            changes.append({"type": "event_removed", "event_id": eid, "severity": "CRITICAL"})
+            continue
+        for field, old_def in old_type.get("ecs_fields", {}).items():
+            new_def = new_type.get("ecs_fields", {}).get(field)
+            if not new_def:
+                changes.append({"type": "field_removed", "event_id": eid,
+                                 "field": field, "severity": "CRITICAL"})
+            elif new_def.get("type") != old_def.get("type"):
+                changes.append({"type": "field_type_changed", "event_id": eid, "field": field,
+                                 "old_type": old_def.get("type"), "new_type": new_def.get("type"),
+                                 "severity": "HIGH"})
+            elif new_def.get("source_field") != old_def.get("source_field"):
+                changes.append({"type": "field_renamed", "event_id": eid, "field": field,
+                                 "old_source": old_def.get("source_field"),
+                                 "new_source": new_def.get("source_field"),
+                                 "severity": "HIGH"})
+        for field in new_type.get("ecs_fields", {}):
+            if field not in old_type.get("ecs_fields", {}):
+                changes.append({"type": "field_added", "event_id": eid,
+                                 "field": field, "severity": "INFO"})
+
+    if not changes:
+        print(f"\n  No changes between {args.source} {args.old_version} -> {args.new_version}")
+        return
+
+    print(f"\n  Schema Diff: {args.source} {args.old_version} -> {args.new_version}")
+    print(f"  {len(changes)} changes found\n")
+
+    # Impact analysis — find detection rules that reference changed fields
+    detections_dir = repo_root / "detections"
+    for change in sorted(changes, key=lambda c: {"CRITICAL": 0, "HIGH": 1, "INFO": 2}[c["severity"]]):
+        affected = []
+        if change.get("field") and detections_dir.exists():
+            field = change["field"]
+            for rule_file in detections_dir.rglob("*.yml"):
+                if "compiled" in str(rule_file):
+                    continue
+                if field in rule_file.read_text(encoding="utf-8", errors="ignore"):
+                    affected.append(rule_file.name)
+        impact = (
+            f" [impacts: {', '.join(affected[:3])}{'...' if len(affected) > 3 else ''}]"
+            if affected else ""
+        )
+        print(
+            f"  [{change['severity']:8s}] EID {change.get('event_id', '?'):3s} "
+            f"{change['type']:20s} "
+            f"{change.get('field', change.get('event_id', '?'))}{impact}"
+        )
+
+
+def cmd_data_gaps(args):
+    """Show technique -> source -> status gap analysis."""
+    from orchestration.gap_analyzer import GapAnalyzer
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    analyzer  = GapAnalyzer(repo_root)
+    gaps      = analyzer.analyze_data_gaps()
+
+    print(f"\n  Data Source Gap Analysis \u2014 Fawkes C2 Techniques")
+    print(f"  {'='*48}\n")
+
+    labels = {
+        "READY":   "READY (data available \u2014 author detection now)",
+        "PARTIAL": "PARTIAL (some data \u2014 detection possible with limitations)",
+        "BLOCKED": "BLOCKED (data source missing \u2014 onboard first)",
+    }
+
+    for actionability in ("READY", "PARTIAL", "BLOCKED"):
+        matching = [g for g in gaps if g["actionability"] == actionability]
+        if not matching:
+            continue
+        print(f"  {labels[actionability]}:")
+        for gap in matching:
+            sources_str = ", ".join(
+                f"{s['source']} ({s['status']})" for s in gap["required_sources"]
+            )
+            print(f"    {gap['technique_id']:12s} {gap['technique_name']}")
+            print(f"      Sources: {sources_str}")
+            print(f"      \u2192 {gap['recommendation']}")
+        print()
+
+    ready   = sum(1 for g in gaps if g["actionability"] == "READY")
+    partial = sum(1 for g in gaps if g["actionability"] == "PARTIAL")
+    blocked = sum(1 for g in gaps if g["actionability"] == "BLOCKED")
+    print(f"  Summary: {ready} READY | {partial} PARTIAL | {blocked} BLOCKED")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patronus",
@@ -481,6 +637,22 @@ def main():
     p_comp = sub.add_parser("compliance", help="List compliance controls")
     p_comp.add_argument("--framework", help="Filter by framework (e.g., PCI-DSS)")
 
+    # data-quality (Phase 5 -- data quality monitoring)
+    p_dq = sub.add_parser("data-quality", help="Run data quality checks on log sources")
+    p_dq.add_argument("--source", default=None, metavar="SOURCE_ID",
+                      help="Check a single source instead of all")
+    p_dq.add_argument("--export", action="store_true",
+                      help="Export per-source JSON reports to monitoring/data-quality/")
+
+    # schema-diff (Phase 5 -- schema version comparison)
+    p_sd = sub.add_parser("schema-diff", help="Compare two schema versions for a source")
+    p_sd.add_argument("source", help="Source name (e.g. sysmon_eid_1)")
+    p_sd.add_argument("old_version", help="Old schema version tag (e.g. v1)")
+    p_sd.add_argument("new_version", help="New schema version tag (e.g. v2)")
+
+    # data-gaps (Phase 5 -- gap analysis)
+    sub.add_parser("data-gaps", help="Show technique/data-source gap analysis for Fawkes C2")
+
     args = parser.parse_args()
     cmd_map = {
         "status": cmd_status,
@@ -495,6 +667,9 @@ def main():
         "coverage": cmd_coverage,
         "feedback": cmd_feedback,
         "compliance": cmd_compliance,
+        "data-quality": cmd_data_quality,
+        "schema-diff": cmd_schema_diff,
+        "data-gaps": cmd_data_gaps,
     }
     cmd_map[args.command](args)
 
