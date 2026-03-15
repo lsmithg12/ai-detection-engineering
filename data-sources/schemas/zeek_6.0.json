@@ -1,0 +1,258 @@
+{
+  "source": "zeek",
+  "version": "6.0",
+  "description": "Zeek 6.0 network security monitor log schema mapped to Elastic Common Schema (ECS). Covers connection, DNS, HTTP, SSL/TLS, and file analysis log types.",
+  "updated": "2026-03-15",
+  "event_types": {
+    "conn": {
+      "name": "conn",
+      "ecs_fields": {
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.orig_h"
+        },
+        "source.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.orig_p"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.resp_h"
+        },
+        "destination.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.resp_p"
+        },
+        "network.transport": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "proto"
+        },
+        "network.protocol": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "service"
+        },
+        "network.bytes": {
+          "type": "long",
+          "required": false,
+          "source_field": "orig_bytes"
+        },
+        "zeek.connection.uid": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "uid"
+        },
+        "zeek.connection.state": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "conn_state"
+        },
+        "zeek.connection.duration": {
+          "type": "long",
+          "required": false,
+          "source_field": "duration"
+        },
+        "zeek.connection.history": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "history"
+        }
+      }
+    },
+    "dns": {
+      "name": "dns",
+      "ecs_fields": {
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.orig_h"
+        },
+        "source.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.orig_p"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.resp_h"
+        },
+        "destination.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.resp_p"
+        },
+        "dns.question.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "query"
+        },
+        "dns.question.type_code": {
+          "type": "long",
+          "required": false,
+          "source_field": "qtype"
+        },
+        "dns.question.class": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "qclass_name"
+        },
+        "zeek.connection.uid": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "uid"
+        }
+      }
+    },
+    "http": {
+      "name": "http",
+      "ecs_fields": {
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.orig_h"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.resp_h"
+        },
+        "destination.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.resp_p"
+        },
+        "url.original": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "uri"
+        },
+        "url.path": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "uri"
+        },
+        "http.request.method": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "method"
+        },
+        "http.response.status_code": {
+          "type": "long",
+          "required": false,
+          "source_field": "status_code"
+        },
+        "user_agent.original": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "user_agent"
+        },
+        "zeek.connection.uid": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "uid"
+        }
+      }
+    },
+    "ssl": {
+      "name": "ssl",
+      "ecs_fields": {
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.orig_h"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "id.resp_h"
+        },
+        "destination.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "id.resp_p"
+        },
+        "tls.version": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "version"
+        },
+        "tls.cipher": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "cipher"
+        },
+        "tls.client.ja3": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ja3"
+        },
+        "tls.server.ja3s": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ja3s"
+        },
+        "tls.server.certificate.subject": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "subject"
+        },
+        "zeek.connection.uid": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "uid"
+        }
+      }
+    },
+    "files": {
+      "name": "files",
+      "ecs_fields": {
+        "source.ip": {
+          "type": "ip",
+          "required": false,
+          "source_field": "tx_hosts"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": false,
+          "source_field": "rx_hosts"
+        },
+        "file.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "filename"
+        },
+        "file.size": {
+          "type": "long",
+          "required": false,
+          "source_field": "total_bytes"
+        },
+        "file.hash.md5": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "md5"
+        },
+        "file.hash.sha256": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "sha256"
+        },
+        "file.mime_type": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "mime_type"
+        },
+        "zeek.connection.uid": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "conn_uids"
+        }
+      }
+    }
+  }
+}

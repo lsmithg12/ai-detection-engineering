@@ -1,0 +1,333 @@
+{
+  "source": "sysmon",
+  "version": "15.13",
+  "description": "Microsoft Sysinternals System Monitor (Sysmon) 15.13 event schema mapped to Elastic Common Schema (ECS)",
+  "updated": "2026-03-15",
+  "event_types": {
+    "1": {
+      "name": "ProcessCreate",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "process.executable": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "process.command_line": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "CommandLine"
+        },
+        "process.pid": {
+          "type": "long",
+          "required": true,
+          "source_field": "ProcessId"
+        },
+        "process.parent.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ParentImage"
+        },
+        "process.parent.command_line": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ParentCommandLine"
+        },
+        "process.parent.pid": {
+          "type": "long",
+          "required": false,
+          "source_field": "ParentProcessId"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "User"
+        },
+        "host.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Computer"
+        },
+        "file.hash.md5": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        },
+        "file.hash.sha256": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        }
+      }
+    },
+    "3": {
+      "name": "NetworkConnect",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "SourceIp"
+        },
+        "source.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "SourcePort"
+        },
+        "destination.ip": {
+          "type": "ip",
+          "required": true,
+          "source_field": "DestinationIp"
+        },
+        "destination.port": {
+          "type": "long",
+          "required": true,
+          "source_field": "DestinationPort"
+        },
+        "network.protocol": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Protocol"
+        },
+        "network.direction": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Initiated"
+        }
+      }
+    },
+    "7": {
+      "name": "ImageLoad",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "process.executable": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "file.path": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "ImageLoaded"
+        },
+        "file.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "ImageLoaded"
+        },
+        "file.hash.md5": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        },
+        "file.hash.sha256": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        },
+        "dll.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ImageLoaded"
+        }
+      }
+    },
+    "8": {
+      "name": "CreateRemoteThread",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "SourceImage"
+        },
+        "process.entity_id": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "SourceProcessGuid"
+        },
+        "winlog.event_data.TargetImage": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetImage"
+        },
+        "winlog.event_data.TargetProcessId": {
+          "type": "long",
+          "required": true,
+          "source_field": "TargetProcessId"
+        },
+        "winlog.event_data.StartAddress": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "StartAddress"
+        },
+        "winlog.event_data.StartFunction": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "StartFunction"
+        }
+      }
+    },
+    "10": {
+      "name": "ProcessAccess",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "SourceImage"
+        },
+        "winlog.event_data.TargetImage": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetImage"
+        },
+        "winlog.event_data.GrantedAccess": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "GrantedAccess"
+        },
+        "winlog.event_data.CallTrace": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "CallTrace"
+        },
+        "process.entity_id": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "SourceProcessGuid"
+        }
+      }
+    },
+    "11": {
+      "name": "FileCreate",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "file.path": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetFilename"
+        },
+        "file.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetFilename"
+        },
+        "host.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Computer"
+        }
+      }
+    },
+    "13": {
+      "name": "RegistryEvent",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "registry.path": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetObject"
+        },
+        "registry.value": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Details"
+        },
+        "registry.hive": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetObject"
+        }
+      }
+    },
+    "17": {
+      "name": "PipeCreate",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "file.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "PipeName"
+        }
+      }
+    },
+    "18": {
+      "name": "PipeConnect",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "file.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "PipeName"
+        }
+      }
+    },
+    "22": {
+      "name": "DNSQuery",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "dns.question.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "QueryName"
+        },
+        "dns.answers.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "QueryResults"
+        }
+      }
+    },
+    "25": {
+      "name": "ProcessTampering",
+      "ecs_fields": {
+        "process.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Image"
+        },
+        "process.pid": {
+          "type": "long",
+          "required": true,
+          "source_field": "ProcessId"
+        },
+        "winlog.event_data.Type": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Type"
+        }
+      }
+    }
+  }
+}

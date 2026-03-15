@@ -1,0 +1,162 @@
+{
+  "technique_id": "T1098.001",
+  "technique_name": "Account Manipulation: Additional Cloud Credentials — IAM CreateAccessKey",
+  "description": "Simulates attacker creating additional access keys for a privileged IAM user to establish persistent programmatic access after initial compromise.",
+  "platform": "cloud",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "iam",
+          "type": "info",
+          "kind": "event",
+          "action": "CreateAccessKey",
+          "outcome": "success",
+          "provider": "iam.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-east-1",
+          "service": { "name": "iam" }
+        },
+        "source": { "ip": "198.51.100.42" },
+        "user": { "name": "bob", "id": "123456789012" },
+        "user_agent": { "original": "aws-cli/2.15.0 Python/3.11.0 Linux/5.15.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "iam.amazonaws.com",
+            "event_name": "CreateAccessKey",
+            "request_parameters": { "UserName": "admin" },
+            "response_elements": {
+              "accessKey": {
+                "userName": "admin",
+                "accessKeyId": "SIM-ACCESSKEYID-ADMIN-EXAMPLE",
+                "status": "Active"
+              }
+            },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "bob",
+              "account_id": "123456789012",
+              "arn": "arn:aws:iam::123456789012:user/bob"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1098.001",
+          "platform": "cloud",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "IAM CreateAccessKey for 'admin' user called by non-admin principal 'bob' from external IP — establishes persistent programmatic backdoor"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "iam",
+          "type": "info",
+          "kind": "event",
+          "action": "CreateAccessKey",
+          "outcome": "success",
+          "provider": "iam.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "iam" }
+        },
+        "source": { "ip": "10.0.1.50" },
+        "user": { "name": "alice", "id": "123456789012" },
+        "user_agent": { "original": "aws-cli/2.15.0 Python/3.11.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "iam.amazonaws.com",
+            "event_name": "CreateAccessKey",
+            "request_parameters": { "UserName": "alice" },
+            "response_elements": {
+              "accessKey": {
+                "userName": "alice",
+                "accessKeyId": "SIM-ACCESSKEYID-ALICE-EXAMPLE",
+                "status": "Active"
+              }
+            },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "alice",
+              "account_id": "123456789012",
+              "arn": "arn:aws:iam::123456789012:user/alice"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1098.001",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "User creating their own access key from corporate IP — normal key rotation activity"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "iam",
+          "type": "info",
+          "kind": "event",
+          "action": "ListAccessKeys",
+          "outcome": "success",
+          "provider": "iam.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "iam" }
+        },
+        "source": { "ip": "10.0.2.100" },
+        "user": { "name": "svc-deploy", "id": "123456789012" },
+        "user_agent": { "original": "Terraform/1.6.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "iam.amazonaws.com",
+            "event_name": "ListAccessKeys",
+            "request_parameters": {},
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "svc-deploy",
+              "account_id": "123456789012"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1098.001",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "Terraform service account listing access keys during infra audit — read-only, not creating keys"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["aws.cloudtrail.event_name", "aws.cloudtrail.request_parameters", "user.name", "source.ip"],
+    "notes": "Alert on CreateAccessKey where the target UserName differs from the requesting user (cross-user key creation). Exclude automated rotation via IAM roles or service accounts creating their own keys."
+  },
+  "log_sources_used": ["aws_cloudtrail"],
+  "platforms": ["cloud"]
+}

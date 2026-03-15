@@ -1,0 +1,173 @@
+{
+  "id": "cloudtrail_normalize",
+  "conf": {
+    "asyncFuncTimeout": 1000,
+    "output": "default",
+    "streamtags": ["aws", "cloudtrail", "ecs", "cloud"],
+    "groups": {},
+    "functions": [
+      {
+        "id": "func_ct_serde",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "mode": "extract",
+          "type": "json",
+          "srcField": "_raw",
+          "cleanFields": false
+        },
+        "description": "Parse CloudTrail JSON from _raw; promotes all top-level fields"
+      },
+      {
+        "id": "func_ct_ecs_core",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "event.action",
+              "value": "eventName"
+            },
+            {
+              "name": "event.provider",
+              "value": "eventSource"
+            },
+            {
+              "name": "event.dataset",
+              "value": "'aws.cloudtrail'"
+            },
+            {
+              "name": "event.module",
+              "value": "'aws'"
+            },
+            {
+              "name": "event.category",
+              "value": "eventSource && eventSource.indexOf('iam') >= 0 ? 'iam' : eventSource && eventSource.indexOf('sts') >= 0 ? 'authentication' : 'configuration'"
+            },
+            {
+              "name": "event.type",
+              "value": "errorCode ? 'denied' : 'info'"
+            },
+            {
+              "name": "event.outcome",
+              "value": "errorCode ? 'failure' : 'success'"
+            },
+            {
+              "name": "cloud.region",
+              "value": "awsRegion"
+            },
+            {
+              "name": "cloud.provider",
+              "value": "'aws'"
+            },
+            {
+              "name": "cloud.account.id",
+              "value": "recipientAccountId"
+            },
+            {
+              "name": "source.ip",
+              "value": "sourceIPAddress && !sourceIPAddress.match(/\\.amazonaws\\.com$/) ? sourceIPAddress : undefined"
+            },
+            {
+              "name": "user_agent.original",
+              "value": "userAgent"
+            },
+            {
+              "name": "user.name",
+              "value": "userIdentity && userIdentity.userName ? userIdentity.userName : userIdentity && userIdentity.sessionContext && userIdentity.sessionContext.sessionIssuer ? userIdentity.sessionContext.sessionIssuer.userName : undefined"
+            },
+            {
+              "name": "user.id",
+              "value": "userIdentity ? userIdentity.principalId : undefined"
+            },
+            {
+              "name": "user.target.id",
+              "value": "userIdentity ? userIdentity.accountId : undefined"
+            },
+            {
+              "name": "aws.cloudtrail.user_identity.type",
+              "value": "userIdentity ? userIdentity.type : undefined"
+            },
+            {
+              "name": "aws.cloudtrail.user_identity.arn",
+              "value": "userIdentity ? userIdentity.arn : undefined"
+            },
+            {
+              "name": "aws.cloudtrail.error_code",
+              "value": "errorCode"
+            },
+            {
+              "name": "aws.cloudtrail.error_message",
+              "value": "errorMessage"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Map top-level CloudTrail fields to ECS and aws.cloudtrail namespace"
+      },
+      {
+        "id": "func_ct_cloudtrail_ns",
+        "filter": "true",
+        "disabled": false,
+        "conf": {
+          "add": [
+            {
+              "name": "aws.cloudtrail.event_name",
+              "value": "eventName"
+            },
+            {
+              "name": "aws.cloudtrail.event_source",
+              "value": "eventSource"
+            },
+            {
+              "name": "aws.cloudtrail.event_version",
+              "value": "eventVersion"
+            },
+            {
+              "name": "aws.cloudtrail.aws_region",
+              "value": "awsRegion"
+            },
+            {
+              "name": "aws.cloudtrail.source_ip_address",
+              "value": "sourceIPAddress"
+            },
+            {
+              "name": "aws.cloudtrail.user_agent",
+              "value": "userAgent"
+            },
+            {
+              "name": "aws.cloudtrail.request_parameters",
+              "value": "requestParameters ? JSON.stringify(requestParameters) : undefined"
+            },
+            {
+              "name": "aws.cloudtrail.response_elements",
+              "value": "responseElements ? JSON.stringify(responseElements) : undefined"
+            },
+            {
+              "name": "aws.cloudtrail.request_id",
+              "value": "requestID"
+            },
+            {
+              "name": "aws.cloudtrail.event_id",
+              "value": "eventID"
+            },
+            {
+              "name": "aws.cloudtrail.event_type",
+              "value": "eventType"
+            },
+            {
+              "name": "aws.cloudtrail.management_event",
+              "value": "managementEvent"
+            },
+            {
+              "name": "aws.cloudtrail.read_only",
+              "value": "readOnly"
+            }
+          ],
+          "remove": []
+        },
+        "description": "Preserve original CloudTrail fields in aws.cloudtrail namespace for full fidelity"
+      }
+    ]
+  }
+}

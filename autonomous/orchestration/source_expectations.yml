@@ -1,0 +1,163 @@
+# source_expectations.yml — Phase 5 Data Quality Monitoring
+#
+# Each entry under `sources` defines a log source that the data quality engine
+# monitors. The engine checks freshness, completeness, volume, and schema
+# conformance against these expectations.
+#
+# Fields:
+#   index_pattern         : ES index glob (e.g. "sim-*")
+#   filter                : ES query clause used to scope this source within the index
+#   expected_fields       : List of ECS field paths that must be populated
+#   expected_volume_24h   : Approximate event count expected in a 24-hour window
+#   freshness_threshold_minutes : Max minutes since last event before status degrades
+
+sources:
+
+  sysmon_eid_1:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "1"
+    expected_fields:
+      - process.name
+      - process.executable
+      - process.command_line
+      - process.pid
+      - process.parent.name
+      - user.name
+      - host.name
+      - "@timestamp"
+    expected_volume_24h: 5000
+    freshness_threshold_minutes: 15
+
+  sysmon_eid_3:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "3"
+    expected_fields:
+      - process.name
+      - source.ip
+      - source.port
+      - destination.ip
+      - destination.port
+      - network.protocol
+    expected_volume_24h: 8000
+    freshness_threshold_minutes: 15
+
+  sysmon_eid_8:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "8"
+    expected_fields:
+      - process.name
+      - process.entity_id
+      - winlog.event_data.TargetImage
+      - winlog.event_data.StartAddress
+    expected_volume_24h: 50
+    freshness_threshold_minutes: 60
+
+  sysmon_eid_10:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "10"
+    expected_fields:
+      - process.name
+      - winlog.event_data.TargetImage
+      - winlog.event_data.GrantedAccess
+    expected_volume_24h: 200
+    freshness_threshold_minutes: 60
+
+  sysmon_eid_11:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "11"
+    expected_fields:
+      - process.name
+      - file.path
+      - host.name
+    expected_volume_24h: 3000
+    freshness_threshold_minutes: 15
+
+  sysmon_eid_13:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "13"
+    expected_fields:
+      - process.name
+      - registry.path
+      - registry.value
+    expected_volume_24h: 1000
+    freshness_threshold_minutes: 30
+
+  windows_security_4624:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.code: "4624"
+    expected_fields:
+      - user.name
+      - host.name
+      - winlog.event_data.LogonType
+      - source.ip
+    expected_volume_24h: 2000
+    freshness_threshold_minutes: 30
+
+  linux_auditd:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        agent.type: "auditbeat"
+    expected_fields:
+      - process.name
+      - process.executable
+      - process.pid
+      - user.name
+      - host.name
+    expected_volume_24h: 3000
+    freshness_threshold_minutes: 30
+
+  aws_cloudtrail:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.dataset: "aws.cloudtrail"
+    expected_fields:
+      - event.action
+      - cloud.region
+      - source.ip
+      - user.name
+    expected_volume_24h: 1000
+    freshness_threshold_minutes: 60
+
+  zeek_conn:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.dataset: "zeek.conn"
+    expected_fields:
+      - source.ip
+      - source.port
+      - destination.ip
+      - destination.port
+      - network.transport
+    expected_volume_24h: 15000
+    freshness_threshold_minutes: 5
+
+  etw_telemetry:
+    index_pattern: "sim-*"
+    filter:
+      term:
+        event.provider: "Microsoft-Windows-Kernel-Process"
+    expected_fields:
+      - process.name
+      - process.pid
+      - host.name
+    expected_volume_24h: 0
+    freshness_threshold_minutes: 60
+    # NOTE: ETW telemetry requires Elastic Endpoint or dedicated ETW collector.
+    # This source is currently a GAP — volume 0 is expected until onboarded.

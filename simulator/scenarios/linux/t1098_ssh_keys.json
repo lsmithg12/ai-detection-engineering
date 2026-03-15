@@ -1,0 +1,168 @@
+{
+  "technique_id": "T1098",
+  "technique_name": "SSH Authorized Keys Manipulation",
+  "description": "Simulates attacker appending an attacker-controlled SSH public key to an existing user's authorized_keys file, enabling persistent SSH access without credentials.",
+  "platform": "linux",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "tee",
+          "executable": "/usr/bin/tee",
+          "args": ["-a", "/home/jsmith/.ssh/authorized_keys"],
+          "command_line": "tee -a /home/jsmith/.ssh/authorized_keys",
+          "pid": 62000,
+          "parent": { "name": "bash", "pid": 61000 }
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1098",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "root appending attacker SSH pubkey to jsmith's authorized_keys via tee -a"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log",
+          "action": "opened-file"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-WEB-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "file": {
+          "path": "/home/jsmith/.ssh/authorized_keys",
+          "name": "authorized_keys",
+          "directory": "/home/jsmith/.ssh"
+        },
+        "process": {
+          "name": "tee",
+          "executable": "/usr/bin/tee",
+          "pid": 62000
+        },
+        "user": { "name": "root", "id": "0" },
+        "auditd": {
+          "log": { "record_type": "PATH" },
+          "data": { "syscall": "open" }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1098",
+          "platform": "linux",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "authorized_keys modified for user jsmith — attacker's RSA key appended"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-DEV-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "ssh-keygen",
+          "executable": "/usr/bin/ssh-keygen",
+          "args": ["-t", "ed25519", "-C", "alice@example.com"],
+          "command_line": "ssh-keygen -t ed25519 -C alice@example.com",
+          "pid": 71000,
+          "parent": { "name": "bash", "pid": 70000 }
+        },
+        "user": { "name": "alice", "id": "1003" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1098",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "User generating their own SSH key pair — normal IT onboarding activity"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "auditd",
+          "dataset": "auditd.log"
+        },
+        "agent": { "type": "auditbeat" },
+        "host": {
+          "name": "LNX-DEV-01",
+          "os": { "family": "linux", "platform": "ubuntu" }
+        },
+        "process": {
+          "name": "ssh-copy-id",
+          "executable": "/usr/bin/ssh-copy-id",
+          "args": ["-i", "/home/alice/.ssh/id_ed25519.pub", "alice@lnx-app-01"],
+          "command_line": "ssh-copy-id -i /home/alice/.ssh/id_ed25519.pub alice@lnx-app-01",
+          "pid": 72000,
+          "parent": { "name": "bash", "pid": 70001 }
+        },
+        "user": { "name": "alice", "id": "1003" },
+        "auditd": {
+          "log": { "record_type": "SYSCALL" },
+          "data": { "syscall": "execve" }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1098",
+          "platform": "linux",
+          "expected_match": false,
+          "description": "ssh-copy-id distributing user's own key — standard SSH setup by the account owner"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["file.path", "process.name", "user.name", "process.args"],
+    "notes": "Alert on writes to any .ssh/authorized_keys file by a process that is NOT ssh-copy-id AND the writing user does NOT own the target home directory. Exclude ssh-keygen (generates keys, doesn't modify authorized_keys)."
+  },
+  "log_sources_used": ["auditbeat"],
+  "platforms": ["linux"]
+}

@@ -1,0 +1,152 @@
+{
+  "technique_id": "T1078.004",
+  "technique_name": "Valid Accounts: Cloud Accounts — Unusual Console Login",
+  "description": "Simulates attacker using stolen cloud credentials to authenticate to the AWS console from an unexpected geographic region and IP address, without MFA.",
+  "platform": "cloud",
+  "mitre_tactic": "initial_access",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "kind": "event",
+          "action": "ConsoleLogin",
+          "outcome": "success",
+          "provider": "signin.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-east-1",
+          "service": { "name": "signin" }
+        },
+        "source": { "ip": "198.51.100.1" },
+        "user": { "name": "alice", "id": "123456789012" },
+        "user_agent": {
+          "original": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.6099.130"
+        },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsConsoleSignIn",
+            "event_source": "signin.amazonaws.com",
+            "event_name": "ConsoleLogin",
+            "request_parameters": { "MFAUsed": "No" },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "alice",
+              "account_id": "123456789012",
+              "arn": "arn:aws:iam::123456789012:user/alice"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1078.004",
+          "platform": "cloud",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "Console login from 198.51.100.1 (external) in us-east-1 — account normally authenticates from corporate IPs in us-west-2, no MFA used"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "authentication",
+          "type": "start",
+          "kind": "event",
+          "action": "ConsoleLogin",
+          "outcome": "success",
+          "provider": "signin.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "signin" }
+        },
+        "source": { "ip": "10.0.1.50" },
+        "user": { "name": "alice", "id": "123456789012" },
+        "user_agent": {
+          "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) Chrome/120.0.6099.130"
+        },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsConsoleSignIn",
+            "event_source": "signin.amazonaws.com",
+            "event_name": "ConsoleLogin",
+            "request_parameters": { "MFAUsed": "Yes" },
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "alice",
+              "account_id": "123456789012",
+              "arn": "arn:aws:iam::123456789012:user/alice"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1078.004",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "Normal console login from corporate IP 10.0.1.50 in the expected region us-west-2 with MFA"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "iam",
+          "type": "info",
+          "kind": "event",
+          "action": "GetCallerIdentity",
+          "outcome": "success",
+          "provider": "sts.amazonaws.com",
+          "dataset": "aws.cloudtrail"
+        },
+        "cloud": {
+          "provider": "aws",
+          "account": { "id": "123456789012" },
+          "region": "us-west-2",
+          "service": { "name": "sts" }
+        },
+        "source": { "ip": "10.0.1.51" },
+        "user": { "name": "svc-monitoring", "id": "123456789012" },
+        "user_agent": { "original": "aws-cli/2.15.0 Python/3.11.0" },
+        "aws": {
+          "cloudtrail": {
+            "event_type": "AwsApiCall",
+            "event_source": "sts.amazonaws.com",
+            "event_name": "GetCallerIdentity",
+            "request_parameters": {},
+            "user_identity": {
+              "type": "IAMUser",
+              "user_name": "svc-monitoring",
+              "account_id": "123456789012"
+            }
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1078.004",
+          "platform": "cloud",
+          "expected_match": false,
+          "description": "Service account API call from known internal IP — normal monitoring activity"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["source.ip", "cloud.region", "aws.cloudtrail.request_parameters", "user.name"],
+    "notes": "Alert on ConsoleLogin from non-RFC1918 source IPs OR logins without MFA. Correlate against known-good source IP baseline per user. Geographic anomaly detection improves accuracy."
+  },
+  "log_sources_used": ["aws_cloudtrail"],
+  "platforms": ["cloud"]
+}

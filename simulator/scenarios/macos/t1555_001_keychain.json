@@ -1,0 +1,116 @@
+{
+  "technique_id": "T1555.001",
+  "technique_name": "Credentials from Password Stores: Keychain",
+  "description": "Simulates Fawkes keychain command using the macOS 'security' utility to dump keychain contents in plaintext, including stored passwords for web accounts, WiFi, and application credentials.",
+  "platform": "macos",
+  "mitre_tactic": "credential_access",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.process"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-EXEC-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "process": {
+          "name": "security",
+          "executable": "/usr/bin/security",
+          "args": ["dump-keychain", "-d", "/Users/alice/Library/Keychains/login.keychain-db"],
+          "command_line": "security dump-keychain -d /Users/alice/Library/Keychains/login.keychain-db",
+          "pid": 92000,
+          "parent": { "name": "zsh", "pid": 91000 }
+        },
+        "user": { "name": "alice", "id": "501" },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1555.001",
+          "platform": "macos",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "security dump-keychain -d — dumps macOS login keychain in plaintext (-d flag reveals passwords); Fawkes keychain command uses this exact invocation"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.process"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-DEV-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "process": {
+          "name": "security",
+          "executable": "/usr/bin/security",
+          "args": ["list-keychains"],
+          "command_line": "security list-keychains",
+          "pid": 80000,
+          "parent": { "name": "zsh", "pid": 79000 }
+        },
+        "user": { "name": "bob", "id": "502" },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1555.001",
+          "platform": "macos",
+          "expected_match": false,
+          "description": "security list-keychains — read-only enumeration of available keychains, no credential extraction (-d flag absent)"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.process"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-DEV-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "process": {
+          "name": "security",
+          "executable": "/usr/bin/security",
+          "args": ["find-internet-password", "-s", "github.com", "-g"],
+          "command_line": "security find-internet-password -s github.com -g",
+          "pid": 80001,
+          "parent": { "name": "git", "pid": 79500 }
+        },
+        "user": { "name": "charlie", "id": "503" },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1555.001",
+          "platform": "macos",
+          "expected_match": false,
+          "description": "Git credential helper looking up GitHub password — targeted single-credential lookup by git process, not a full dump"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["process.name", "process.args", "process.command_line", "process.parent.name"],
+    "notes": "Alert on: (1) 'security dump-keychain' with -d flag (plaintext extraction), OR (2) 'security dump-keychain' without -d (structural dump still useful for attacker). Exclude: security find-internet-password/-generic-password (targeted lookups), security list-keychains (enumeration only). Parent process context: git/ssh agents doing find-internet-password are benign."
+  },
+  "log_sources_used": ["elastic_endpoint"],
+  "platforms": ["macos"]
+}

