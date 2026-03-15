@@ -11,7 +11,7 @@ affected_techniques:
   - T1071.004
   - T1568
 simulator_support: true
-cribl_pipeline: null  # pipeline ID when Cribl parser exists
+cribl_pipeline: cim_normalize  # Phase 3: regex parser deployed via cribl_pipeline.py
 ecs_fields_expected:
   - dns.question.name
   - dns.question.type
@@ -19,8 +19,9 @@ ecs_fields_expected:
   - event.code
 resolution_notes: |
   Added to the simulator in PR #17. Needed for detecting Fawkes domain fronting
-  (T1071.001), DNS C2 (T1071.004), and dynamic resolution (T1568). Needs a
-  Cribl raw log parser for Sysmon EID 22 to normalize DNS query fields into ECS
-  before indexing. Critical path for C2 detection coverage.
+  (T1071.001), DNS C2 (T1071.004), and dynamic resolution (T1568). Cribl regex
+  parser for EID 22 now exists in cim_normalize pipeline (cribl_pipeline.py) —
+  extracts QueryName and Image fields. Remaining work: validate ECS field mapping
+  end-to-end and move status to onboarded once confirmed in production.
 created_date: "2026-03-14"
-updated_date: "2026-03-14"
+updated_date: "2026-03-15"

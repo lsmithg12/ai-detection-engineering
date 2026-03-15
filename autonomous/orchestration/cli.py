@@ -250,7 +250,7 @@ def cmd_data_sources(args):
                     techs += f" +{len(e['affected'])-3}"
                 print(f"    [{e['priority'].upper():8s}] {e['gap_id']:8s} "
                       f"EID {str(e['event_id']):5s} {e['event_name']:20s} "
-                      f"[{sim} {cribl}] → {techs}")
+                      f"[{sim} {cribl}] -> {techs}")
 
 
 def main():

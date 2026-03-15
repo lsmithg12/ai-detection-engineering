@@ -107,156 +107,15 @@ fi
 #   - Raw Sysmon text in _raw (Phase 3): regex_extract parses text → builds ECS fields
 # Order: rename → serde (JSON) → regex fallback (raw text) → ECS mapping → CIM aliases
 log_info "Creating CIM normalization pipeline..."
-RESULT=$(cribl_api POST "/pipelines" '{
-  "id": "cim_normalize",
-  "conf": {
-    "functions": [
-      {
-        "id": "rename",
-        "filter": "true",
-        "description": "Save Cribl internal fields before serde overwrites them",
-        "conf": {
-          "wildcardDepth": 5,
-          "renameExpr": "C.Rename.rename(name, [[/^host$/, \"_cribl_host\"], [/^source$/, \"_cribl_source\"]])"
-        }
-      },
-      {
-        "id": "serde",
-        "filter": "true",
-        "description": "Parse _raw JSON into top-level ECS fields (process, user, host, etc.)",
-        "conf": {
-          "mode": "extract",
-          "type": "json",
-          "srcField": "_raw"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "!__e.event || !__e.event.code",
-        "description": "Phase 3: Extract EventID from raw Sysmon text (only if serde did not parse JSON)",
-        "conf": {
-          "field": "_raw",
-          "regex": "EventID[=:]\\s*(?<_raw_event_code>\\d+)"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code && /^(1|4688)$/.test(_raw_event_code)",
-        "description": "Phase 3: Extract process fields from raw Sysmon EID 1 / Win 4688",
-        "conf": {
-          "field": "_raw",
-          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?CommandLine:\\s*(?<_raw_cmdline>.+?)\\n[\\s\\S]*?ParentImage:\\s*(?<_raw_parent_image>.+?)\\n"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '3'",
-        "description": "Phase 3: Extract network fields from raw Sysmon EID 3",
-        "conf": {
-          "field": "_raw",
-          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?DestinationIp:\\s*(?<_raw_dest_ip>[\\d\\.]+)[\\s\\S]*?DestinationPort:\\s*(?<_raw_dest_port>\\d+)[\\s\\S]*?SourceIp:\\s*(?<_raw_src_ip>[\\d\\.]+)"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '7'",
-        "description": "Phase 3: Extract image load fields from raw Sysmon EID 7",
-        "conf": {
-          "field": "_raw",
-          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?ImageLoaded:\\s*(?<_raw_image_loaded>.+?)\\n"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '8' || _raw_event_code == '10'",
-        "description": "Phase 3: Extract injection fields from raw Sysmon EID 8/10",
-        "conf": {
-          "field": "_raw",
-          "regex": "SourceImage:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?TargetImage:\\s*(?<_raw_target_image>.+?)\\n"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '10'",
-        "description": "Phase 3: Extract GrantedAccess from raw Sysmon EID 10",
-        "conf": {
-          "field": "_raw",
-          "regex": "GrantedAccess:\\s*(?<_raw_granted_access>0x[0-9A-Fa-f]+)"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '13'",
-        "description": "Phase 3: Extract registry fields from raw Sysmon EID 13",
-        "conf": {
-          "field": "_raw",
-          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?TargetObject:\\s*(?<_raw_target_object>.+?)\\n[\\s\\S]*?Details:\\s*(?<_raw_details>.+?)\\n"
-        }
-      },
-      {
-        "id": "regex_extract",
-        "filter": "_raw_event_code == '22'",
-        "description": "Phase 3: Extract DNS fields from raw Sysmon EID 22",
-        "conf": {
-          "field": "_raw",
-          "regex": "Image:\\s*(?<_raw_image>.+?)\\n[\\s\\S]*?QueryName:\\s*(?<_raw_query_name>.+?)\\n"
-        }
-      },
-      {
-        "id": "eval",
-        "filter": "_raw_event_code && !__e.event",
-        "description": "Phase 3: Map raw-extracted fields to ECS dotted notation",
-        "conf": {
-          "add": [
-            {"name": "event.code",                       "value": "_raw_event_code"},
-            {"name": "event.category",                   "value": "_raw_event_code == '3' ? 'network' : _raw_event_code == '7' ? 'process' : _raw_event_code == '13' ? 'registry' : 'process'"},
-            {"name": "process.executable",               "value": "_raw_image || undefined"},
-            {"name": "process.name",                     "value": "_raw_image ? _raw_image.split('\\\\').pop() : undefined"},
-            {"name": "process.command_line",             "value": "_raw_cmdline || undefined"},
-            {"name": "process.parent.executable",        "value": "_raw_parent_image || undefined"},
-            {"name": "file.path",                        "value": "_raw_image_loaded || undefined"},
-            {"name": "file.name",                        "value": "_raw_image_loaded ? _raw_image_loaded.split('\\\\').pop() : undefined"},
-            {"name": "destination.ip",                   "value": "_raw_dest_ip || undefined"},
-            {"name": "destination.port",                 "value": "_raw_dest_port ? parseInt(_raw_dest_port) : undefined"},
-            {"name": "source.ip",                        "value": "_raw_src_ip || undefined"},
-            {"name": "registry.path",                    "value": "_raw_target_object || undefined"},
-            {"name": "registry.value",                   "value": "_raw_details || undefined"},
-            {"name": "winlog.event_data.TargetImage",    "value": "_raw_target_image || undefined"},
-            {"name": "winlog.event_data.GrantedAccess",  "value": "_raw_granted_access || undefined"},
-            {"name": "dns.question.name",                "value": "_raw_query_name || undefined"}
-          ],
-          "remove": ["_raw_event_code", "_raw_image", "_raw_cmdline", "_raw_parent_image", "_raw_image_loaded", "_raw_target_image", "_raw_granted_access", "_raw_target_object", "_raw_details", "_raw_dest_ip", "_raw_dest_port", "_raw_src_ip", "_raw_query_name"]
-        }
-      },
-      {
-        "id": "eval",
-        "filter": "true",
-        "description": "Cribl processing marker + CIM aliases + cleanup",
-        "conf": {
-          "add": [
-            {"name": "cribl_pipe",      "value": "\"cim_normalize\""},
-            {"name": "cribl_processed", "value": "true"},
-            {"name": "cribl_ts",        "value": "Date.now()"},
-            {"name": "EventCode",       "value": "__e.event && __e.event.code"},
-            {"name": "CommandLine",     "value": "__e.process && __e.process.command_line"},
-            {"name": "Image",           "value": "__e.process && __e.process.executable"},
-            {"name": "ParentImage",     "value": "__e.process && __e.process.parent && __e.process.parent.executable"},
-            {"name": "TargetObject",    "value": "__e.registry && __e.registry.path"},
-            {"name": "Details",         "value": "__e.registry && __e.registry.value"},
-            {"name": "src_ip",          "value": "__e.source && __e.source.ip"},
-            {"name": "dest_ip",         "value": "__e.destination && __e.destination.ip"},
-            {"name": "dest_port",       "value": "__e.destination && __e.destination.port"}
-          ],
-          "remove": ["_raw", "_cribl_host", "_cribl_source", "cribl_breaker", "source"]
-        }
-      }
-    ]
-  }
-}')
-if echo "$RESULT" | grep -q '"cim_normalize"'; then
-    log_ok "CIM normalization pipeline created (serde + raw regex fallback + CIM aliases)"
+# Pipeline JSON is complex (regex patterns + JavaScript expressions with single quotes).
+# Delegate to Python to avoid bash quoting nightmares.
+# cribl_pipeline.py also uses the correct Cribl API config format:
+#   regex_extract needs "source" (not "field") and "/pattern/" delimiters.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if python3 "$SCRIPT_DIR/cribl_pipeline.py" --deploy --url="$CRIBL_URL"; then
+    log_ok "CIM normalization pipeline created (serde + 8 regex parsers + 2 eval mappers)"
 else
-    log_warn "Pipeline may already exist (re-run is idempotent)"
+    log_err "Pipeline creation failed — check pipeline/cribl_pipeline.py"
 fi
 
 # ─── 3. Create Elasticsearch Outputs ─────────────────────────────
@@ -304,7 +163,7 @@ RESULT=$(cribl_api POST "/system/outputs" '{
   "id": "elastic_validation",
   "type": "elastic",
   "url": "http://elasticsearch:9200",
-  "index": "`_validation_index || \"sim-validation\"`",
+  "index": "`_validation_index || index || \"sim-validation\"`",
   "authType": "basic",
   "username": "elastic",
   "password": "changeme",
@@ -346,7 +205,7 @@ RESULT=$(cribl_api PATCH "/routes/default" '{
     {
       "id": "validation_to_elastic",
       "name": "Phase 3: Validation Events → Elastic (sim-validation-*)",
-      "filter": "__e._validation_index",
+      "filter": "__e._validation_index || __e.index && __e.index.startsWith('sim-validation')",
       "pipeline": "cim_normalize",
       "output": "elastic_validation",
       "final": true,

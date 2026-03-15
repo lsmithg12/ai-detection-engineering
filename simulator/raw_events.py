@@ -127,15 +127,26 @@ def _hec_envelope(
     ts: datetime.datetime,
     ecs_event: dict,
 ) -> dict:
-    """Wrap a raw log string in a Splunk/Cribl HEC envelope."""
-    return {
+    """Wrap a raw log string in a Splunk/Cribl HEC envelope.
+
+    Custom metadata (_simulation) goes in the ``fields`` sub-object per the
+    HEC protocol spec.  This ensures Cribl's in_splunk_hec input promotes
+    these fields to top-level event properties (``__e._simulation``), which
+    the routing rules and downstream scoring depend on.
+    """
+    envelope: dict = {
         "event": raw_text,
         "sourcetype": sourcetype,
         "host": host,
         "source": source,
         "time": _unix_ts(ts),
-        "_simulation": ecs_event.get("_simulation", {}),
     }
+    sim = ecs_event.get("_simulation", {})
+    if sim:
+        envelope["fields"] = {"_simulation": sim}
+        # Also keep top-level for backward compat with direct-ingest callers
+        envelope["_simulation"] = sim
+    return envelope
 
 
 # ---------------------------------------------------------------------------
