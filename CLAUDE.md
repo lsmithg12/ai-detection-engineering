@@ -346,7 +346,9 @@ You have access to GitHub MCP tools. Use them to:
 
 ## Autonomous Pipeline (Patronus)
 
-Five AI agents run the detection lifecycle end-to-end:
+### Current Architecture (5 Agents — Pre-Phase 4)
+
+Five AI agents currently run the detection lifecycle:
 
 | Agent | Role | Trigger | Key File |
 |-------|------|---------|----------|
@@ -355,6 +357,24 @@ Five AI agents run the detection lifecycle end-to-end:
 | Blue Team | Author Sigma rules, validate against ES, transpile | On red-team merge | `autonomous/orchestration/agents/blue_team_agent.py` |
 | Quality | Health scoring, daily monitoring reports | Daily | `autonomous/orchestration/agents/quality_agent.py` |
 | Security | PR gate — secrets, code security, rule quality | Every PR to main | `autonomous/orchestration/agents/security_agent.py` |
+
+### Target Architecture (10 Agents — Phase 4+)
+
+Phase 4 refactors into 10 specialized agents across 3 tiers plus an orchestrator.
+See `plans/architecture-scalable-detection-platform.md` for the full design.
+
+| Tier | Agent | Responsibility | Refactored From |
+|------|-------|---------------|-----------------|
+| **Foundation** | Data Onboarding | Log source lifecycle, schema mapping, data quality | New |
+| **Foundation** | Threat Intel | Multi-source intel ingestion, prioritization, aging | Intel agent |
+| **Foundation** | Coverage Analyst | Gap analysis, multi-threat coverage, prioritization | New |
+| **Content** | Detection Author | Write Sigma, EQL, threshold rules | Blue Team (authoring) |
+| **Content** | Scenario Engineer | Attack variants, evasion tests, kill chains | Red Team |
+| **Content** | Validation | Test detections across SIEMs, measure quality | Blue Team (validation) |
+| **Operations** | Deployment | Rule deployment, rollback, version management | Blue Team (deployment) |
+| **Operations** | Tuning | Monitor alert health, auto-tune FP, exclusions | Quality agent |
+| **Operations** | Security Gate | PR review, secrets scan, quality gates | Security agent |
+| **Orchestrator** | Coordinator | Route work, manage priorities, resolve conflicts | New |
 
 **Run agents locally**:
 ```bash
@@ -372,14 +392,16 @@ cd autonomous && python3 orchestration/cli.py status
 cd autonomous && python3 orchestration/cli.py deploy --validated
 ```
 
-### Current Detection State (2026-03-14)
+### Current Detection State (2026-03-15)
 
 - **29 Sigma rules** across 8 MITRE tactics (all have compiled Lucene + SPL)
 - **11 MONITORING** (deployed to Elastic + Splunk, all healthy)
 - **12 VALIDATED** (F1 >= 0.75, deploy-ready)
 - **2 AUTHORED** (pending validation)
 - **4 needs rework** (F1 < 0.75: T1003.001, T1021.001, T1105, T1059.003/T1082/T1190/T1204.002 are borderline)
+- **Threat actors**: 1 (Fawkes) — target: 4+ after Phase 4
 - **Fawkes coverage**: 13/21 core techniques (62%)
+- **Platforms**: Windows only — target: Win/Linux/Cloud/Network after Phase 5
 - **Validation method**: ES-based (Phase 2) + Cribl streaming path (Phase 3); local JSON fallback for CI
 
 See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed detection health.
@@ -391,10 +413,11 @@ See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed
 | Phase 1 | COMPLETED (PR #52) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54) | Elasticsearch-based SIEM validation |
 | Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl streaming validation + data source gaps |
-| Phase 4 | NOT STARTED | Agent intelligence upgrades (EQL, thresholds) |
-| Phase 5 | NOT STARTED | Coverage expansion to 75%+ Fawkes |
-| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
-| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+| Phase 4 | NOT STARTED | Scalable architecture: 10 agents, threat model registry, log source registry |
+| Phase 5 | NOT STARTED | Data engineering: multi-platform simulation, data quality, schema evolution |
+| Phase 6 | NOT STARTED | Detection content: content packs, EQL, threshold rules, evasion testing |
+| Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
+| Phase 8 | NOT STARTED | Advanced capabilities: Agent SDK, live C2, behavioral analytics, marketplace |
 
 See `ROADMAP.md` for details and `plans/` for step-by-step instructions.
 
