@@ -76,15 +76,19 @@
 
 ## Improvement Phases
 
+Phases 4-8 were redesigned on 2026-03-15 around real-world scaling concerns.
+See `plans/architecture-scalable-detection-platform.md` for the architectural vision.
+
 | Phase | Status | Key Deliverable |
 |-------|--------|-----------------|
 | Phase 1 | COMPLETED (PR #52, 2026-03-13) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54, 2026-03-14) | Elasticsearch-based SIEM validation |
 | Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl → ES streaming validation + data source gap tracking |
-| Phase 4 | NOT STARTED | Agent intelligence upgrades |
-| Phase 5 | NOT STARTED | Coverage expansion (75%+ Fawkes) |
-| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
-| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+| Phase 4 | NOT STARTED | Scalable architecture: 10 agents, threat model registry, log source registry |
+| Phase 5 | NOT STARTED | Data engineering: multi-platform simulation, data quality, schema evolution |
+| Phase 6 | NOT STARTED | Detection content: content packs, EQL, threshold rules, evasion testing |
+| Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
+| Phase 8 | NOT STARTED | Advanced capabilities: Agent SDK, live C2, behavioral analytics, marketplace |
 
 ## Token Budget
 
@@ -94,7 +98,8 @@
 
 ## Recent Changes
 
-- **PR #XX**: Phase 3 — Raw event converter, Cribl streaming validation, data source gap tracking
+- **PR #59**: Phase 3 — Raw event converter, Cribl streaming validation, data source gap tracking
+- **Architecture redesign**: Phases 4-8 rebuilt for enterprise scale (threat model registry, 10 agents, multi-platform)
 - **PR #54**: Phase 2 — Elasticsearch-based SIEM validation with local fallback
 - **PR #53**: Quality agent run — 11 detections healthy
 - **PR #52**: Phase 1 — Fixed stuck detections, compiled Lucene/SPL for all 29 rules
@@ -103,5 +108,5 @@
 - **PR #47**: Pipeline run — backslash normalization fix + blue-team authored 4 detections
 
 ---
-*Updated 2026-03-14. See `autonomous/orchestration/config.yml` for agent configuration.*
+*Updated 2026-03-15. See `autonomous/orchestration/config.yml` for agent configuration.*
 
