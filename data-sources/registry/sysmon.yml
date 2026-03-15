@@ -1,0 +1,173 @@
+source_id: sysmon
+vendor: Microsoft
+product: Sysmon
+version: "15.0"
+platform: windows
+transport: [wef, winlogbeat, cribl_forwarder]
+normalization: ecs
+status: active
+description: >
+  System Monitor (Sysmon) provides detailed information about process creations,
+  network connections, file changes, registry modifications, and more. Primary
+  endpoint telemetry source for Windows detection engineering.
+
+event_types:
+  eid_1:
+    description: "Process Creation"
+    ecs_category: process
+    ecs_type: start
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: CommandLine, ecs: process.command_line, type: keyword }
+      - { raw: ParentImage, ecs: process.parent.executable, type: keyword }
+      - { raw: ParentCommandLine, ecs: process.parent.command_line, type: keyword }
+      - { raw: User, ecs: user.name, type: keyword }
+      - { raw: ProcessId, ecs: process.pid, type: long }
+      - { raw: ParentProcessId, ecs: process.parent.pid, type: long }
+      - { raw: Hashes, ecs: process.hash.sha256, type: keyword }
+      - { raw: OriginalFileName, ecs: process.pe.original_file_name, type: keyword }
+      - { raw: IntegrityLevel, ecs: winlog.event_data.IntegrityLevel, type: keyword }
+    detection_value: critical
+    volume_estimate: "500/host/day"
+
+  eid_2:
+    description: "File Creation Time Changed"
+    ecs_category: file
+    ecs_type: change
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: TargetFilename, ecs: file.path, type: keyword }
+      - { raw: CreationUtcTime, ecs: file.created, type: date }
+      - { raw: PreviousCreationUtcTime, ecs: file.mtime, type: date }
+    detection_value: high
+    volume_estimate: "10/host/day"
+
+  eid_3:
+    description: "Network Connection"
+    ecs_category: network
+    ecs_type: connection
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: DestinationIp, ecs: destination.ip, type: ip }
+      - { raw: DestinationPort, ecs: destination.port, type: long }
+      - { raw: SourceIp, ecs: source.ip, type: ip }
+      - { raw: SourcePort, ecs: source.port, type: long }
+      - { raw: Protocol, ecs: network.transport, type: keyword }
+    detection_value: high
+    volume_estimate: "2000/host/day"
+
+  eid_7:
+    description: "Image Loaded"
+    ecs_category: library
+    ecs_type: start
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: ImageLoaded, ecs: file.name, type: keyword }
+      - { raw: Hashes, ecs: file.hash.sha256, type: keyword }
+      - { raw: Signed, ecs: file.code_signature.valid, type: boolean }
+      - { raw: Signature, ecs: file.code_signature.subject_name, type: keyword }
+    detection_value: high
+    volume_estimate: "5000/host/day"
+
+  eid_8:
+    description: "CreateRemoteThread"
+    ecs_category: process
+    ecs_type: start
+    fields:
+      - { raw: SourceImage, ecs: process.executable, type: keyword }
+      - { raw: TargetImage, ecs: winlog.event_data.TargetImage, type: keyword }
+      - { raw: StartAddress, ecs: winlog.event_data.StartAddress, type: keyword }
+      - { raw: StartModule, ecs: winlog.event_data.StartModule, type: keyword }
+      - { raw: StartFunction, ecs: winlog.event_data.StartFunction, type: keyword }
+    detection_value: critical
+    volume_estimate: "5/host/day"
+
+  eid_10:
+    description: "Process Access"
+    ecs_category: process
+    ecs_type: access
+    fields:
+      - { raw: SourceImage, ecs: process.executable, type: keyword }
+      - { raw: TargetImage, ecs: winlog.event_data.TargetImage, type: keyword }
+      - { raw: GrantedAccess, ecs: winlog.event_data.GrantedAccess, type: keyword }
+      - { raw: CallTrace, ecs: winlog.event_data.CallTrace, type: keyword }
+    detection_value: critical
+    volume_estimate: "200/host/day"
+
+  eid_11:
+    description: "File Created"
+    ecs_category: file
+    ecs_type: creation
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: TargetFilename, ecs: file.path, type: keyword }
+    detection_value: medium
+    volume_estimate: "1000/host/day"
+
+  eid_13:
+    description: "Registry Value Set"
+    ecs_category: registry
+    ecs_type: change
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: TargetObject, ecs: registry.path, type: keyword }
+      - { raw: Details, ecs: registry.data.strings, type: keyword }
+      - { raw: EventType, ecs: registry.data.type, type: keyword }
+    detection_value: high
+    volume_estimate: "300/host/day"
+
+  eid_17:
+    description: "Pipe Created"
+    ecs_category: file
+    ecs_type: creation
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: PipeName, ecs: file.name, type: keyword }
+    detection_value: medium
+    volume_estimate: "50/host/day"
+
+  eid_18:
+    description: "Pipe Connected"
+    ecs_category: file
+    ecs_type: access
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: PipeName, ecs: file.name, type: keyword }
+    detection_value: medium
+    volume_estimate: "50/host/day"
+
+  eid_22:
+    description: "DNS Query"
+    ecs_category: network
+    ecs_type: protocol
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: QueryName, ecs: dns.question.name, type: keyword }
+      - { raw: QueryResults, ecs: dns.answers.data, type: keyword }
+    detection_value: high
+    volume_estimate: "500/host/day"
+
+  eid_23:
+    description: "File Delete (Archived)"
+    ecs_category: file
+    ecs_type: deletion
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: TargetFilename, ecs: file.path, type: keyword }
+    detection_value: medium
+    volume_estimate: "100/host/day"
+
+  eid_25:
+    description: "Process Tampering"
+    ecs_category: process
+    ecs_type: change
+    fields:
+      - { raw: Image, ecs: process.executable, type: keyword }
+      - { raw: Type, ecs: winlog.event_data.Type, type: keyword }
+    detection_value: critical
+    volume_estimate: "1/host/day"
+
+health_check:
+  method: query_latest_event
+  query: "agent.type:winlogbeat AND winlog.channel:\"Microsoft-Windows-Sysmon/Operational\""
+  stale_threshold: "15m"

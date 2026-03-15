@@ -1,0 +1,71 @@
+# Threat Model Registry Schema
+# All threat model files in threat-intel/models/ MUST conform to this structure.
+# Used by intel_agent.py, coverage_agent.py, and cli.py for multi-threat analysis.
+
+version: "1.0"
+description: "Schema for threat model definitions"
+
+required_fields:
+  - name
+  - type
+  - platform
+  - priority
+  - techniques
+
+field_definitions:
+  name:
+    type: string
+    description: "Human-readable name of the threat model"
+    examples: ["Fawkes C2 Agent", "Scattered Spider", "LockBit 3.0"]
+
+  type:
+    type: string
+    enum: [c2_framework, apt_group, ransomware, commodity, insider_threat]
+    description: "Category of threat actor or tooling"
+
+  platform:
+    type: list
+    items: [windows, linux, macos, cloud, identity, network]
+    description: "Platforms this threat operates on"
+
+  priority:
+    type: string
+    enum: [critical, high, medium, low]
+    description: "Organizational priority for detection coverage"
+
+  source:
+    type: string
+    description: "Primary reference URL"
+
+  last_updated:
+    type: date
+    description: "ISO date when this model was last reviewed"
+
+  techniques:
+    type: map
+    description: "Map of MITRE ATT&CK technique IDs to technique details"
+    key_pattern: "T\\d{4}(\\.\\d{3})?"
+    value_fields:
+      description:
+        type: string
+        required: true
+      commands:
+        type: list
+        description: "Tool-specific commands (optional, for C2 frameworks)"
+      artifacts:
+        type: list
+        items: [process_create, process_access, process_inject, create_remote_thread,
+                image_load, file_write, file_create, file_delete, file_modify,
+                registry_write, network_connection, logon, token_steal, dns_query,
+                named_pipe, service_install, script_block, wmi_event]
+      data_sources:
+        type: list
+        description: "Required data sources as source_id:event_type (e.g., sysmon:eid_8)"
+      detection_complexity:
+        type: string
+        enum: [low, medium, high, expert]
+        description: "How difficult it is to write a reliable detection"
+      priority_override:
+        type: string
+        enum: [critical, high, medium, low]
+        description: "Per-technique priority (overrides model default if set)"

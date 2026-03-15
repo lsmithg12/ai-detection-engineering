@@ -1,0 +1,96 @@
+name: "LockBit 3.0 (Black)"
+type: ransomware
+platform: [windows, linux]
+priority: high
+source: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a"
+last_updated: "2026-03-15"
+description: >
+  Ransomware-as-a-Service (RaaS) operation. Most prolific ransomware group
+  by victim count. Affiliates use diverse initial access methods.
+  LockBit 3.0 (Black) variant includes anti-analysis, self-propagation,
+  and ESXi targeting.
+
+techniques:
+  T1190:
+    description: "Exploit Public-Facing Application (common affiliate entry)"
+    commands: []
+    artifacts: [process_create, network_connection]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_3", "network:zeek_conn"]
+    detection_complexity: medium
+
+  T1133:
+    description: "External Remote Services (RDP/VPN with stolen creds)"
+    commands: []
+    artifacts: [logon, network_connection]
+    data_sources: ["windows_security:eid_4624", "sysmon:eid_3"]
+    detection_complexity: medium
+
+  T1059.001:
+    description: "PowerShell for Cobalt Strike Beacon Deployment"
+    commands: []
+    artifacts: [process_create, script_block]
+    data_sources: ["sysmon:eid_1", "windows_security:eid_4104"]
+    detection_complexity: low
+
+  T1059.003:
+    description: "cmd.exe for Batch Script Execution"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1047:
+    description: "WMI for Lateral Execution"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: medium
+
+  T1053.005:
+    description: "Scheduled Task for Persistence and Execution"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1070.001:
+    description: "Clear Windows Event Logs"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1490:
+    description: "Inhibit System Recovery (vssadmin, bcdedit, wbadmin)"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1486:
+    description: "Data Encrypted for Impact (LockBit 3.0 encryptor)"
+    commands: []
+    artifacts: [file_write, process_create]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_11"]
+    detection_complexity: medium
+
+  T1027:
+    description: "Obfuscated Files (packed/encrypted payloads)"
+    commands: []
+    artifacts: [file_write, process_create]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_11"]
+    detection_complexity: medium
+
+  T1562.001:
+    description: "Disable or Modify Tools (kill AV/EDR processes)"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: medium
+
+  T1021.002:
+    description: "SMB/Windows Admin Shares for Lateral Movement"
+    commands: []
+    artifacts: [logon, network_connection]
+    data_sources: ["windows_security:eid_4624", "sysmon:eid_3"]
+    detection_complexity: medium

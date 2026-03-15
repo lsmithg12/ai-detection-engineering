@@ -1,0 +1,56 @@
+source_id: aws_cloudtrail
+vendor: Amazon Web Services
+product: "CloudTrail"
+platform: cloud
+transport: [s3, api_poll, filebeat]
+normalization: ecs
+status: planned
+description: >
+  AWS CloudTrail provides API call logging for all AWS services.
+  Essential for detecting unauthorized access, privilege escalation,
+  and data exfiltration in cloud environments.
+  Status: PLANNED — not yet deployed in lab environment.
+
+event_types:
+  console_login:
+    description: "AWS Console Sign-In"
+    ecs_category: authentication
+    fields:
+      - { raw: userIdentity.arn, ecs: user.id, type: keyword }
+      - { raw: sourceIPAddress, ecs: source.ip, type: ip }
+      - { raw: responseElements.ConsoleLogin, ecs: event.outcome, type: keyword }
+    detection_value: high
+    volume_estimate: "10/account/day"
+  assume_role:
+    description: "STS AssumeRole"
+    ecs_category: iam
+    fields:
+      - { raw: userIdentity.arn, ecs: user.id, type: keyword }
+      - { raw: requestParameters.roleArn, ecs: user.target.id, type: keyword }
+    detection_value: high
+    volume_estimate: "100/account/day"
+  create_user:
+    description: "IAM CreateUser"
+    ecs_category: iam
+    detection_value: critical
+    volume_estimate: "0.1/account/day"
+  run_instances:
+    description: "EC2 RunInstances"
+    ecs_category: host
+    detection_value: medium
+    volume_estimate: "5/account/day"
+  put_bucket_policy:
+    description: "S3 PutBucketPolicy"
+    ecs_category: configuration
+    detection_value: high
+    volume_estimate: "0.5/account/day"
+  stop_logging:
+    description: "CloudTrail StopLogging"
+    ecs_category: configuration
+    detection_value: critical
+    volume_estimate: "0.01/account/day"
+
+health_check:
+  method: query_latest_event
+  query: "event.module:aws AND event.dataset:aws.cloudtrail"
+  stale_threshold: "24h"

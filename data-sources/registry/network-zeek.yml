@@ -1,0 +1,85 @@
+source_id: network_zeek
+vendor: "Zeek Project"
+product: "Zeek (Bro)"
+platform: network
+transport: [syslog, filebeat, cribl_forwarder]
+normalization: ecs
+status: planned
+description: >
+  Zeek (formerly Bro) network security monitor provides rich protocol-level
+  metadata for network traffic analysis. Generates connection logs, DNS queries,
+  HTTP requests, TLS sessions, and file transfer metadata.
+  Status: PLANNED — not yet deployed in lab environment.
+
+event_types:
+  conn:
+    description: "Connection Log"
+    ecs_category: network
+    ecs_type: connection
+    fields:
+      - { raw: id.orig_h, ecs: source.ip, type: ip }
+      - { raw: id.resp_h, ecs: destination.ip, type: ip }
+      - { raw: id.orig_p, ecs: source.port, type: long }
+      - { raw: id.resp_p, ecs: destination.port, type: long }
+      - { raw: proto, ecs: network.transport, type: keyword }
+      - { raw: duration, ecs: event.duration, type: long }
+      - { raw: orig_bytes, ecs: source.bytes, type: long }
+      - { raw: resp_bytes, ecs: destination.bytes, type: long }
+    detection_value: high
+    volume_estimate: "10000/sensor/day"
+  dns:
+    description: "DNS Queries"
+    ecs_category: network
+    ecs_type: protocol
+    fields:
+      - { raw: query, ecs: dns.question.name, type: keyword }
+      - { raw: qtype_name, ecs: dns.question.type, type: keyword }
+      - { raw: answers, ecs: dns.answers.data, type: keyword }
+    detection_value: high
+    volume_estimate: "5000/sensor/day"
+  http:
+    description: "HTTP Requests"
+    ecs_category: network
+    ecs_type: protocol
+    fields:
+      - { raw: host, ecs: url.domain, type: keyword }
+      - { raw: uri, ecs: url.path, type: keyword }
+      - { raw: method, ecs: http.request.method, type: keyword }
+      - { raw: user_agent, ecs: user_agent.original, type: keyword }
+      - { raw: status_code, ecs: http.response.status_code, type: long }
+    detection_value: high
+    volume_estimate: "5000/sensor/day"
+  ssl:
+    description: "TLS/SSL Sessions"
+    ecs_category: network
+    ecs_type: protocol
+    fields:
+      - { raw: server_name, ecs: tls.client.server_name, type: keyword }
+      - { raw: ja3, ecs: tls.client.ja3, type: keyword }
+      - { raw: ja3s, ecs: tls.server.ja3s, type: keyword }
+      - { raw: version, ecs: tls.version, type: keyword }
+    detection_value: high
+    volume_estimate: "3000/sensor/day"
+  files:
+    description: "File Transfer Metadata"
+    ecs_category: file
+    fields:
+      - { raw: filename, ecs: file.name, type: keyword }
+      - { raw: mime_type, ecs: file.mime_type, type: keyword }
+      - { raw: md5, ecs: file.hash.md5, type: keyword }
+      - { raw: total_bytes, ecs: file.size, type: long }
+    detection_value: medium
+    volume_estimate: "1000/sensor/day"
+  notice:
+    description: "Zeek Notices/Alerts"
+    ecs_category: intrusion_detection
+    fields:
+      - { raw: note, ecs: rule.name, type: keyword }
+      - { raw: msg, ecs: message, type: keyword }
+    detection_value: critical
+    volume_estimate: "10/sensor/day"
+
+health_check:
+  method: query_latest_event
+  query: "event.module:zeek"
+  stale_threshold: "15m"

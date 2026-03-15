@@ -1,0 +1,32 @@
+source_id: powershell
+vendor: Microsoft
+product: "PowerShell"
+platform: windows
+transport: [wef, winlogbeat]
+normalization: ecs
+status: active
+description: >
+  PowerShell ScriptBlock and Module logging provides visibility into
+  PowerShell execution, including deobfuscated script content. Critical
+  for detecting fileless malware, downloaders, and living-off-the-land attacks.
+
+event_types:
+  eid_4104:
+    description: "ScriptBlock Logging"
+    ecs_category: process
+    fields:
+      - { raw: ScriptBlockText, ecs: powershell.file.script_block_text, type: keyword }
+      - { raw: ScriptBlockId, ecs: powershell.file.script_block_id, type: keyword }
+      - { raw: Path, ecs: file.path, type: keyword }
+    detection_value: critical
+    volume_estimate: "100/host/day"
+  eid_4103:
+    description: "Module Logging"
+    ecs_category: process
+    detection_value: medium
+    volume_estimate: "200/host/day"
+
+health_check:
+  method: query_latest_event
+  query: "winlog.channel:\"Microsoft-Windows-PowerShell/Operational\" AND event.code:4104"
+  stale_threshold: "1h"

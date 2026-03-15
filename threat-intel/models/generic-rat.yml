@@ -1,0 +1,88 @@
+name: "Generic Remote Access Trojan"
+type: commodity
+platform: [windows]
+priority: medium
+source: "https://attack.mitre.org/software/"
+last_updated: "2026-03-15"
+description: >
+  Baseline commodity RAT capabilities shared across most remote access trojans
+  (AsyncRAT, QuasarRAT, njRAT, DarkComet, etc.). Represents the minimum
+  detection coverage needed against commodity threats.
+
+techniques:
+  T1059.001:
+    description: "PowerShell Downloader/Stager"
+    commands: []
+    artifacts: [process_create, script_block, network_connection]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_3", "windows_security:eid_4104"]
+    detection_complexity: low
+
+  T1059.003:
+    description: "cmd.exe Execution"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1547.001:
+    description: "Registry Run Key Persistence"
+    commands: []
+    artifacts: [registry_write]
+    data_sources: ["sysmon:eid_13"]
+    detection_complexity: low
+
+  T1053.005:
+    description: "Scheduled Task Persistence"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1082:
+    description: "System Information Discovery"
+    commands: []
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1071.001:
+    description: "HTTP/HTTPS C2 Communication"
+    commands: []
+    artifacts: [network_connection, dns_query]
+    data_sources: ["sysmon:eid_3", "sysmon:eid_22"]
+    detection_complexity: medium
+
+  T1105:
+    description: "Ingress Tool Transfer"
+    commands: []
+    artifacts: [network_connection, file_write]
+    data_sources: ["sysmon:eid_3", "sysmon:eid_11"]
+    detection_complexity: medium
+
+  T1056.001:
+    description: "Keylogging"
+    commands: []
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1113:
+    description: "Screen Capture"
+    commands: []
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1115:
+    description: "Clipboard Data Collection"
+    commands: []
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1204.002:
+    description: "Malicious File Execution (User Execution)"
+    commands: []
+    artifacts: [process_create, file_write]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_11"]
+    detection_complexity: low

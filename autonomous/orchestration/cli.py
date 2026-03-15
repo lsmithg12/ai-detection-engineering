@@ -14,7 +14,9 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Allow running from repo root or autonomous/
@@ -253,6 +255,164 @@ def cmd_data_sources(args):
                       f"[{sim} {cribl}] -> {techs}")
 
 
+def cmd_queue(args):
+    """Show coordinator work queue."""
+    from orchestration.coordinator import Coordinator
+    sm = StateManager()
+    coord = Coordinator(sm)
+    status = coord.status()
+    print(f"\n  Work Queue: {status['queue_size']} items")
+    for agent, count in status["by_agent"].items():
+        print(f"    {agent}: {count} items")
+    if status["top_priority"]:
+        print(f"  Top priority: {status['top_priority']}")
+    budgets = status.get("budget_remaining", {})
+    if budgets:
+        print("\n  Budget remaining (tokens):")
+        for agent, tokens in sorted(budgets.items()):
+            print(f"    {agent}: {tokens:,}")
+
+
+def cmd_coverage(args):
+    """Generate and display coverage analysis."""
+    try:
+        from orchestration.agents.coverage_agent import run as run_coverage
+        sm = StateManager()
+        result = run_coverage(sm)
+        print("\n  Coverage report generated.")
+        if isinstance(result, dict):
+            print(f"  Techniques tracked: {result.get('total_techniques', '?')}")
+            print(f"  Detection coverage: {result.get('coverage_pct', '?')}%")
+            if result.get("top_gap"):
+                print(f"  Top gap: {result['top_gap']}")
+    except ImportError:
+        # Fallback: read coverage from detection requests
+        sm = StateManager()
+        summary = sm.status_summary()
+        total = sum(len(v) for v in summary.values())
+        deployed = len(summary.get("DEPLOYED", [])) + len(summary.get("MONITORING", []))
+        validated = len(summary.get("VALIDATED", []))
+        print(f"\n  Coverage Summary (from detection requests):")
+        print(f"    Total techniques tracked: {total}")
+        print(f"    Deployed + Monitoring: {deployed}")
+        print(f"    Validated (deploy-ready): {validated}")
+        if total > 0:
+            print(f"    Coverage rate: {(deployed + validated) / total:.0%}")
+
+
+def cmd_feedback(args):
+    """Record or view analyst feedback."""
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    feedback_path = repo_root / "monitoring" / "feedback" / "verdicts.jsonl"
+
+    if args.show:
+        if not feedback_path.exists():
+            print("  No feedback recorded yet.")
+            return
+        entries = []
+        with open(feedback_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    entry = json.loads(line)
+                    if not args.technique_id or entry.get("technique_id") == args.technique_id:
+                        entries.append(entry)
+        if not entries:
+            if args.technique_id:
+                print(f"  No feedback for {args.technique_id}")
+            else:
+                print("  No feedback.")
+            return
+        for e in entries[-20:]:
+            print(f"  [{e.get('timestamp', '')}] {e.get('technique_id', '')} "
+                  f"{e.get('verdict', '')} -- {e.get('reason', '')}")
+    elif args.summary:
+        if not feedback_path.exists():
+            print("  No feedback recorded yet.")
+            return
+        by_technique = {}
+        with open(feedback_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    entry = json.loads(line)
+                    tid = entry.get("technique_id", "")
+                    by_technique.setdefault(tid, {"tp": 0, "fp": 0, "fn": 0})
+                    verdict = entry.get("verdict", "")
+                    if verdict in by_technique[tid]:
+                        by_technique[tid][verdict] += 1
+        print("\n  Feedback Summary:")
+        print(f"  {'Technique':<12} {'TP':>4} {'FP':>4} {'FN':>4} {'FP Rate':>8}")
+        for tid, counts in sorted(by_technique.items()):
+            total = counts["tp"] + counts["fp"]
+            fp_rate = counts["fp"] / total if total > 0 else 0
+            print(f"  {tid:<12} {counts['tp']:>4} {counts['fp']:>4} "
+                  f"{counts['fn']:>4} {fp_rate:>8.1%}")
+    else:
+        # Record a verdict
+        if not args.technique_id or not args.verdict:
+            print("  Usage: feedback T1055.001 --verdict fp --reason 'McAfee scan'")
+            return
+        feedback_path.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "technique_id": args.technique_id,
+            "verdict": args.verdict,
+            "reason": args.reason or "",
+            "analyst": os.environ.get("USER", os.environ.get("USERNAME", "unknown")),
+        }
+        with open(feedback_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+        print(f"  Recorded: {args.technique_id} = {args.verdict}")
+
+
+def cmd_compliance(args):
+    """List compliance controls."""
+    import yaml
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    detections_dir = repo_root / "detections"
+
+    controls = {}
+    for rule_file in detections_dir.rglob("*.yml"):
+        if "compiled" in str(rule_file):
+            continue
+        try:
+            with open(rule_file, encoding="utf-8") as f:
+                rule = yaml.safe_load(f)
+            if not isinstance(rule, dict):
+                continue
+            custom = rule.get("custom", {})
+            if not custom:
+                continue
+            for ctrl in custom.get("compliance_controls", []):
+                framework = ctrl.split("-")[0] if "-" in ctrl else ctrl
+                controls.setdefault(framework, []).append({
+                    "control": ctrl,
+                    "rule": rule.get("title", rule_file.stem),
+                    "file": str(rule_file.relative_to(repo_root)),
+                })
+        except Exception:
+            continue
+
+    if not controls:
+        print("  No compliance controls mapped yet.")
+        print("  Add compliance_controls to Sigma rules under the 'custom' section.")
+        return
+
+    if args.framework:
+        matched = controls.get(args.framework, [])
+        if not matched:
+            print(f"  No detections mapped to {args.framework}")
+            return
+        print(f"\n  {args.framework} Controls ({len(matched)} detections):")
+        for c in matched:
+            print(f"    {c['control']}: {c['rule']}")
+    else:
+        print("\n  Compliance Coverage:")
+        for fw, items in sorted(controls.items()):
+            print(f"    {fw}: {len(items)} detections")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patronus",
@@ -266,7 +426,9 @@ def main():
     # pending
     p_pending = sub.add_parser("pending", help="Show pending work for an agent")
     p_pending.add_argument("--agent", required=True,
-                           choices=["intel", "red-team", "blue-team", "quality", "security"])
+                           choices=["intel", "red-team", "author", "validation",
+                                    "deployment", "tuning", "coverage", "security",
+                                    "blue-team", "quality"])
 
     # get
     p_get = sub.add_parser("get", help="Show a single detection request")
@@ -301,6 +463,24 @@ def main():
     # data-sources (Phase 3)
     sub.add_parser("data-sources", help="Report data source gap status")
 
+    # queue (Phase 4 -- coordinator)
+    sub.add_parser("queue", help="Show coordinator work queue")
+
+    # coverage (Phase 4 -- coverage analysis)
+    sub.add_parser("coverage", help="Generate and display coverage analysis")
+
+    # feedback (Phase 4 -- analyst feedback loop)
+    p_fb = sub.add_parser("feedback", help="Record or view analyst feedback")
+    p_fb.add_argument("technique_id", nargs="?")
+    p_fb.add_argument("--verdict", choices=["tp", "fp", "fn"])
+    p_fb.add_argument("--reason", default="")
+    p_fb.add_argument("--show", action="store_true")
+    p_fb.add_argument("--summary", action="store_true")
+
+    # compliance (Phase 4 -- compliance control mapping)
+    p_comp = sub.add_parser("compliance", help="List compliance controls")
+    p_comp.add_argument("--framework", help="Filter by framework (e.g., PCI-DSS)")
+
     args = parser.parse_args()
     cmd_map = {
         "status": cmd_status,
@@ -311,6 +491,10 @@ def main():
         "update": cmd_update,
         "deploy": cmd_deploy,
         "data-sources": cmd_data_sources,
+        "queue": cmd_queue,
+        "coverage": cmd_coverage,
+        "feedback": cmd_feedback,
+        "compliance": cmd_compliance,
     }
     cmd_map[args.command](args)
 

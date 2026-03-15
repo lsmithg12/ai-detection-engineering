@@ -33,6 +33,8 @@ FAWKES_TTP_PATH = REPO_ROOT / "threat-intel" / "fawkes" / "fawkes-ttp-mapping.md
 AGENT_NAME = "intel"
 MAX_REPORTS = 5
 
+MODELS_DIR = REPO_ROOT / "threat-intel" / "models"
+
 # Search query templates — {month} and {year} are filled at runtime
 SEARCH_QUERIES = [
     "threat actor TTPs {month} {year}",
@@ -123,6 +125,35 @@ def _today() -> str:
 def _current_month_year() -> tuple[str, str]:
     now = datetime.datetime.now(datetime.timezone.utc)
     return now.strftime("%B"), str(now.year)
+
+
+def load_threat_model_registry() -> dict[str, list[str]]:
+    """Load all threat models from threat-intel/models/ and return a reverse index.
+
+    Returns: {technique_id -> [model_name, ...]}
+    Allows process_techniques() to tag which threat actors use each technique.
+    """
+    if not MODELS_DIR.exists():
+        return {}
+
+    technique_to_actors: dict[str, list[str]] = {}
+    for path in sorted(MODELS_DIR.glob("*.yml")):
+        if path.name == "schema.yml":
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                model = yaml.safe_load(f)
+            if not model or "techniques" not in model:
+                continue
+            actor_name = model.get("name", path.stem)
+            for tid in model["techniques"]:
+                technique_to_actors.setdefault(tid, []).append(actor_name)
+        except Exception as e:
+            print(f"  [intel] Warning: could not load model {path.name}: {e}")
+
+    print(f"  [intel] Registry: {len(technique_to_actors)} techniques across "
+          f"{sum(1 for p in MODELS_DIR.glob('*.yml') if p.name != 'schema.yml')} threat models")
+    return technique_to_actors
 
 
 def load_fawkes_techniques() -> dict[str, dict]:
@@ -238,6 +269,7 @@ def process_techniques(
     intel_report_path: str,
     fawkes_map: dict[str, dict],
     existing: set[str],
+    threat_actor_registry: dict[str, list[str]] | None = None,
 ) -> dict:
     """
     Process extracted techniques: create detection requests for new ones,
@@ -268,6 +300,14 @@ def process_techniques(
             priority = "critical"
             stats["fawkes_overlap"] += 1
 
+        # Build threat_actors list from registry (all models that reference this technique)
+        threat_actors: list[str] = []
+        if threat_actor_registry:
+            threat_actors = threat_actor_registry.get(tid, [])
+        # Fawkes is always in scope even if not in registry yet
+        if fawkes_info and "Fawkes C2 Agent" not in threat_actors:
+            threat_actors.append("Fawkes C2 Agent")
+
         try:
             state_manager.create(
                 technique_id=tid,
@@ -275,6 +315,11 @@ def process_techniques(
                 priority=priority,
                 intel_report=str(intel_report_path),
                 requested_by=AGENT_NAME,
+            )
+            # Tag threat actors and Fawkes commands
+            state_manager.update(
+                tid, agent=AGENT_NAME,
+                threat_actors=threat_actors,
             )
             # If we have Fawkes commands, update the request
             if fawkes_info:
@@ -469,9 +514,10 @@ def run(state_manager: StateManager) -> dict:
     if parsing_lessons:
         print(f"  [intel] {len(parsing_lessons)} parsing lessons loaded")
 
-    # 2. Load Fawkes TTP mapping for cross-reference
+    # 2. Load Fawkes TTP mapping for cross-reference + full threat model registry
     fawkes_map = load_fawkes_techniques()
     print(f"  [intel] Loaded {len(fawkes_map)} Fawkes technique mappings")
+    threat_actor_registry = load_threat_model_registry()
 
     # 3. Get existing coverage
     existing = get_existing_coverage(state_manager)
@@ -560,6 +606,7 @@ def run(state_manager: StateManager) -> dict:
                 str(report_path.relative_to(REPO_ROOT)),
                 fawkes_map,
                 existing,
+                threat_actor_registry=threat_actor_registry,
             )
 
             total_stats["total_new"] += stats["new_techniques"]

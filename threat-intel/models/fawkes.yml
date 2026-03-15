@@ -1,0 +1,158 @@
+name: "Fawkes C2 Agent"
+type: c2_framework
+platform: [windows, linux, macos]
+priority: critical
+source: "https://github.com/galoryber/fawkes"
+last_updated: "2026-03-15"
+version: "latest"
+description: >
+  Golang-based Mythic C2 agent with 59 commands spanning the full ATT&CK kill chain.
+  Primary adversary for this detection engineering lab.
+
+techniques:
+  T1055.001:
+    description: "CreateRemoteThread Process Injection"
+    commands: [vanilla-injection]
+    artifacts: [process_access, create_remote_thread]
+    data_sources: ["sysmon:eid_8", "sysmon:eid_10"]
+    detection_complexity: medium
+
+  T1055.004:
+    description: "Asynchronous Procedure Call (APC) Injection"
+    commands: [apc-injection]
+    artifacts: [process_access]
+    data_sources: ["sysmon:eid_10"]
+    detection_complexity: high
+
+  T1055.012:
+    description: "Threadless Process Injection"
+    commands: [threadless-inject]
+    artifacts: [image_load]
+    data_sources: ["sysmon:eid_7", "etw:microsoft-windows-threat-intelligence"]
+    detection_complexity: expert
+
+  T1055.013:
+    description: "Opus Injection (KernelCallbackTable)"
+    commands: [opus-injection]
+    artifacts: [process_access]
+    data_sources: ["etw:microsoft-windows-threat-intelligence"]
+    detection_complexity: expert
+
+  T1055.015:
+    description: "PoolParty Injection (Thread Pool Variants)"
+    commands: [poolparty-injection]
+    artifacts: [process_access]
+    data_sources: ["etw:microsoft-windows-threat-intelligence"]
+    detection_complexity: expert
+
+  T1059.001:
+    description: "PowerShell Execution with Bypass Flags"
+    commands: [powershell]
+    artifacts: [process_create, script_block]
+    data_sources: ["sysmon:eid_1", "windows_security:eid_4104"]
+    detection_complexity: low
+
+  T1059.003:
+    description: "Windows Command Shell Execution"
+    commands: [run, shell, spawn, inline-execute]
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1047:
+    description: "WMI Execution"
+    commands: [wmi]
+    artifacts: [process_create, wmi_event]
+    data_sources: ["sysmon:eid_1", "sysmon:eid_19", "sysmon:eid_20", "sysmon:eid_21"]
+    detection_complexity: medium
+
+  T1053.005:
+    description: "Scheduled Task Persistence"
+    commands: [schtask]
+    artifacts: [process_create]
+    data_sources: ["sysmon:eid_1"]
+    detection_complexity: low
+
+  T1547.001:
+    description: "Registry Run Key Persistence"
+    commands: ["persist -method registry"]
+    artifacts: [registry_write]
+    data_sources: ["sysmon:eid_13"]
+    detection_complexity: low
+
+  T1543.003:
+    description: "Windows Service Persistence"
+    commands: ["service -action create"]
+    artifacts: [service_install, process_create]
+    data_sources: ["windows_system:eid_7045", "sysmon:eid_1"]
+    detection_complexity: low
+
+  T1562.001:
+    description: "AMSI/ETW Patching"
+    commands: [autopatch, start-clr]
+    artifacts: [image_load]
+    data_sources: ["sysmon:eid_7"]
+    detection_complexity: medium
+
+  T1134.001:
+    description: "Token Impersonation/Theft"
+    commands: [steal-token]
+    artifacts: [process_access, token_steal]
+    data_sources: ["sysmon:eid_10"]
+    detection_complexity: medium
+
+  T1134.003:
+    description: "Make and Impersonate Token"
+    commands: [make-token]
+    artifacts: [logon]
+    data_sources: ["windows_security:eid_4624"]
+    detection_complexity: medium
+
+  T1056.001:
+    description: "Keylogging via Low-Level Hook"
+    commands: [keylog]
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1070.006:
+    description: "Timestomping"
+    commands: [timestomp]
+    artifacts: [file_modify]
+    data_sources: ["sysmon:eid_2"]
+    detection_complexity: medium
+
+  T1071.001:
+    description: "HTTP/HTTPS C2 Beaconing"
+    commands: [sleep]
+    artifacts: [network_connection]
+    data_sources: ["sysmon:eid_3", "sysmon:eid_22"]
+    detection_complexity: medium
+
+  T1090.001:
+    description: "SOCKS5 Proxy for Lateral Movement"
+    commands: [socks5]
+    artifacts: [network_connection]
+    data_sources: ["sysmon:eid_3", "network:zeek_conn"]
+    detection_complexity: high
+
+  T1115:
+    description: "Clipboard Data Collection"
+    commands: [clipboard]
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1113:
+    description: "Screen Capture"
+    commands: [screenshot]
+    artifacts: []
+    data_sources: ["elastic_endpoint:api_hook"]
+    detection_complexity: high
+
+  T1027.001:
+    description: "Binary Padding/Inflation"
+    commands: [binary-inflate]
+    artifacts: [file_write]
+    data_sources: ["sysmon:eid_11"]
+    detection_complexity: medium

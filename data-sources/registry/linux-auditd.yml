@@ -1,0 +1,63 @@
+source_id: linux_auditd
+vendor: Linux
+product: "auditd"
+platform: linux
+transport: [syslog, filebeat, cribl_forwarder]
+normalization: ecs
+status: planned
+description: >
+  Linux Audit Daemon (auditd) provides system call auditing for Linux systems.
+  Captures process execution, file access, network connections, and user
+  authentication events. Primary telemetry source for Linux detection engineering.
+  Status: PLANNED — not yet deployed in lab environment.
+
+event_types:
+  execve:
+    description: "Process Execution"
+    ecs_category: process
+    ecs_type: start
+    fields:
+      - { raw: exe, ecs: process.executable, type: keyword }
+      - { raw: comm, ecs: process.name, type: keyword }
+      - { raw: a0, ecs: process.args, type: keyword }
+      - { raw: uid, ecs: user.id, type: keyword }
+      - { raw: ppid, ecs: process.parent.pid, type: long }
+    detection_value: critical
+    volume_estimate: "500/host/day"
+  connect:
+    description: "Network Connection"
+    ecs_category: network
+    ecs_type: connection
+    fields:
+      - { raw: saddr, ecs: destination.ip, type: ip }
+      - { raw: exe, ecs: process.executable, type: keyword }
+    detection_value: high
+    volume_estimate: "1000/host/day"
+  open:
+    description: "File Open"
+    ecs_category: file
+    ecs_type: access
+    fields:
+      - { raw: name, ecs: file.path, type: keyword }
+      - { raw: exe, ecs: process.executable, type: keyword }
+    detection_value: medium
+    volume_estimate: "5000/host/day"
+  user_auth:
+    description: "User Authentication"
+    ecs_category: authentication
+    fields:
+      - { raw: acct, ecs: user.name, type: keyword }
+      - { raw: addr, ecs: source.ip, type: ip }
+      - { raw: res, ecs: event.outcome, type: keyword }
+    detection_value: high
+    volume_estimate: "50/host/day"
+  anom_promiscuous:
+    description: "Promiscuous Mode"
+    ecs_category: network
+    detection_value: high
+    volume_estimate: "0.1/host/day"
+
+health_check:
+  method: query_latest_event
+  query: "event.module:auditd"
+  stale_threshold: "15m"

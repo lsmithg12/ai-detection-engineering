@@ -133,3 +133,18 @@ valid_transitions:
   MONITORING: [TUNED, AUTHORED]
   TUNED: [MONITORING, RETIRED]
   RETIRED: []
+
+# Phase 4: Agent-to-state mapping for query_pending
+# Each agent polls for detection requests in these states
+agent_pending_states:
+  intel: [REQUESTED]
+  red-team: [REQUESTED]
+  author: [SCENARIO_BUILT]
+  validation: [AUTHORED]
+  deployment: [VALIDATED]
+  tuning: [DEPLOYED, MONITORING]
+  coverage: []        # Scheduled agent, no pending state
+  security: []        # Triggered by PR, no pending state
+  # Legacy aliases
+  blue-team: [SCENARIO_BUILT, AUTHORED]
+  quality: [DEPLOYED, MONITORING]

@@ -1,0 +1,92 @@
+# Log Source Registry Schema
+# All source definition files in data-sources/registry/ MUST conform to this structure.
+# Used by coverage_agent.py, validation.py, and quality_agent.py for source health checks.
+
+version: "1.0"
+description: "Schema for log source definitions"
+
+required_fields:
+  - source_id
+  - vendor
+  - product
+  - platform
+  - event_types
+
+field_definitions:
+  source_id:
+    type: string
+    description: "Unique identifier, matches data_sources references in threat models"
+    examples: ["sysmon", "windows_security", "aws_cloudtrail"]
+    pattern: "[a-z][a-z0-9_]+"
+
+  vendor:
+    type: string
+    description: "Vendor or project name"
+
+  product:
+    type: string
+    description: "Product name"
+
+  version:
+    type: string
+    description: "Minimum version for listed capabilities"
+
+  platform:
+    type: string
+    enum: [windows, linux, macos, cloud, network, identity]
+
+  transport:
+    type: list
+    items: [wef, syslog, cribl_forwarder, hec, s3, api_poll, filebeat, winlogbeat]
+    description: "How events get to the SIEM"
+
+  normalization:
+    type: string
+    enum: [ecs, cim, raw, custom]
+    description: "Schema normalization standard"
+
+  status:
+    type: string
+    enum: [active, planned, degraded, retired]
+    description: "Current operational status in the lab"
+
+  event_types:
+    type: map
+    description: "Map of event type IDs to their definitions"
+    value_fields:
+      description:
+        type: string
+        required: true
+      ecs_category:
+        type: string
+        description: "ECS event.category value"
+      ecs_type:
+        type: string
+        description: "ECS event.type value"
+      fields:
+        type: list
+        description: "Field mappings from raw to normalized"
+        items:
+          raw: string
+          ecs: string
+          type: [keyword, text, ip, long, date, boolean, nested]
+      detection_value:
+        type: string
+        enum: [critical, high, medium, low, informational]
+      volume_estimate:
+        type: string
+        description: "Rough events per host per day"
+
+  health_check:
+    type: map
+    fields:
+      method:
+        type: string
+        enum: [query_latest_event, index_exists, api_check]
+      query:
+        type: string
+        description: "ES query to find latest event for this source"
+      stale_threshold:
+        type: string
+        description: "Duration after which source is considered stale"
+        examples: ["15m", "1h", "24h"]
