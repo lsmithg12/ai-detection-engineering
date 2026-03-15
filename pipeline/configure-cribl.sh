@@ -102,60 +102,20 @@ else
 fi
 
 # ─── 2. Create CIM Normalization Pipeline ────────────────────────
-# Pipeline functions must be inside conf.functions wrapper.
+# Pipeline functions handle both formats:
+#   - ECS JSON in _raw (existing flow): serde parses JSON → ECS fields available
+#   - Raw Sysmon text in _raw (Phase 3): regex_extract parses text → builds ECS fields
+# Order: rename → serde (JSON) → regex fallback (raw text) → ECS mapping → CIM aliases
 log_info "Creating CIM normalization pipeline..."
-RESULT=$(cribl_api POST "/pipelines" '{
-  "id": "cim_normalize",
-  "conf": {
-    "functions": [
-      {
-        "id": "rename",
-        "filter": "true",
-        "description": "Save Cribl internal fields before serde overwrites them",
-        "conf": {
-          "wildcardDepth": 5,
-          "renameExpr": "C.Rename.rename(name, [[/^host$/, \"_cribl_host\"], [/^source$/, \"_cribl_source\"]])"
-        }
-      },
-      {
-        "id": "serde",
-        "filter": "true",
-        "description": "Parse _raw JSON into top-level ECS fields (process, user, host, etc.)",
-        "conf": {
-          "mode": "extract",
-          "type": "json",
-          "srcField": "_raw"
-        }
-      },
-      {
-        "id": "eval",
-        "filter": "true",
-        "description": "Cribl processing marker + CIM aliases + cleanup",
-        "conf": {
-          "add": [
-            {"name": "cribl_pipe",      "value": "\"cim_normalize\""},
-            {"name": "cribl_processed", "value": "true"},
-            {"name": "cribl_ts",        "value": "Date.now()"},
-            {"name": "EventCode",       "value": "__e.event && __e.event.code"},
-            {"name": "CommandLine",     "value": "__e.process && __e.process.command_line"},
-            {"name": "Image",           "value": "__e.process && __e.process.executable"},
-            {"name": "ParentImage",     "value": "__e.process && __e.process.parent && __e.process.parent.executable"},
-            {"name": "TargetObject",    "value": "__e.registry && __e.registry.path"},
-            {"name": "Details",         "value": "__e.registry && __e.registry.value"},
-            {"name": "src_ip",          "value": "__e.source && __e.source.ip"},
-            {"name": "dest_ip",         "value": "__e.destination && __e.destination.ip"},
-            {"name": "dest_port",       "value": "__e.destination && __e.destination.port"}
-          ],
-          "remove": ["_raw", "_cribl_host", "_cribl_source", "cribl_breaker", "source"]
-        }
-      }
-    ]
-  }
-}')
-if echo "$RESULT" | grep -q '"cim_normalize"'; then
-    log_ok "CIM normalization pipeline created (serde + markers + CIM aliases)"
+# Pipeline JSON is complex (regex patterns + JavaScript expressions with single quotes).
+# Delegate to Python to avoid bash quoting nightmares.
+# cribl_pipeline.py also uses the correct Cribl API config format:
+#   regex_extract needs "source" (not "field") and "/pattern/" delimiters.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if python3 "$SCRIPT_DIR/cribl_pipeline.py" --deploy --url="$CRIBL_URL"; then
+    log_ok "CIM normalization pipeline created (serde + 8 regex parsers + 2 eval mappers)"
 else
-    log_warn "Pipeline may already exist (re-run is idempotent)"
+    log_err "Pipeline creation failed — check pipeline/cribl_pipeline.py"
 fi
 
 # ─── 3. Create Elasticsearch Outputs ─────────────────────────────
@@ -196,6 +156,26 @@ else
     log_warn "ES attack output may already exist"
 fi
 
+# Phase 3: Validation output — routes through full Cribl pipeline to ephemeral ES index.
+# Uses a dynamic index name based on the _validation_index field set by validation.py.
+# This enables end-to-end testing: raw events → Cribl HEC → normalize → ES → Lucene query.
+RESULT=$(cribl_api POST "/system/outputs" '{
+  "id": "elastic_validation",
+  "type": "elastic",
+  "url": "http://elasticsearch:9200",
+  "index": "`_validation_index || index || \"sim-validation\"`",
+  "authType": "basic",
+  "username": "elastic",
+  "password": "changeme",
+  "compress": false,
+  "description": "Phase 3: Validation events — dynamic index from _validation_index field"
+}')
+if echo "$RESULT" | grep -q '"elastic_validation"'; then
+    log_ok "Elasticsearch validation output → sim-validation-* (dynamic)"
+else
+    log_warn "ES validation output may already exist"
+fi
+
 # ─── 4. Create Splunk HEC Output ─────────────────────────────────
 # Token field is "token" (not "hecToken" or "authType").
 log_info "Creating Splunk HEC output..."
@@ -222,6 +202,15 @@ log_info "Configuring routing rules..."
 RESULT=$(cribl_api PATCH "/routes/default" '{
   "id": "default",
   "routes": [
+    {
+      "id": "validation_to_elastic",
+      "name": "Phase 3: Validation Events → Elastic (sim-validation-*)",
+      "filter": "__e._validation_index || __e.index && __e.index.startsWith('sim-validation')",
+      "pipeline": "cim_normalize",
+      "output": "elastic_validation",
+      "final": true,
+      "disabled": false
+    },
     {
       "id": "attack_to_elastic",
       "name": "Attack Events → Elastic (sim-attack)",
@@ -261,7 +250,7 @@ RESULT=$(cribl_api PATCH "/routes/default" '{
   ]
 }')
 if echo "$RESULT" | grep -q '"attack_to_elastic"'; then
-    log_ok "Routes configured (attack → sim-attack, baseline → sim-baseline, both → Splunk)"
+    log_ok "Routes configured (validation → sim-validation-*, attack → sim-attack, baseline → sim-baseline, all → Splunk)"
 else
     log_err "Failed to configure routes: $RESULT"
 fi
@@ -284,7 +273,8 @@ echo -e "  ${CYAN}Login${NC}:         admin / admin"
 echo ""
 echo -e "  ${CYAN}Data flow:${NC}"
 echo "    Simulator → Cribl HEC (8088)"
-echo "    ├── CIM normalize pipeline (ECS → Splunk field aliases)"
-echo "    ├── Attack events  → Elastic (sim-attack) + Splunk (sysmon)"
-echo "    └── Baseline events → Elastic (sim-baseline) + Splunk (sysmon)"
+echo "    ├── CIM normalize pipeline (ECS JSON + raw Sysmon text → ECS fields)"
+echo "    ├── Validation events → Elastic (sim-validation-*) [Phase 3]"
+echo "    ├── Attack events     → Elastic (sim-attack) + Splunk (sysmon)"
+echo "    └── Baseline events   → Elastic (sim-baseline) + Splunk (sysmon)"
 echo ""

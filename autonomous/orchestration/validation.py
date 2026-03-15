@@ -22,6 +22,7 @@ import json
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 from uuid import uuid4
 
 from orchestration.siem import _load_infra_config, _basic_auth
@@ -129,6 +130,51 @@ def _build_bulk_body(index_name: str, attack_events: list[dict],
     return "\n".join(lines) + "\n"
 
 
+def _check_cribl_reachable(cribl_url: str) -> bool:
+    """Quick health check — is Cribl Stream responding?"""
+    try:
+        req = urllib.request.Request(f"{cribl_url}/api/v1/health")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _send_to_cribl_hec(hec_url: str, hec_token: str,
+                       events: list[dict]) -> int:
+    """
+    Send events to Cribl's HEC input for full streaming pipeline processing.
+
+    Events flow: HEC input -> cim_normalize pipeline -> ES/Splunk outputs.
+    Each event should have _validation_index set for routing to the correct index.
+
+    Returns the number of events sent on success, -1 on failure.
+    """
+    # HEC accepts newline-delimited JSON (one event per line)
+    body_lines = []
+    for evt in events:
+        body_lines.append(json.dumps(evt))
+    body = "\n".join(body_lines)
+
+    try:
+        req = urllib.request.Request(
+            f"{hec_url}/services/collector",
+            data=body.encode("utf-8"),
+            method="POST",
+            headers={
+                "Authorization": f"Splunk {hec_token}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status == 200:
+                return len(events)
+            return -1
+    except Exception as e:
+        print(f"    [validation] Cribl HEC send failed: {e}")
+        return -1
+
+
 def validate_against_elasticsearch(
     compiled_lucene: str,
     attack_events: list[dict],
@@ -190,41 +236,171 @@ def validate_against_elasticsearch(
     total_events = len(attack_events) + len(benign_events)
     errors = []
 
+    # ─── Cribl full-path streaming validation (Phase 3) ────────────
+    # When ingestion_method="cribl", events flow through the full streaming path:
+    #   raw events -> Cribl HEC (port 8088) -> cim_normalize pipeline -> ES output
+    # This tests the real-world data path, not just query correctness.
+    cribl_routed = False
+    if ingestion_method == "cribl":
+        infra_full = _load_infra_config()
+        cribl_cfg = infra_full.get("cribl", {})
+
+        cribl_hec_url = cribl_cfg.get("hec_url", "http://localhost:8088")
+        cribl_hec_token = cribl_cfg.get("hec_token", "blue-team-lab-hec-token")
+
+        if not _check_cribl_reachable(cribl_cfg.get("url", "http://localhost:9000")):
+            errors.append("Cribl unreachable — falling back to direct ES ingest")
+            # Fall through to direct ingest below
+        else:
+            try:
+                # Import raw event converter
+                import sys as _sys
+                repo_root = Path(__file__).resolve().parent.parent.parent
+                if str(repo_root) not in _sys.path:
+                    _sys.path.insert(0, str(repo_root))
+                from simulator.raw_events import ecs_to_raw
+
+                # Convert ECS events to raw HEC format and tag with validation index.
+                # Use the HEC "index" field — Cribl's HEC input recognizes this as
+                # a standard HEC property and makes it available as __e.index.
+                # Also set _validation_index in fields{} for route filter matching.
+                raw_events_hec = []
+                for evt in attack_events:
+                    raw = ecs_to_raw(evt)
+                    raw["index"] = index_name
+                    raw["_validation_index"] = index_name
+                    raw.setdefault("fields", {})["_validation_index"] = index_name
+                    raw_events_hec.append(raw)
+                for evt in benign_events:
+                    raw = ecs_to_raw(evt)
+                    raw["index"] = index_name
+                    raw["_validation_index"] = index_name
+                    raw.setdefault("fields", {})["_validation_index"] = index_name
+                    raw_events_hec.append(raw)
+
+                # Create the ephemeral ES index FIRST (so it exists when Cribl writes)
+                try:
+                    _es_request(
+                        f"{es_url}/{index_name}",
+                        method="PUT",
+                        data={"settings": {
+                            "number_of_shards": 1,
+                            "number_of_replicas": 0,
+                            "index.lifecycle.name": "validation-cleanup",
+                        }},
+                        auth=es_auth,
+                    )
+                except Exception:
+                    pass  # Index may already exist or ILM policy missing — non-fatal
+
+                # Send raw events to Cribl HEC (full streaming path)
+                expected_count = len(raw_events_hec)
+                sent_count = _send_to_cribl_hec(
+                    cribl_hec_url, cribl_hec_token, raw_events_hec
+                )
+
+                if sent_count > 0:
+                    # Wait for events to flow through Cribl -> ES
+                    # Cribl processes near-real-time but buffering + ES refresh adds latency.
+                    # Wait up to 12s, break early when all expected events arrive.
+                    arrived_count = 0
+                    for _wait in range(12):
+                        time.sleep(1)
+                        try:
+                            _es_request(
+                                f"{es_url}/{index_name}/_refresh",
+                                method="POST", auth=es_auth,
+                            )
+                            status_code, count_resp = _es_request(
+                                f"{es_url}/{index_name}/_count",
+                                auth=es_auth,
+                            )
+                            if isinstance(count_resp, dict):
+                                arrived_count = count_resp.get("count", 0)
+                                if arrived_count >= expected_count:
+                                    break
+                                # Partial delivery — keep waiting
+                        except Exception:
+                            continue
+
+                    if arrived_count > 0:
+                        # Verify _simulation.type survived the Cribl pipeline
+                        sim_check_ok = False
+                        try:
+                            _, sample_resp = _es_request(
+                                f"{es_url}/{index_name}/_search",
+                                method="POST",
+                                data={"query": {"match_all": {}}, "size": 1,
+                                      "_source": ["_simulation.type", "_simulation"]},
+                                auth=es_auth,
+                            )
+                            sample_hits = sample_resp.get("hits", {}).get("hits", [])
+                            if sample_hits:
+                                src = sample_hits[0].get("_source", {})
+                                sim_type = src.get("_simulation.type", "")
+                                # Also check nested form (Cribl may promote fields{} differently)
+                                if not sim_type:
+                                    sim_type = (src.get("_simulation", {}) or {}).get("type", "")
+                                sim_check_ok = sim_type in ("attack", "baseline")
+                        except Exception:
+                            pass
+
+                        if not sim_check_ok:
+                            errors.append(
+                                "WARNING: _simulation.type not found in Cribl-routed events — "
+                                "scoring will use document ID convention (atk-*/ben-*) as fallback"
+                            )
+
+                        if arrived_count < expected_count:
+                            errors.append(
+                                f"Partial delivery: {arrived_count}/{expected_count} events "
+                                f"arrived in ES after 12s"
+                            )
+
+                        cribl_routed = True
+                        errors.append(
+                            f"Cribl streaming: {sent_count} events sent via HEC -> "
+                            f"cim_normalize -> {index_name} ({arrived_count} arrived)"
+                        )
+                    else:
+                        errors.append(
+                            "Cribl HEC accepted events but none arrived in ES after 12s "
+                            "-- falling back to direct ES ingest"
+                        )
+                else:
+                    errors.append("Cribl HEC send failed -- falling back to direct ES ingest")
+
+            except ImportError:
+                errors.append("simulator.raw_events not available — falling back to direct ingest")
+            except Exception as e:
+                errors.append(f"Cribl streaming failed: {e} — falling back to direct ingest")
+
     try:
         # ─── 0. Create index explicitly with ILM settings ──────────
         # Do NOT use a separate sim-validation-* index template — it would
         # shadow the sim-* template (priority 500) and lose all ECS field
         # mappings. Instead, create the index with ILM settings inline and
         # let the sim-* template provide keyword/text/ip field mappings.
-        try:
-            _es_request(
-                f"{es_url}/{index_name}",
-                method="PUT",
-                data={"settings": {
-                    "number_of_shards": 1,
-                    "number_of_replicas": 0,
-                    "index.lifecycle.name": "validation-cleanup",
-                }},
-                auth=es_auth,
-            )
-        except Exception:
-            pass  # Index may already exist or ILM policy may not exist — non-fatal
+        if not cribl_routed:
+            # Only create index for direct ingest — Cribl path already created it
+            try:
+                _es_request(
+                    f"{es_url}/{index_name}",
+                    method="PUT",
+                    data={"settings": {
+                        "number_of_shards": 1,
+                        "number_of_replicas": 0,
+                        "index.lifecycle.name": "validation-cleanup",
+                    }},
+                    auth=es_auth,
+                )
+            except Exception:
+                pass  # Index may already exist or ILM policy may not exist — non-fatal
 
-        # ─── 1. Bulk ingest events ──────────────────────────────────
-        bulk_body = _build_bulk_body(index_name, attack_events, benign_events, technique_id)
+        # ─── 1. Bulk ingest events (skip if Cribl already routed) ──
+        if not cribl_routed:
+            bulk_body = _build_bulk_body(index_name, attack_events, benign_events, technique_id)
 
-        try:
-            status, resp = _es_request(
-                f"{es_url}/{index_name}/_bulk",
-                method="POST",
-                data=bulk_body,
-                auth=es_auth,
-                content_type="application/x-ndjson",
-                timeout=15,
-            )
-        except urllib.error.HTTPError as e:
-            # Retry once on bulk failure
-            time.sleep(1)
             try:
                 status, resp = _es_request(
                     f"{es_url}/{index_name}/_bulk",
@@ -234,19 +410,31 @@ def validate_against_elasticsearch(
                     content_type="application/x-ndjson",
                     timeout=15,
                 )
-            except Exception:
-                _cleanup_index(es_url, index_name, es_auth)
-                return None
+            except urllib.error.HTTPError as e:
+                # Retry once on bulk failure
+                time.sleep(1)
+                try:
+                    status, resp = _es_request(
+                        f"{es_url}/{index_name}/_bulk",
+                        method="POST",
+                        data=bulk_body,
+                        auth=es_auth,
+                        content_type="application/x-ndjson",
+                        timeout=15,
+                    )
+                except Exception:
+                    _cleanup_index(es_url, index_name, es_auth)
+                    return None
 
-        # Check for bulk ingest errors
-        if isinstance(resp, dict) and resp.get("errors"):
-            error_items = [
-                item for item in resp.get("items", [])
-                if "error" in item.get("index", {})
-            ]
-            if error_items:
-                errors.append(f"Bulk ingest had {len(error_items)} errors: "
-                              f"{error_items[0]['index']['error'].get('reason', '?')}")
+            # Check for bulk ingest errors
+            if isinstance(resp, dict) and resp.get("errors"):
+                error_items = [
+                    item for item in resp.get("items", [])
+                    if "error" in item.get("index", {})
+                ]
+                if error_items:
+                    errors.append(f"Bulk ingest had {len(error_items)} errors: "
+                                  f"{error_items[0]['index']['error'].get('reason', '?')}")
 
         # ─── 2. Refresh index for immediate querying ────────────────
         try:
@@ -308,11 +496,22 @@ def validate_against_elasticsearch(
         hits = search_resp.get("hits", {}).get("hits", [])
         hit_ids = {h["_id"] for h in hits}
 
-        # Classify each hit
+        # Classify each hit — prefer _simulation.type field, fall back to doc ID convention
         tp = 0
         fp = 0
         for hit in hits:
-            sim_type = hit.get("_source", {}).get("_simulation.type", "")
+            src = hit.get("_source", {})
+            sim_type = src.get("_simulation.type", "")
+            # Cribl may nest _simulation as an object instead of dotted key
+            if not sim_type:
+                sim_type = (src.get("_simulation", {}) or {}).get("type", "")
+            # Final fallback: infer from document ID (atk-* = attack, ben-* = baseline)
+            if not sim_type:
+                doc_id = hit.get("_id", "")
+                if doc_id.startswith("atk-"):
+                    sim_type = "attack"
+                elif doc_id.startswith("ben-"):
+                    sim_type = "baseline"
             if sim_type == "attack":
                 tp += 1
             elif sim_type == "baseline":
@@ -345,6 +544,8 @@ def validate_against_elasticsearch(
             "query_time_ms": query_time_ms,
             "errors": errors,
         }
+
+        result["ingestion_method"] = ingestion_method
 
         return result
 

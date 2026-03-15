@@ -55,6 +55,66 @@ PRIORITY_SOURCES = [
     "thedfirreport.com",
 ]
 
+# Data source requirements per technique category
+# Maps MITRE technique prefixes to the data sources they need
+TECHNIQUE_DATA_SOURCES = {
+    "T1055": [{"source": "sysmon", "event_ids": [8, 10], "fields": ["process.executable", "winlog.event_data.TargetImage"]}],
+    "T1053": [{"source": "sysmon", "event_ids": [1], "fields": ["process.name", "process.command_line"]}],
+    "T1059": [{"source": "sysmon", "event_ids": [1], "fields": ["process.name", "process.command_line"]},
+              {"source": "windows_security", "event_ids": [4104], "fields": ["powershell.file.script_block_text"]}],
+    "T1547": [{"source": "sysmon", "event_ids": [13], "fields": ["registry.path", "registry.value"]},
+              {"source": "sysmon", "event_ids": [11], "fields": ["file.path", "file.name"]}],
+    "T1543": [{"source": "windows_system", "event_ids": [7045], "fields": ["winlog.event_data.ServiceName", "winlog.event_data.ImagePath"]}],
+    "T1070": [{"source": "sysmon", "event_ids": [1], "fields": ["process.name", "process.command_line"]}],
+    "T1071": [{"source": "sysmon", "event_ids": [3, 22], "fields": ["destination.ip", "destination.port", "dns.question.name"]}],
+    "T1562": [{"source": "sysmon", "event_ids": [7], "fields": ["file.name", "process.executable"]}],
+    "T1047": [{"source": "sysmon", "event_ids": [19, 20, 21], "fields": ["wmi.filter.name", "wmi.filter.query"]}],
+    "T1046": [{"source": "sysmon", "event_ids": [3], "fields": ["destination.ip", "destination.port"]}],
+    "T1027": [{"source": "sysmon", "event_ids": [1, 11], "fields": ["file.path", "process.command_line"]}],
+    "T1134": [{"source": "sysmon", "event_ids": [10, 17, 18], "fields": ["winlog.event_data.TargetImage"]}],
+    "T1056": [{"source": "elastic_endpoint", "event_ids": [], "fields": ["process.Ext.api.name"]}],
+}
+
+
+def get_data_source_requirements(technique_id: str) -> list[dict]:
+    """Look up data source requirements for a technique."""
+    # Try exact match first, then prefix match
+    if technique_id in TECHNIQUE_DATA_SOURCES:
+        return TECHNIQUE_DATA_SOURCES[technique_id]
+    # Try parent technique (e.g., T1055.001 -> T1055)
+    parent = technique_id.split(".")[0]
+    if parent in TECHNIQUE_DATA_SOURCES:
+        return TECHNIQUE_DATA_SOURCES[parent]
+    return []
+
+
+def check_data_source_gaps(technique_id: str) -> list[str]:
+    """Check if any required data sources have known gaps.
+
+    Reads YAML files from gaps/data-sources/ and returns list of gap IDs
+    that affect the given technique.
+    """
+    gaps_dir = REPO_ROOT / "gaps" / "data-sources"
+    if not gaps_dir.exists():
+        return []
+
+    matching_gaps = []
+    for gap_file in gaps_dir.glob("*.yml"):
+        try:
+            with open(gap_file, encoding="utf-8") as f:
+                gap = yaml.safe_load(f)
+            if not gap:
+                continue
+            affected = gap.get("affected_techniques", [])
+            # Check if this technique (or its parent) is affected
+            if technique_id in affected:
+                matching_gaps.append(gap.get("gap_id", gap_file.stem))
+            elif technique_id.split(".")[0] in [t.split(".")[0] for t in affected]:
+                matching_gaps.append(gap.get("gap_id", gap_file.stem))
+        except Exception:
+            continue
+    return matching_gaps
+
 
 def _today() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
@@ -222,6 +282,20 @@ def process_techniques(
                     tid, agent=AGENT_NAME,
                     fawkes_commands=fawkes_info["commands"],
                 )
+            # Tag data source requirements (Phase 3)
+            ds_requirements = get_data_source_requirements(tid)
+            ds_gaps = check_data_source_gaps(tid)
+            if ds_requirements:
+                state_manager.update(
+                    tid, agent=AGENT_NAME,
+                    data_source_requirements=ds_requirements,
+                )
+            if ds_gaps:
+                state_manager.update(
+                    tid, agent=AGENT_NAME,
+                    data_source_gaps=ds_gaps,
+                )
+                print(f"    [intel] Warning: {tid} has data source gaps: {ds_gaps}")
             existing.add(tid)
             stats["new_techniques"] += 1
             stats["requests_created"].append(tid)

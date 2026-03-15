@@ -258,6 +258,7 @@ ai-detection-engineering/
 │   └── detection-requests/            # Detection lifecycle tracking (YAML per technique)
 ├── simulator/                         # Log generator (attack + baseline scenarios)
 │   ├── simulator.py                   # Event generation engine
+│   ├── raw_events.py               # ECS → raw vendor format converter (Phase 3)
 │   └── scenarios/                     # Per-technique scenario JSON files
 ├── .github/workflows/                 # CI/CD — 6 workflows (daily agents + deploy + security gate)
 ├── cribl/                             # Cribl Stream MCP server
@@ -269,7 +270,9 @@ ai-detection-engineering/
 │   ├── analysis/                      # APT analysis (Scattered Spider)
 │   └── reports/                       # Intel reports from external sources
 ├── coverage/                          # ATT&CK matrix, data sources, detection backlog
-├── gaps/                              # Data source gaps
+├── gaps/                            # Data source gaps
+│   ├── data-source-gaps.md          # Free-text gap analysis
+│   └── data-sources/               # Structured YAML gap files (Phase 3)
 ├── tuning/                            # Exclusion lists & tuning changelog
 │   ├── exclusions.yml                 # Global exclusion list
 │   └── changelog/                     # Per-rule tuning history + deployment log
@@ -377,7 +380,7 @@ cd autonomous && python3 orchestration/cli.py deploy --validated
 - **2 AUTHORED** (pending validation)
 - **4 needs rework** (F1 < 0.75: T1003.001, T1021.001, T1105, T1059.003/T1082/T1190/T1204.002 are borderline)
 - **Fawkes coverage**: 13/21 core techniques (62%)
-- **Validation method**: Elasticsearch-based (local JSON fallback for CI)
+- **Validation method**: ES-based (Phase 2) + Cribl streaming path (Phase 3); local JSON fallback for CI
 
 See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed detection health.
 
@@ -387,7 +390,7 @@ See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed
 |-------|--------|-----------------|
 | Phase 1 | COMPLETED (PR #52) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54) | Elasticsearch-based SIEM validation |
-| Phase 3 | NOT STARTED | Raw logs -> Cribl -> ES pipeline |
+| Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl streaming validation + data source gaps |
 | Phase 4 | NOT STARTED | Agent intelligence upgrades (EQL, thresholds) |
 | Phase 5 | NOT STARTED | Coverage expansion to 75%+ Fawkes |
 | Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
@@ -483,6 +486,7 @@ All Kibana API calls require auth header: `-u elastic:changeme`
 | `sim-baseline` | Normal enterprise activity | FP baseline queries |
 | `sim-attack` | Fawkes TTP simulations | TP validation queries |
 | `sim-validation-*` | Temporary validation events | Created/deleted per test run by validation.py; ILM auto-cleanup 1h |
+| `sim-validation-*` (via Cribl) | Cribl-routed validation events | Created by validation.py cribl method; Cribl route `validation_to_elastic` |
 | `attack-range-samples` | Supplemental ATT&CK data | Load via `pipeline/fetch-attack-range-data.sh` |
 | `sim-*` (via Cribl) | Cribl-normalized events | Same indices, routed through Cribl pipeline when `--cribl` active |
 

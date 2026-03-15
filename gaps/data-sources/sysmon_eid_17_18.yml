@@ -1,0 +1,26 @@
+# gaps/data-sources/sysmon_eid_17_18.yml
+# Data source gap tracking — Phase 3
+gap_id: GAP-005
+source_type: sysmon
+event_id:
+  - 17
+  - 18
+event_name: PipeEvent
+status: partially_available  # gap | partially_available | onboarded
+priority: medium  # critical | high | medium | low
+affected_techniques:
+  - T1134
+  - T1570
+simulator_support: true
+cribl_pipeline: null  # pipeline ID when Cribl parser exists
+ecs_fields_expected:
+  - file.name
+  - process.name
+  - event.code
+resolution_notes: |
+  Added to the simulator in PR #17. Sysmon EID 17 (PipeCreated) and EID 18
+  (PipeConnected) are useful for detecting named pipe abuse used in token
+  impersonation (T1134) and lateral tool transfer (T1570). Needs a Cribl raw
+  log parser to extract pipe name and process context into ECS fields.
+created_date: "2026-03-14"
+updated_date: "2026-03-14"
