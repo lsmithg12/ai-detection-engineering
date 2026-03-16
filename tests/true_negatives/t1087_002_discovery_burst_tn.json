@@ -1,0 +1,17 @@
+{
+  "_simulation": {
+    "description": "Single recon command — legitimate admin checking network status. Should NOT alert.",
+    "technique": "T1087.002",
+    "expected_result": "NO_ALERT",
+    "rule_type": "eql"
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "1", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {"name": "ipconfig.exe", "executable": "C:\\Windows\\System32\\ipconfig.exe", "command_line": "ipconfig /all"},
+      "user": {"name": "admin_user"}
+    }
+  ]
+}

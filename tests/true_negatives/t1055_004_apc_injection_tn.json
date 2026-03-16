@@ -1,0 +1,28 @@
+{
+  "_simulation": {
+    "description": "Windows Defender (MsMpEng.exe) creating thread in process during scan — should NOT alert (excluded)",
+    "technique": "T1055.004",
+    "expected_result": "NO_ALERT"
+  },
+  "event": {
+    "@timestamp": "2026-03-15T10:00:00.000Z",
+    "event": {
+      "code": "8",
+      "category": "process"
+    },
+    "host": {"name": "WORKSTATION-01"},
+    "process": {
+      "name": "MsMpEng.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MsMpEng.exe",
+      "pid": 3344
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Program Files\\Internet Explorer\\iexplore.exe",
+        "TargetPid": "8899",
+        "NewThreadId": "1234"
+      }
+    },
+    "user": {"name": "SYSTEM"}
+  }
+}

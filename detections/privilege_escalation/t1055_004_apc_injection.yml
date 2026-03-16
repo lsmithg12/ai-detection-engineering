@@ -1,0 +1,52 @@
+title: APC Injection — Suspicious QueueUserAPC Pattern
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+status: experimental
+description: |
+  Detects Asynchronous Procedure Call (APC) injection via QueueUserAPC.
+  APC injection inserts shellcode into the APC queue of a target thread,
+  executing when the thread enters an alertable wait state.
+
+  Detection approach: EID 8 (CreateRemoteThread) combined with process access
+  (EID 10 with PROCESS_CREATE_THREAD flag) from unusual source processes.
+  APC injection still generates EID 8 in Sysmon because the kernel-level
+  thread creation is captured regardless of the API path.
+
+  Fawkes apc-injection command: Uses QueueUserAPC with early-bird technique
+  or standard APC insertion into alertable threads.
+references:
+  - https://attack.mitre.org/techniques/T1055/004/
+  - https://github.com/galoryber/fawkes
+  - https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-queueuserapc
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.privilege_escalation
+  - attack.defense_evasion
+  - attack.t1055.004
+  - detection.fawkes
+logsource:
+  category: create_remote_thread
+  product: windows
+detection:
+  selection:
+    event.code: "8"
+  filter_legitimate:
+    process.executable|endswith:
+      - \MsMpEng.exe
+      - \csrss.exe
+      - \svchost.exe
+      - \wininit.exe
+      - \services.exe
+      - \lsass.exe
+      - \WerFault.exe
+      - \WUDFHost.exe
+      - \SearchIndexer.exe
+      - \msiexec.exe
+  condition: selection and not filter_legitimate
+falsepositives:
+  - Security software (EDR, AV) using APC-based memory scanning
+  - Development tools (debuggers, profilers) creating threads in target processes
+  - .NET runtime JIT compilation creating threads for managed code execution
+  - Process monitoring tools that inject monitoring DLLs
+level: high

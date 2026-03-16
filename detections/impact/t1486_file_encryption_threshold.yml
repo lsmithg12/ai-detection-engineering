@@ -1,0 +1,55 @@
+title: Rapid File Modification Burst — Ransomware Indicator
+id: 3f8b6d7e-9a0c-1d2e-3f4a-5b6c7d8e9f0a
+status: experimental
+description: |
+  Detects ransomware-style encryption by alerting when a single process
+  creates or modifies more than 10 files within 30 seconds. Ransomware
+  typically encrypts hundreds to thousands of files in rapid succession.
+  This threshold (10 files / 30s) is chosen to catch early-stage encryption
+  while avoiding false positives from legitimate file operations.
+  Covers Fawkes Data Encrypted for Impact (T1486).
+references:
+  - https://attack.mitre.org/techniques/T1486/
+  - https://github.com/galoryber/fawkes
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.impact
+  - attack.t1486
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection_type: threshold
+detection:
+  selection:
+    event.code: "11"
+  filter_system:
+    process.name:
+      - MsMpEng.exe
+      - TiWorker.exe
+      - svchost.exe
+      - SearchIndexer.exe
+      - WmiPrvSE.exe
+  condition: selection and not filter_system
+threshold:
+  field: process.name
+  value: 10
+  window: "30s"
+  cardinality_field: null
+  cardinality_value: null
+spl_query: |
+  index=sysmon EventCode=11
+  NOT (Image="*\\MsMpEng.exe" OR Image="*\\TiWorker.exe"
+       OR Image="*\\svchost.exe" OR Image="*\\SearchIndexer.exe")
+  | bucket _time span=30s
+  | stats count by Image, _time, host
+  | where count > 10
+elastic_threshold_type: threshold
+falsepositives:
+  - Archive/compression tools (7-Zip, WinRAR) processing large archives
+  - Software installers extracting many files simultaneously
+  - Backup agents performing incremental backups
+  - Development tools (compilers, bundlers) generating many output files
+level: critical

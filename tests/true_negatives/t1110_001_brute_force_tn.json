@@ -1,0 +1,12 @@
+{
+  "_simulation": {
+    "description": "2 failed login attempts — user mistyped password twice, should NOT alert",
+    "technique": "T1110.001",
+    "expected_result": "NO_ALERT",
+    "rule_type": "threshold"
+  },
+  "events": [
+    {"@timestamp": "2026-03-15T10:00:00.000Z", "event": {"code": "4625"}, "source": {"ip": "192.168.1.100"}, "host": {"name": "WORKSTATION-01"}, "user": {"name": "john.doe"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:00:15.000Z", "event": {"code": "4625"}, "source": {"ip": "192.168.1.100"}, "host": {"name": "WORKSTATION-01"}, "user": {"name": "john.doe"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}}
+  ]
+}

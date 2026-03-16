@@ -1,0 +1,6 @@
+index=sysmon (EventCode=10 OR EventCode=8)
+| eval is_access=(EventCode=10 AND GrantedAccess IN ("0x1F0FFF","0x1F3FFF","0x001F0FFF"))
+| eval is_thread=(EventCode=8)
+| transaction host maxspan=10s
+| where is_access=1 AND is_thread=1
+| table _time, host, User, SourceImage, TargetImage

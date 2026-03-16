@@ -1,0 +1,7 @@
+index=sysmon (EventCode=1 OR EventCode=13)
+| eval is_ps=(EventCode=1 AND (
+    match(CommandLine, "(?i)-ExecutionPolicy.*Bypass|(?i)-ep.*bypass|(?i)-enc|(?i)-EncodedCommand")
+  ))
+| eval is_reg=(EventCode=13 AND match(TargetObject, "CurrentVersion\\Run"))
+| transaction host maxspan=300s
+| where is_ps=1 AND is_reg=1

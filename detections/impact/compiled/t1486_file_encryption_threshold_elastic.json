@@ -1,0 +1,29 @@
+{
+  "name": "Rapid File Modification Burst — Ransomware Indicator",
+  "description": "Detects ransomware-style encryption: a single process creates/modifies 10+ files within 30 seconds, excluding known system processes.",
+  "risk_score": 99,
+  "severity": "critical",
+  "type": "threshold",
+  "language": "lucene",
+  "query": "event.code: \"11\" AND NOT process.name: (MsMpEng.exe OR TiWorker.exe OR svchost.exe OR SearchIndexer.exe OR WmiPrvSE.exe)",
+  "threshold": {
+    "field": ["process.name"],
+    "value": 10
+  },
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0040", "name": "Impact", "reference": "https://attack.mitre.org/tactics/TA0040/"},
+      "technique": [
+        {"id": "T1486", "name": "Data Encrypted for Impact", "reference": "https://attack.mitre.org/techniques/T1486/"}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-6m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Execution Detection Pack", "Threshold", "Ransomware", "Phase6"],
+  "false_positives": ["Archive tools", "Software installers", "Backup agents"],
+  "rule_id": "3f8b6d7e-9a0c-1d2e-3f4a-5b6c7d8e9f0a"
+}

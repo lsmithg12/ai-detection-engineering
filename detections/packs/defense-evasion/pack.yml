@@ -1,0 +1,94 @@
+name: Defense Evasion Detection Pack
+version: "1.0.0"
+description: |
+  Detects defense evasion techniques including AMSI bypass, event log clearing,
+  firewall disablement, obfuscation, and indicator blocking. Covers Fawkes
+  autopatch, start-clr, and timestomp capabilities.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: monitoring
+
+threat_actors:
+  - fawkes
+  - apt
+mitre_tactics:
+  - defense_evasion
+mitre_techniques:
+  - T1027
+  - T1070.001
+  - T1078.004
+  - T1562.001
+  - T1562.004
+  - T1562.006
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_7
+    description: Image load events (CLR DLL load)
+    required: true
+  - source: windows_security_4624
+    description: Logon events for cloud account abuse
+    required: false
+
+rules:
+  - path: detections/defense_evasion/t1027.yml
+    technique: T1027
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+  - path: detections/defense_evasion/t1070_001.yml
+    technique: T1070.001
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+  - path: detections/defense_evasion/t1078_004.yml
+    technique: T1078.004
+    type: sigma
+    required: false
+    status: monitoring
+    f1: 1.00
+  - path: detections/defense_evasion/t1562_001.yml
+    technique: T1562.001
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+  - path: detections/defense_evasion/t1562_004.yml
+    technique: T1562.004
+    type: sigma
+    required: true
+    status: validated
+    f1: 0.86
+  - path: detections/defense_evasion/t1562_006.yml
+    technique: T1562.006
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+  - path: detections/defense_evasion/t1562_006_registry.yml
+    technique: T1562.006
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+
+quality:
+  min_f1: 0.85
+  min_evasion_resilience: 0.50
+  max_fp_rate: 0.10
+
+test_suite:
+  scenarios: []
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with 7 defense evasion detections"
+      - "3 MONITORING, 4 VALIDATED"

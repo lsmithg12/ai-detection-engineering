@@ -1,0 +1,49 @@
+title: Brute Force Login — Failed Logon Threshold
+id: 1d6f4b5c-7e8a-9b0c-1d2e-3f4a5b6c7d8e
+status: experimental
+description: |
+  Detects brute force login attacks by alerting when more than 5 failed logon
+  attempts (Event ID 4625) occur from the same source IP within 10 minutes.
+  A low threshold of 5 is used because legitimate users rarely fail authentication
+  5 times in 10 minutes; password spraying and brute force tools generate far more.
+  Covers Fawkes make-token lateral movement attempts and credential stuffing.
+references:
+  - https://attack.mitre.org/techniques/T1110/001/
+  - https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.credential_access
+  - attack.t1110.001
+  - attack.t1110
+  - detection.fawkes
+logsource:
+  product: windows
+  service: security
+detection_type: threshold
+detection:
+  selection:
+    event.code: "4625"
+  filter_normal:
+    winlog.event_data.SubStatus:
+      - "0xC000006D"   # Unknown username
+  condition: selection
+threshold:
+  field: source.ip
+  value: 5
+  window: "10m"
+  cardinality_field: null
+  cardinality_value: null
+spl_query: |
+  index=wineventlog EventCode=4625
+  | bucket _time span=10m
+  | stats count by src_ip, _time
+  | where count > 5
+elastic_threshold_type: threshold
+falsepositives:
+  - Service accounts with expired or misconfigured passwords
+  - Vulnerability scanners probing authentication endpoints
+  - SSO systems with aggressive retry logic
+  - Users locked out who keep retrying the same wrong password
+level: medium

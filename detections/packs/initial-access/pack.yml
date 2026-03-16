@@ -1,0 +1,57 @@
+name: Initial Access Detection Pack
+version: "1.0.0"
+description: |
+  Detects initial access vectors including remote access software installation
+  and voice phishing (vishing) campaigns. Monitors for unauthorized remote
+  tools that could indicate supply chain compromise or social engineering.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: monitoring
+
+threat_actors:
+  - fawkes
+  - scattered-spider
+  - apt
+mitre_tactics:
+  - initial_access
+mitre_techniques:
+  - T1219
+  - T1566.004
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_1
+    description: Process creation (remote access tools)
+    required: true
+
+rules:
+  - path: detections/initial_access/t1219.yml
+    technique: T1219
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+  - path: detections/initial_access/t1566_004.yml
+    technique: T1566.004
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+
+quality:
+  min_f1: 0.90
+  min_evasion_resilience: 0.40
+  max_fp_rate: 0.05
+
+test_suite:
+  scenarios: []
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with 2 MONITORING initial access detections"

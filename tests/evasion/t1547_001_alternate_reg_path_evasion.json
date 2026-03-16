@@ -1,0 +1,29 @@
+{
+  "_evasion": {
+    "technique": "T1547.001",
+    "evasion_variant": "alternate_registry_path",
+    "description": "Attacker uses the HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon path instead of the common Run key, or uses the UserInitMprLogonScript value.",
+    "bypass_attempt": "Using Winlogon Userinit or UserInitMprLogonScript for persistence instead of Run key",
+    "expected_result": "EVASION_SUCCEEDS",
+    "fawkes_command": "persist (registry method, alternate path)",
+    "notes": "KNOWN GAP. Our T1547.001 rule monitors CurrentVersion\\Run and RunOnce. The Winlogon paths (HKLM/HKCU\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon) are valid persistence vectors not currently covered.",
+    "remediation": "Extend t1547_001 rule to include Winlogon registry paths, or create a companion T1547.001 rule for Winlogon persistence"
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "13", "category": "registry"},
+      "host": {"name": "WORKSTATION-01"},
+      "registry": {
+        "path": "HKCU\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\UserInitMprLogonScript",
+        "value": "C:\\Users\\victim\\AppData\\Local\\Temp\\backdoor.bat",
+        "hive": "HKCU"
+      },
+      "process": {
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      },
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

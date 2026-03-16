@@ -1,0 +1,60 @@
+name: Discovery Detection Pack
+version: "1.0.0"
+description: |
+  Detects enumeration and reconnaissance activity including network service
+  scanning and file/directory discovery. Covers Fawkes ps, net-enum,
+  net-shares, net-stat, arp, ifconfig, drives, and env commands.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: validated
+
+threat_actors:
+  - fawkes
+  - generic-rat
+mitre_tactics:
+  - discovery
+mitre_techniques:
+  - T1046
+  - T1083
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_1
+    description: Process creation (recon tools)
+    required: true
+  - source: sysmon_eid_3
+    description: Network connection (scanner)
+    required: false
+
+rules:
+  - path: detections/discovery/t1046.yml
+    technique: T1046
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+  - path: detections/discovery/t1083.yml
+    technique: T1083
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+
+quality:
+  min_f1: 0.90
+  min_evasion_resilience: 0.50
+  max_fp_rate: 0.10
+
+test_suite:
+  scenarios: []
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with 2 validated discovery detections"
+      - "Both rules F1=1.00, auto_deploy eligible"

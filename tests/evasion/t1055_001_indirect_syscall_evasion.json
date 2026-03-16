@@ -1,0 +1,31 @@
+{
+  "_evasion": {
+    "technique": "T1055.001",
+    "evasion_variant": "indirect_syscall",
+    "description": "Attacker uses direct or indirect syscalls (not Win32 API) to perform injection. Sysmon still captures the resulting EID 8 (CreateRemoteThread) event regardless of API layer used.",
+    "bypass_attempt": "Bypassing userland API hooks by calling syscalls directly",
+    "expected_result": "SHOULD_ALERT",
+    "fawkes_command": "vanilla-injection (alternative implementation)",
+    "notes": "Direct syscall injection still generates Sysmon EID 8 because Sysmon hooks at the kernel driver level, not at the Win32 API layer. Our rule remains effective."
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "8", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {
+        "name": "malicious_tool.exe",
+        "executable": "C:\\Users\\victim\\AppData\\Local\\Temp\\malicious_tool.exe",
+        "pid": 9876
+      },
+      "winlog": {
+        "event_data": {
+          "TargetImage": "C:\\Windows\\System32\\notepad.exe",
+          "NewThreadId": "5432",
+          "StartAddress": "0x7FFF98765432"
+        }
+      },
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

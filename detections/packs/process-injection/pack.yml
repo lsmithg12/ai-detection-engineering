@@ -1,0 +1,60 @@
+name: Process Injection Detection Pack
+version: "1.0.0"
+description: |
+  Detects process injection techniques used by Fawkes C2 and similar tools,
+  covering CreateRemoteThread, APC injection, and behavioral indicators.
+  Maps to MITRE ATT&CK Privilege Escalation techniques T1055.x.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: validated
+
+threat_actors:
+  - fawkes
+  - cobalt-strike
+  - generic-rat
+mitre_tactics:
+  - privilege_escalation
+  - defense_evasion
+mitre_techniques:
+  - T1055.001
+
+platforms:
+  - windows
+minimum_sysmon_version: "15.0"
+
+data_requirements:
+  - source: sysmon_eid_8
+    description: CreateRemoteThread events
+    required: true
+  - source: sysmon_eid_10
+    description: Process access events (GrantedAccess)
+    required: true
+  - source: sysmon_eid_7
+    description: Image load events (DLL injection indicator)
+    required: false
+
+rules:
+  - path: detections/privilege_escalation/t1055_001.yml
+    technique: T1055.001
+    type: sigma
+    required: true
+    status: validated
+    f1: 1.00
+
+quality:
+  min_f1: 0.90
+  min_evasion_resilience: 0.60
+  max_fp_rate: 0.05
+
+test_suite:
+  scenarios:
+    - tests/integration/injection_kill_chain.json
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with CreateRemoteThread detection"
+      - "Phase 6 content pack framework introduction"

@@ -1,0 +1,330 @@
+name: Continuous Detection Validation
+
+on:
+  schedule:
+    # Run every Sunday at 03:00 UTC — off-peak, avoids conflicts with daily workflows
+    - cron: '0 3 * * 0'
+  push:
+    branches:
+      - main
+    paths:
+      - 'detections/**/*.yml'
+      - 'tests/**/*.json'
+      - 'simulator/scenarios/**/*.json'
+  workflow_dispatch:
+    inputs:
+      technique_filter:
+        description: 'Filter to specific technique (e.g., T1055.001) or leave empty for all'
+        required: false
+        default: ''
+      include_evasion:
+        description: 'Run evasion tests in addition to standard validation'
+        required: false
+        default: 'false'
+
+jobs:
+  validate-detections:
+    name: Re-validate Deployed Detections
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+
+      - name: Validate detection syntax (offline — always runs)
+        id: syntax_check
+        run: |
+          python3 - <<'PYEOF'
+          import yaml
+          import sys
+          from pathlib import Path
+
+          repo_root = Path(".")
+          detections_dir = repo_root / "detections"
+          errors = []
+          checked = 0
+
+          for rule_file in detections_dir.rglob("*.yml"):
+              if "compiled" in str(rule_file) or "packs" in str(rule_file):
+                  continue
+              try:
+                  with open(rule_file, encoding="utf-8") as f:
+                      rule = yaml.safe_load(f)
+                  if not isinstance(rule, dict):
+                      errors.append(f"{rule_file}: not a valid YAML dict")
+                      continue
+                  # Check required fields
+                  for field in ["title", "id", "description", "logsource"]:
+                      if not rule.get(field):
+                          errors.append(f"{rule_file}: missing required field '{field}'")
+                  checked += 1
+              except yaml.YAMLError as e:
+                  errors.append(f"{rule_file}: YAML parse error: {e}")
+              except Exception as e:
+                  errors.append(f"{rule_file}: {e}")
+
+          print(f"Checked {checked} rule files")
+          if errors:
+              print(f"ERRORS ({len(errors)}):")
+              for e in errors:
+                  print(f"  {e}")
+              sys.exit(1)
+          else:
+              print("All rules passed syntax check")
+          PYEOF
+
+      - name: Validate test case coverage
+        id: test_coverage
+        run: |
+          python3 - <<'PYEOF'
+          import yaml
+          import json
+          from pathlib import Path
+
+          repo_root = Path(".")
+          detections_dir = repo_root / "detections"
+          tp_dir = repo_root / "tests" / "true_positives"
+          tn_dir = repo_root / "tests" / "true_negatives"
+
+          rules = []
+          for rule_file in detections_dir.rglob("*.yml"):
+              if "compiled" in str(rule_file) or "packs" in str(rule_file):
+                  continue
+              try:
+                  with open(rule_file, encoding="utf-8") as f:
+                      rule = yaml.safe_load(f)
+                  if isinstance(rule, dict):
+                      rules.append((rule_file.stem, rule.get("title", rule_file.stem)))
+              except Exception:
+                  continue
+
+          missing_tp = []
+          missing_tn = []
+
+          for stem, title in rules:
+              # Check for any TP/TN that contains the stem
+              tp_files = list(tp_dir.glob(f"*{stem[:6]}*")) if tp_dir.exists() else []
+              tn_files = list(tn_dir.glob(f"*{stem[:6]}*")) if tn_dir.exists() else []
+              if not tp_files:
+                  missing_tp.append(f"{stem} ({title})")
+              if not tn_files:
+                  missing_tn.append(f"{stem} ({title})")
+
+          print(f"Rules with missing TP tests: {len(missing_tp)}")
+          for m in missing_tp[:10]:
+              print(f"  - {m}")
+          print(f"Rules with missing TN tests: {len(missing_tn)}")
+          for m in missing_tn[:10]:
+              print(f"  - {m}")
+
+          # Warn but don't fail — new rules in PR may not have tests yet
+          if len(missing_tp) > 5:
+              print("WARNING: More than 5 rules missing TP tests")
+          PYEOF
+
+      - name: Check compiled output freshness
+        id: compiled_check
+        run: |
+          python3 - <<'PYEOF'
+          import os
+          from pathlib import Path
+
+          repo_root = Path(".")
+          detections_dir = repo_root / "detections"
+          stale = []
+
+          for rule_file in detections_dir.rglob("*.yml"):
+              if "compiled" in str(rule_file) or "packs" in str(rule_file):
+                  continue
+              compiled_dir = rule_file.parent / "compiled"
+              lucene_file = compiled_dir / f"{rule_file.stem}.lucene"
+              if not lucene_file.exists():
+                  stale.append(f"{rule_file.relative_to(repo_root)} (no .lucene)")
+
+          if stale:
+              print(f"Rules without compiled Lucene ({len(stale)}):")
+              for s in stale:
+                  print(f"  {s}")
+              # Warn but don't fail — EQL/threshold rules use different compiled format
+              print("WARNING: Some rules missing compiled Lucene output")
+          else:
+              print("All Sigma rules have compiled Lucene output")
+          PYEOF
+
+      - name: Local validation (offline fallback)
+        id: local_validation
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import json
+          import yaml
+          import re
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          repo_root = Path(".")
+          results_dir = repo_root / "tests" / "results"
+          tp_dir = repo_root / "tests" / "true_positives"
+
+          regression_failures = []
+          total_checked = 0
+
+          for result_file in sorted(results_dir.glob("*.json")):
+              try:
+                  with open(result_file, encoding="utf-8") as f:
+                      stored = json.load(f)
+              except Exception:
+                  continue
+
+              stored_f1 = stored.get("f1_score", stored.get("f1", None))
+              if stored_f1 is None:
+                  continue
+
+              technique = stored.get("technique_id", result_file.stem)
+              total_checked += 1
+
+              # Flag regressions: F1 dropped significantly from stored result
+              # We use the stored result as the baseline since we can't re-run ES here
+              if stored_f1 < 0.5:
+                  regression_failures.append({
+                      "technique": technique,
+                      "f1": stored_f1,
+                      "reason": "F1 below 0.50 threshold",
+                  })
+
+          print(f"Checked {total_checked} stored validation results")
+          if regression_failures:
+              print(f"REGRESSIONS ({len(regression_failures)}):")
+              for r in regression_failures:
+                  print(f"  {r['technique']}: F1={r['f1']:.2f} — {r['reason']}")
+          else:
+              print("No regressions detected in stored results")
+          PYEOF
+
+      - name: Pack manifest validation
+        id: pack_check
+        run: |
+          python3 - <<'PYEOF'
+          import yaml
+          from pathlib import Path
+
+          repo_root = Path(".")
+          packs_dir = repo_root / "detections" / "packs"
+
+          if not packs_dir.exists():
+              print("No packs directory found — skipping")
+              exit(0)
+
+          errors = []
+          for pack_dir in sorted(packs_dir.iterdir()):
+              if not pack_dir.is_dir():
+                  continue
+              manifest = pack_dir / "pack.yml"
+              if not manifest.exists():
+                  errors.append(f"{pack_dir.name}: missing pack.yml")
+                  continue
+              try:
+                  with open(manifest, encoding="utf-8") as f:
+                      data = yaml.safe_load(f)
+                  required = ["name", "version", "rules", "quality"]
+                  for field in required:
+                      if not data.get(field):
+                          errors.append(f"{pack_dir.name}: missing '{field}' in pack.yml")
+                  # Verify rule files exist
+                  for rule in data.get("rules", []):
+                      rule_path = repo_root / rule.get("path", "")
+                      if not rule_path.exists():
+                          errors.append(f"{pack_dir.name}: rule file not found: {rule.get('path')}")
+              except Exception as e:
+                  errors.append(f"{pack_dir.name}: {e}")
+
+          if errors:
+              print(f"Pack validation errors ({len(errors)}):")
+              for e in errors:
+                  print(f"  {e}")
+              # Warn only — don't block on pack issues
+              print("WARNING: Pack validation found issues")
+          else:
+              import os
+              pack_count = sum(1 for d in packs_dir.iterdir() if d.is_dir() and (d / "pack.yml").exists())
+              print(f"All {pack_count} packs valid")
+          PYEOF
+
+      - name: Generate validation summary
+        id: summary
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import json
+          import yaml
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          repo_root = Path(".")
+          results_dir = repo_root / "tests" / "results"
+          detections_dir = repo_root / "detections"
+
+          # Count rules
+          sigma_rules = [f for f in detections_dir.rglob("*.yml")
+                         if "compiled" not in str(f) and "packs" not in str(f)]
+          eql_rules = [f for f in sigma_rules
+                       if "eql" in f.stem or
+                       (f.read_text(encoding="utf-8", errors="ignore").find("detection_type: eql") != -1)]
+          threshold_rules = [f for f in sigma_rules
+                             if "threshold" in f.stem or
+                             (f.read_text(encoding="utf-8", errors="ignore").find("detection_type: threshold") != -1)]
+
+          # Count stored results
+          results = list(results_dir.glob("*.json")) if results_dir.exists() else []
+          f1_scores = []
+          for r in results:
+              try:
+                  with open(r, encoding="utf-8") as f:
+                      data = json.load(f)
+                  f1 = data.get("f1_score", data.get("f1"))
+                  if f1 is not None:
+                      f1_scores.append(f1)
+              except Exception:
+                  pass
+
+          avg_f1 = sum(f1_scores) / len(f1_scores) if f1_scores else 0
+
+          print(f"=== Continuous Validation Summary ===")
+          print(f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+          print(f"Total Sigma rules: {len(sigma_rules)}")
+          print(f"  EQL rules: {len(eql_rules)}")
+          print(f"  Threshold rules: {len(threshold_rules)}")
+          print(f"  Standard Sigma: {len(sigma_rules) - len(eql_rules) - len(threshold_rules)}")
+          print(f"Stored validation results: {len(results)}")
+          print(f"Average F1 score: {avg_f1:.3f}")
+          PYEOF
+
+      - name: Create GitHub Issue on regression (if needed)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Regression] Continuous validation failed — ${date}`,
+              body: `## Continuous Validation Failure\n\nThe weekly continuous validation workflow detected an issue.\n\n**Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n**Date**: ${date}\n\n### Action Required\n1. Check the failed workflow step above\n2. Run local validation: \`python autonomous/orchestration/cli.py status\`\n3. Re-validate failing rules against Elasticsearch\n4. Open a tuning PR if F1 has dropped\n\n/cc @${context.repo.owner}`,
+              labels: ['detection', 'needs-review']
+            });

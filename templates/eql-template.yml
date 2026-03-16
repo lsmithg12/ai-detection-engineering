@@ -1,0 +1,71 @@
+# EQL Sequence Detection Rule Template
+# Use for multi-event correlation rules that span more than one log event.
+# EQL rules detect: "Event A happened, THEN Event B happened within X seconds on the same host."
+#
+# Key differences from standard Sigma rules:
+# - detection_type: eql  (not standard Sigma)
+# - eql_query: contains the actual EQL sequence
+# - spl_correlation: equivalent SPL for Splunk (no native EQL in Splunk)
+# - Validates via validation_eql.py (not validation.py)
+#
+# Transpilation:
+# - Elastic: EQL rules deploy natively to Detection Engine as type=eql
+# - Splunk: Translate to SPL with | transaction / | stats bucket patterns
+#
+title: <Title — Descriptive, starts with what is detected>
+id: <uuid4 — generate with: python3 -c "import uuid; print(uuid.uuid4())">
+status: experimental
+description: |
+  <What multi-event sequence is being detected. Include:>
+  <1. What Event A is (first step in the sequence)>
+  <2. What Event B is (second step)>
+  <3. What the combination indicates (why it's malicious)>
+references:
+  - https://attack.mitre.org/techniques/<TXXXX>/
+  - <Add relevant blog post or research link>
+author: blue-team-agent
+date: <YYYY/MM/DD>
+modified: <YYYY/MM/DD>
+tags:
+  - attack.<tactic>
+  - attack.<technique_id>
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+
+# EQL-specific fields — not standard Sigma, used by validation_eql.py and siem.py
+detection_type: eql
+
+# The EQL sequence query. Uses Elasticsearch EQL syntax.
+# Key patterns:
+#   sequence by host.name with maxspan=<duration>     <- correlate events on same host
+#     [<category> where <condition>]                   <- first event
+#     [<category> where <condition>]                   <- second event
+#
+# Categories: process, network, registry, file, sequence
+# Duration examples: 60s, 5m, 10m, 1h
+# Common fields: event.code, process.name, process.executable, process.command_line,
+#                host.name, user.name, registry.path, destination.ip, destination.port
+eql_query: |
+  sequence by host.name with maxspan=<duration>
+    [process where event.code == "1" and
+      <first_condition>]
+    [<category> where event.code == "<code>" and
+      <second_condition>]
+
+eql_tiebreaker: "@timestamp"
+eql_min_sequences: 1   # Minimum sequences to constitute an alert
+
+# Splunk SPL equivalent (since Splunk has no native EQL)
+# Use | transaction for sequence correlation, | bucket for time windowing
+spl_correlation: |
+  index=sysmon (<condition_1>) OR (<condition_2>)
+  | transaction host maxspan=<duration>s
+  | where eventcount >= 2
+  | where <has_both_event_types>
+
+falsepositives:
+  - <List known benign scenarios that could trigger this rule>
+  - <Be specific — "IT admins running inventory scripts" is better than "admin activity">
+level: <informational|low|medium|high|critical>

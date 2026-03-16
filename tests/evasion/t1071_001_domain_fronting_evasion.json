@@ -1,0 +1,30 @@
+{
+  "_evasion": {
+    "technique": "T1071.001",
+    "evasion_variant": "domain_fronting",
+    "description": "Fawkes supports domain fronting — connecting to a CDN endpoint (e.g., Cloudflare, Azure CDN) that forwards traffic to the actual C2 server. The network connection appears to go to a legitimate domain.",
+    "bypass_attempt": "Using CDN domain fronting to hide C2 destination behind legitimate-looking domain",
+    "expected_result": "EVASION_SUCCEEDS",
+    "fawkes_command": "connect (domain fronting mode)",
+    "notes": "KNOWN GAP. Domain fronting makes the destination.ip and destination.fqdn appear legitimate (e.g., a CDN IP). Our current T1071.001 rule uses connection frequency patterns that may miss fronted traffic if timing looks like normal web browsing. Mitigation: TLS certificate inspection (SNI vs Host header mismatch), JA3/JA3S fingerprinting.",
+    "remediation": "Add network-level controls: TLS inspection for SNI/Host mismatch, proxy logs showing destination after fronting resolution"
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "3", "category": "network"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {
+        "name": "chrome.exe",
+        "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      },
+      "destination": {
+        "ip": "104.21.42.100",
+        "port": 443,
+        "domain": "cloudflare.com"
+      },
+      "network": {"protocol": "tcp"},
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

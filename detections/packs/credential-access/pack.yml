@@ -1,0 +1,56 @@
+name: Credential Access Detection Pack
+version: "1.0.0"
+description: |
+  Detects credential theft including LSASS memory dumping, token theft,
+  and token impersonation. Covers Fawkes steal-token and make-token commands.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: partial
+
+threat_actors:
+  - fawkes
+  - apt
+mitre_tactics:
+  - credential_access
+mitre_techniques:
+  - T1003.001
+  - T1134.001
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_10
+    description: Process access events (LSASS handle open)
+    required: true
+
+rules:
+  - path: detections/credential_access/t1003_001.yml
+    technique: T1003.001
+    type: sigma
+    required: true
+    status: authored
+    f1: 0.00
+  - path: detections/credential_access/t1134_001_lsass_token_theft.yml
+    technique: T1134.001
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+
+quality:
+  min_f1: 0.75
+  min_evasion_resilience: 0.50
+  max_fp_rate: 0.10
+
+test_suite:
+  scenarios: []
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release"
+      - "T1003.001 needs rework (F1=0.00), T1134.001 MONITORING (F1=1.00)"

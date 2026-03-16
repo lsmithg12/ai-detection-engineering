@@ -1,0 +1,4 @@
+index=wineventlog EventCode=4625
+| bucket _time span=10m
+| stats count by src_ip, _time
+| where count > 5

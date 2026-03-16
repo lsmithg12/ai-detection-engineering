@@ -1,0 +1,52 @@
+title: Mass Service Stop — Pre-Ransomware Indicator
+id: 4a9c7e8f-0b1d-2e3f-4a5b-6c7d8e9f0a1b
+status: experimental
+description: |
+  Detects mass service stoppage — a common ransomware pre-encryption step
+  to release file locks on databases, backup agents, and security tools.
+  Alerts when 3 or more services are stopped on the same host within 5 minutes,
+  excluding normal Windows Update and BITS service transitions.
+  Covers ransomware kill-chain behavior preceding T1486 encryption.
+references:
+  - https://attack.mitre.org/techniques/T1489/
+  - https://attack.mitre.org/techniques/T1486/
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.impact
+  - attack.t1489
+  - detection.fawkes
+logsource:
+  product: windows
+  service: system
+detection_type: threshold
+detection:
+  selection:
+    event.code: "7036"
+    winlog.event_data.param2: "stopped"
+  filter_normal:
+    winlog.event_data.param1:
+      - Windows Update
+      - Background Intelligent Transfer Service
+      - Windows Defender Advanced Threat Protection Service
+  condition: selection and not filter_normal
+threshold:
+  field: host.name
+  value: 3
+  window: "5m"
+  cardinality_field: winlog.event_data.param1
+  cardinality_value: 3
+spl_query: |
+  index=wineventlog EventCode=7036 param2=stopped
+  NOT (param1="Windows Update" OR param1="Background Intelligent Transfer Service")
+  | bucket _time span=5m
+  | stats dc(param1) as distinct_services values(param1) as services count by host, _time
+  | where distinct_services >= 3
+elastic_threshold_type: threshold
+falsepositives:
+  - Planned system maintenance stopping multiple services
+  - Windows Update reboots stopping services before update
+  - Server hardening scripts disabling unnecessary services
+  - Service account password rotation causing cascading restarts
+level: high

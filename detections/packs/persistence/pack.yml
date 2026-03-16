@@ -1,0 +1,67 @@
+name: Persistence Detection Pack
+version: "1.0.0"
+description: |
+  Detects persistence mechanisms including scheduled tasks, Windows services,
+  and registry run key modifications. Covers Fawkes C2 persist commands.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: monitoring
+
+threat_actors:
+  - fawkes
+  - generic-rat
+mitre_tactics:
+  - persistence
+mitre_techniques:
+  - T1053.005
+  - T1543.003
+  - T1547.001
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_1
+    description: Process creation events (schtasks, sc.exe)
+    required: true
+  - source: sysmon_eid_13
+    description: Registry modification events
+    required: true
+
+rules:
+  - path: detections/persistence/t1053_005.yml
+    technique: T1053.005
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+  - path: detections/persistence/t1543_003.yml
+    technique: T1543.003
+    type: sigma
+    required: true
+    status: validated
+    f1: 0.86
+  - path: detections/persistence/t1547_001_registry_run_key.yml
+    technique: T1547.001
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+
+quality:
+  min_f1: 0.85
+  min_evasion_resilience: 0.50
+  max_fp_rate: 0.10
+
+test_suite:
+  scenarios:
+    - tests/integration/persistence_kill_chain.json
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with 3 persistence technique detections"
+      - "All 3 rules deployed to Elastic + Splunk (MONITORING state)"

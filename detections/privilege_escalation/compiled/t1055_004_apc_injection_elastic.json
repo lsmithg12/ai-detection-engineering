@@ -1,0 +1,40 @@
+{
+  "name": "APC Injection — Suspicious QueueUserAPC Pattern",
+  "description": "Detects APC injection via QueueUserAPC: EID 8 (CreateRemoteThread) from non-system processes. Covers Fawkes apc-injection command.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "query",
+  "language": "lucene",
+  "query": "event.code: \"8\" AND NOT process.executable: (*\\\\MsMpEng.exe OR *\\\\csrss.exe OR *\\\\svchost.exe OR *\\\\wininit.exe OR *\\\\services.exe OR *\\\\lsass.exe OR *\\\\WerFault.exe OR *\\\\WUDFHost.exe OR *\\\\SearchIndexer.exe OR *\\\\msiexec.exe)",
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0004",
+        "name": "Privilege Escalation",
+        "reference": "https://attack.mitre.org/tactics/TA0004/"
+      },
+      "technique": [
+        {
+          "id": "T1055",
+          "name": "Process Injection",
+          "reference": "https://attack.mitre.org/techniques/T1055/",
+          "subtechnique": [
+            {
+              "id": "T1055.004",
+              "name": "Asynchronous Procedure Call",
+              "reference": "https://attack.mitre.org/techniques/T1055/004/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-6m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Process Injection Detection Pack", "Fawkes", "APC Injection", "Phase6"],
+  "false_positives": ["Security software", "Debuggers", ".NET JIT"],
+  "rule_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}

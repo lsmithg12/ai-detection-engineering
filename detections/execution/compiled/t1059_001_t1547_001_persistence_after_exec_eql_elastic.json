@@ -1,0 +1,34 @@
+{
+  "name": "PowerShell Execution Followed by Registry Persistence",
+  "description": "Detects PowerShell with execution policy bypass followed by registry Run key modification within 5 minutes. Matches Fawkes powershell + persist(registry) attack chain.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "eql",
+  "language": "eql",
+  "query": "sequence by host.name with maxspan=300s\n  [process where event.code == \"1\" and\n    process.name : (\"powershell.exe\", \"pwsh.exe\") and\n    process.command_line : (\"*-ExecutionPolicy*Bypass*\", \"*-ep*bypass*\",\n                            \"*-enc*\", \"*-EncodedCommand*\", \"*-e *\",\n                            \"*-NonInteractive*\", \"*-NoProfile*-WindowStyle*Hidden*\")]\n  [registry where event.code == \"13\" and\n    registry.path : (\"*\\\\CurrentVersion\\\\Run\\\\*\",\n                     \"*\\\\CurrentVersion\\\\RunOnce\\\\*\",\n                     \"*\\\\CurrentVersion\\\\RunServices\\\\*\")]",
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0002", "name": "Execution", "reference": "https://attack.mitre.org/tactics/TA0002/"},
+      "technique": [
+        {"id": "T1059", "name": "Command and Scripting Interpreter", "reference": "https://attack.mitre.org/techniques/T1059/",
+         "subtechnique": [{"id": "T1059.001", "name": "PowerShell", "reference": "https://attack.mitre.org/techniques/T1059/001/"}]}
+      ]
+    },
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0003", "name": "Persistence", "reference": "https://attack.mitre.org/tactics/TA0003/"},
+      "technique": [
+        {"id": "T1547", "name": "Boot or Logon Autostart Execution", "reference": "https://attack.mitre.org/tactics/TA0003/",
+         "subtechnique": [{"id": "T1547.001", "name": "Registry Run Keys / Startup Folder", "reference": "https://attack.mitre.org/techniques/T1547/001/"}]}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-11m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Execution Detection Pack", "Persistence Detection Pack", "Fawkes", "EQL", "Phase6"],
+  "false_positives": ["Software installers using PowerShell", "Configuration management tools"],
+  "rule_id": "0c5e3b4a-6d7f-8a9b-0c1d-2e3f4a5b6c7d"
+}

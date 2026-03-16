@@ -1,0 +1,32 @@
+{
+  "_simulation": {
+    "description": "APC injection creating remote thread in target process — Fawkes apc-injection command",
+    "technique": "T1055.004",
+    "fawkes_command": "apc-injection",
+    "expected_result": "ALERT"
+  },
+  "event": {
+    "@timestamp": "2026-03-15T10:00:00.000Z",
+    "event": {
+      "code": "8",
+      "category": "process"
+    },
+    "host": {"name": "WORKSTATION-01"},
+    "process": {
+      "name": "fawkes_agent.exe",
+      "executable": "C:\\Users\\victim\\AppData\\Local\\Temp\\fawkes_agent.exe",
+      "pid": 7788
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\notepad.exe",
+        "TargetPid": "5678",
+        "NewThreadId": "9012",
+        "StartAddress": "0x7FFF11223344",
+        "StartModule": null,
+        "StartFunction": null
+      }
+    },
+    "user": {"name": "victim_user"}
+  }
+}

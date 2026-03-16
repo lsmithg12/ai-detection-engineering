@@ -569,6 +569,264 @@ def cmd_data_gaps(args):
     print(f"  Summary: {ready} READY | {partial} PARTIAL | {blocked} BLOCKED")
 
 
+# ---------------------------------------------------------------------------
+# Phase 6 commands — Content Pack Management
+# ---------------------------------------------------------------------------
+
+def cmd_pack_list(args):
+    """List all content packs and their status."""
+    import yaml
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    packs_dir = repo_root / "detections" / "packs"
+
+    if not packs_dir.exists():
+        print("  No content packs found (detections/packs/ does not exist).")
+        return
+
+    packs = []
+    for pack_dir in sorted(packs_dir.iterdir()):
+        if not pack_dir.is_dir():
+            continue
+        manifest_path = pack_dir / "pack.yml"
+        if not manifest_path.exists():
+            continue
+        try:
+            with open(manifest_path, encoding="utf-8") as f:
+                manifest = yaml.safe_load(f)
+            packs.append((pack_dir.name, manifest))
+        except Exception as e:
+            print(f"  Warning: could not read {pack_dir.name}/pack.yml: {e}")
+
+    if not packs:
+        print("  No packs found.")
+        return
+
+    print(f"\n  Content Packs ({len(packs)} total)\n")
+    for pack_name, manifest in packs:
+        rules = manifest.get("rules", [])
+        techniques = manifest.get("mitre_techniques", [])
+        status = manifest.get("status", "unknown")
+        version = manifest.get("version", "?")
+        name = manifest.get("name", pack_name)
+        avg_f1 = 0.0
+        f1_values = [r.get("f1", 0) for r in rules if r.get("f1") is not None]
+        if f1_values:
+            avg_f1 = sum(f1_values) / len(f1_values)
+        print(f"  {name} v{version}")
+        print(f"    Pack: {pack_name} | Status: {status} | Rules: {len(rules)} | Avg F1: {avg_f1:.2f}")
+        print(f"    Techniques: {', '.join(techniques)}")
+        print()
+
+
+def cmd_pack_validate(args):
+    """Validate all rules in a named pack, checking F1 scores against quality gates."""
+    import yaml
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    packs_dir = repo_root / "detections" / "packs"
+
+    # Find pack
+    pack_dir = packs_dir / args.pack_name
+    if not pack_dir.exists():
+        # Try fuzzy match
+        available = [d.name for d in packs_dir.iterdir() if d.is_dir()]
+        print(f"  Pack '{args.pack_name}' not found.")
+        print(f"  Available: {', '.join(available)}")
+        return
+
+    manifest_path = pack_dir / "pack.yml"
+    if not manifest_path.exists():
+        print(f"  No pack.yml found in {pack_dir}")
+        return
+
+    with open(manifest_path, encoding="utf-8") as f:
+        manifest = yaml.safe_load(f)
+
+    rules = manifest.get("rules", [])
+    quality = manifest.get("quality", {})
+    min_f1 = quality.get("min_f1", 0.75)
+    max_fp_rate = quality.get("max_fp_rate", 0.15)
+
+    print(f"\n  Validating: {manifest.get('name', args.pack_name)} v{manifest.get('version', '?')}")
+    print(f"  Quality gates: min_f1={min_f1}, max_fp_rate={max_fp_rate}\n")
+
+    passed = 0
+    failed = 0
+    missing = 0
+
+    for rule_ref in rules:
+        technique = rule_ref.get("technique", "?")
+        rule_path = repo_root / rule_ref.get("path", "")
+        rule_type = rule_ref.get("type", "sigma")
+        f1 = rule_ref.get("f1")
+        status = rule_ref.get("status", "unknown")
+
+        if not rule_path.exists():
+            print(f"  [{technique}] MISSING — {rule_ref.get('path', '?')}")
+            missing += 1
+            continue
+
+        gate_ok = f1 is not None and f1 >= min_f1
+        gate_str = f"F1={f1:.2f}" if f1 is not None else "F1=?"
+        icon = "PASS" if gate_ok else "FAIL"
+        req = "required" if rule_ref.get("required", True) else "optional"
+        print(f"  [{technique}] {icon} | {gate_str} | {status} | {req} | type={rule_type}")
+        if gate_ok:
+            passed += 1
+        else:
+            failed += 1
+
+    total = passed + failed + missing
+    print(f"\n  Result: {passed}/{total} rules pass quality gate (min_f1={min_f1})")
+    if missing > 0:
+        print(f"  Warning: {missing} rule file(s) not found on disk")
+    if failed > 0:
+        required_failed = [
+            r.get("technique", "?") for r in rules
+            if r.get("required", True) and (r.get("f1") is None or r.get("f1", 0) < min_f1)
+        ]
+        if required_failed:
+            print(f"  BLOCKED: Required rules below gate: {', '.join(required_failed)}")
+        else:
+            print(f"  WARN: Optional rules below gate — pack still deployable")
+
+
+def cmd_perf(args):
+    """Profile detection query performance at scale."""
+    from orchestration.performance import (
+        profile_detection, profile_all_detections, print_profile_report,
+    )
+
+    scale = getattr(args, "scale", "small")
+
+    if getattr(args, "all", False):
+        print(f"\n  Profiling all detections at scale={scale}...")
+        results = profile_all_detections(scale=scale)
+        print_profile_report(results)
+    elif getattr(args, "report", False):
+        # Show stored results
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        results_dir = repo_root / "tests" / "results"
+        print("  Performance report from stored results (run 'perf --all' to re-profile)")
+        for f in sorted(results_dir.glob("*_performance.json")):
+            import json as _json
+            data = _json.loads(f.read_text())
+            verdict = data.get("verdict", "?")
+            p95 = data.get("p95_ms", "?")
+            print(f"  {f.stem}: P95={p95}ms verdict={verdict}")
+    elif args.technique_id:
+        import yaml as _yaml
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        # Find the rule and its compiled query
+        for rule_file in (repo_root / "detections").rglob("*.yml"):
+            if args.technique_id.lower().replace(".", "_") in rule_file.stem:
+                with open(rule_file, encoding="utf-8") as f:
+                    rule = _yaml.safe_load(f)
+                compiled_dir = rule_file.parent / "compiled"
+                lucene_file = compiled_dir / f"{rule_file.stem}.lucene"
+                elastic_json = compiled_dir / f"{rule_file.stem}_elastic.json"
+
+                if lucene_file.exists():
+                    query = lucene_file.read_text(encoding="utf-8").strip()
+                    qtype = "lucene"
+                elif elastic_json.exists():
+                    import json as _json
+                    edata = _json.loads(elastic_json.read_text())
+                    query = edata.get("query", "")
+                    qtype = "eql" if edata.get("type") == "eql" else "lucene"
+                else:
+                    print(f"  No compiled query found for {args.technique_id}")
+                    return
+
+                result = profile_detection(args.technique_id, query, scale=scale, query_type=qtype)
+                if result:
+                    if "error" in result:
+                        print(f"  Error: {result['error']}")
+                    else:
+                        print_profile_report([result])
+                else:
+                    print("  Elasticsearch not reachable — cannot profile")
+                return
+        print(f"  Rule not found for {args.technique_id}")
+    else:
+        print("  Usage: perf <technique_id> [--scale small|medium|large]")
+        print("         perf --all [--scale small]")
+        print("         perf --report")
+
+
+def cmd_pack_deploy(args):
+    """Deploy all required rules in a pack to active SIEMs."""
+    import yaml
+    from orchestration.siem import deploy_to_siems
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    packs_dir = repo_root / "detections" / "packs"
+
+    pack_dir = packs_dir / args.pack_name
+    if not pack_dir.exists():
+        print(f"  Pack '{args.pack_name}' not found.")
+        return
+
+    with open(pack_dir / "pack.yml", encoding="utf-8") as f:
+        manifest = yaml.safe_load(f)
+
+    rules = manifest.get("rules", [])
+    required_rules = [r for r in rules if r.get("required", True)]
+
+    print(f"\n  Deploying: {manifest.get('name')} v{manifest.get('version')}")
+    print(f"  Rules to deploy: {len(required_rules)} required (of {len(rules)} total)\n")
+
+    deployed = 0
+    skipped = 0
+
+    for rule_ref in required_rules:
+        technique = rule_ref.get("technique", "?")
+        sigma_path = repo_root / rule_ref.get("path", "")
+
+        if not sigma_path.exists():
+            print(f"  [{technique}] SKIP — rule file not found: {rule_ref.get('path')}")
+            skipped += 1
+            continue
+
+        # Find compiled artifacts
+        compiled_dir = sigma_path.parent / "compiled"
+        rule_stem = sigma_path.stem
+        lucene_path = compiled_dir / f"{rule_stem}.lucene"
+        spl_path = compiled_dir / f"{rule_stem}.spl"
+
+        if not lucene_path.exists():
+            print(f"  [{technique}] SKIP — no compiled Lucene query: {lucene_path.name}")
+            skipped += 1
+            continue
+
+        with open(sigma_path, encoding="utf-8") as f:
+            sigma_data = yaml.safe_load(f)
+        lucene = lucene_path.read_text(encoding="utf-8").strip()
+        spl = spl_path.read_text(encoding="utf-8").strip() if spl_path.exists() else ""
+
+        # Build a minimal request object for deploy_to_siems
+        request = {
+            "technique_id": technique,
+            "title": sigma_data.get("title", technique),
+            "sigma_rule": str(sigma_path.relative_to(repo_root)),
+            "compiled_lucene": str(lucene_path.relative_to(repo_root)),
+        }
+
+        try:
+            result = deploy_to_siems(request, lucene, spl, sigma_data)
+            if result:
+                siems = list(result.keys())
+                print(f"  [{technique}] DEPLOYED -> {', '.join(siems)}")
+                deployed += 1
+            else:
+                print(f"  [{technique}] SKIP — no SIEMs available")
+                skipped += 1
+        except Exception as e:
+            print(f"  [{technique}] ERROR — {e}")
+            skipped += 1
+
+    print(f"\n  Pack deploy complete: {deployed} deployed, {skipped} skipped")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patronus",
@@ -653,6 +911,23 @@ def main():
     # data-gaps (Phase 5 -- gap analysis)
     sub.add_parser("data-gaps", help="Show technique/data-source gap analysis for Fawkes C2")
 
+    # perf (Phase 6 -- performance profiling)
+    p_perf = sub.add_parser("perf", help="Profile detection query performance")
+    p_perf.add_argument("technique_id", nargs="?", help="Technique ID to profile (e.g., T1059.001)")
+    p_perf.add_argument("--scale", default="small", choices=["small", "medium", "large"],
+                        help="Scale tier: small (10K), medium (100K), large (1M)")
+    p_perf.add_argument("--all", action="store_true", help="Profile all detections")
+    p_perf.add_argument("--report", action="store_true", help="Show stored performance results")
+
+    # pack (Phase 6 -- content pack management)
+    p_pack = sub.add_parser("pack", help="Content pack management")
+    p_pack_sub = p_pack.add_subparsers(dest="pack_command", required=True)
+    p_pack_sub.add_parser("list", help="List all content packs")
+    p_pack_validate = p_pack_sub.add_parser("validate", help="Validate a content pack")
+    p_pack_validate.add_argument("pack_name", help="Pack directory name (e.g., process-injection)")
+    p_pack_deploy_cmd = p_pack_sub.add_parser("deploy", help="Deploy a content pack to SIEMs")
+    p_pack_deploy_cmd.add_argument("pack_name", help="Pack directory name (e.g., process-injection)")
+
     args = parser.parse_args()
     cmd_map = {
         "status": cmd_status,
@@ -670,7 +945,16 @@ def main():
         "data-quality": cmd_data_quality,
         "schema-diff": cmd_schema_diff,
         "data-gaps": cmd_data_gaps,
+        "perf": cmd_perf,
     }
+    if args.command == "pack":
+        pack_cmd_map = {
+            "list": cmd_pack_list,
+            "validate": cmd_pack_validate,
+            "deploy": cmd_pack_deploy,
+        }
+        pack_cmd_map[args.pack_command](args)
+        return
     cmd_map[args.command](args)
 
 

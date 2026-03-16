@@ -1,0 +1,2 @@
+index=sysmon EventCode=8 NOT (Image="*\\MsMpEng.exe" OR Image="*\\csrss.exe" OR Image="*\\svchost.exe" OR Image="*\\wininit.exe" OR Image="*\\services.exe" OR Image="*\\lsass.exe" OR Image="*\\WerFault.exe" OR Image="*\\WUDFHost.exe")
+| table _time, host, User, SourceImage, TargetImage, NewThreadId
