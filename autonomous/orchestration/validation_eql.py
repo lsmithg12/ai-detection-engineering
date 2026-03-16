@@ -281,6 +281,10 @@ def validate_eql_rule_file(
         eql_query=eql_query,
         attack_events=attack_events,
         benign_events=benign_events,
-        technique_id=rule.get("tags", [""])[0].replace("attack.", ""),
+        technique_id=next(
+            (t.replace("attack.", "").upper() for t in rule.get("tags", [])
+             if t.startswith("attack.t")),
+            rule.get("id", ""),
+        ),
         expected_sequences=rule.get("eql_min_sequences", 1),
     )

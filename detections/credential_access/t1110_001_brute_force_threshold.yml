@@ -28,7 +28,7 @@ detection:
   filter_normal:
     winlog.event_data.SubStatus:
       - "0xC000006D"   # Unknown username
-  condition: selection
+  condition: selection and not filter_normal
 threshold:
   field: source.ip
   value: 5

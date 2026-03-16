@@ -5,7 +5,7 @@
   "severity": "medium",
   "type": "threshold",
   "language": "lucene",
-  "query": "event.code: \"4625\"",
+  "query": "event.code: \"4625\" AND NOT winlog.event_data.SubStatus: \"0xC000006D\"",
   "threshold": {
     "field": ["source.ip"],
     "value": 5

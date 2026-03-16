@@ -18,6 +18,7 @@ mitre_tactics:
   - defense_evasion
 mitre_techniques:
   - T1055.001
+  - T1055.004
 
 platforms:
   - windows
@@ -41,6 +42,18 @@ rules:
     required: true
     status: validated
     f1: 1.00
+  - path: detections/privilege_escalation/t1055_004_apc_injection.yml
+    technique: T1055.004
+    type: sigma
+    required: true
+    status: experimental
+    f1: null
+  - path: detections/privilege_escalation/t1055_sequence_eql.yml
+    technique: T1055.001/T1055.004
+    type: eql
+    required: false
+    status: experimental
+    f1: null
 
 quality:
   min_f1: 0.90
