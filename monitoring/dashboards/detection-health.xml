@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Patronus — Detection Health Dashboard (Splunk Simple XML 1.1)
+  Task 7.1 — Phase 7 Operational Excellence
+
+  Prerequisites:
+    1. Run monitoring/dashboards/ingest-metrics.py to populate the detection_metrics
+       KV Store collection (or use the lookup stanza below after creating it via:
+         splunk add kvstore-collection detection_metrics
+    2. The lookup definition `detection_metrics_lookup` maps to the KV Store collection.
+       Alternatively, substitute with your indexed metrics source.
+
+  Data sources:
+    - KV Store lookup: detection_metrics  (populated by ingest-metrics.py or pipeline)
+    - Index: .detection-metrics-*         (if using Elasticsearch federation is unavailable,
+                                           populate a Splunk index with the same fields)
+    - Index: .alerts-security*            (Elastic alert data forwarded to Splunk via HEC)
+-->
+<dashboard version="1.1" theme="dark">
+  <label>Patronus — Detection Health</label>
+  <description>Phase 7 operational dashboard. Tracks detection health, F1 scores, pipeline states, MITRE tactic coverage, and recent alert volume.</description>
+
+  <!-- ===================================================================
+       Row 1: Summary single-value panels
+  ==================================================================== -->
+  <row>
+    <panel>
+      <title>Total Detections</title>
+      <single>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | stats count AS total_detections
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0x53A051","0xF8BE34","0xF1813F","0xDC4E41"]</option>
+        <option name="underLabel">Rules Tracked</option>
+        <option name="useColors">true</option>
+      </single>
+    </panel>
+
+    <panel>
+      <title>MONITORING (Deployed)</title>
+      <single>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | where upper(state)="MONITORING"
+            | stats count AS deployed
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0x53A051","0xF8BE34","0xF1813F","0xDC4E41"]</option>
+        <option name="underLabel">Deployed &amp; Monitoring</option>
+        <option name="useColors">true</option>
+      </single>
+    </panel>
+
+    <panel>
+      <title>Avg F1 Score</title>
+      <single>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | stats avg(f1_score) AS avg_f1
+            | eval avg_f1=round(avg_f1, 3)
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0xDC4E41","0xF1813F","0xF8BE34","0x53A051"]</option>
+        <option name="rangeValues">[0,0.75,0.9]</option>
+        <option name="underLabel">Mean F1 (all rules)</option>
+        <option name="useColors">true</option>
+      </single>
+    </panel>
+
+    <panel>
+      <title>Needs Rework</title>
+      <single>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | where f1_score &lt; 0.75 OR upper(state)="NEEDS_REWORK"
+            | stats count AS rework_count
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0x53A051","0xF8BE34","0xF1813F","0xDC4E41"]</option>
+        <option name="rangeValues">[0,1,3]</option>
+        <option name="underLabel">F1 &lt; 0.75</option>
+        <option name="useColors">true</option>
+      </single>
+    </panel>
+  </row>
+
+  <!-- ===================================================================
+       Row 2: State distribution pie + Coverage by tactic bar chart
+  ==================================================================== -->
+  <row>
+    <panel>
+      <title>Detection State Distribution</title>
+      <chart>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | stats count BY state
+            | sort - count
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.chart.showPercent">true</option>
+        <option name="charting.fieldColors">{
+          "MONITORING": "#53A051",
+          "VALIDATED": "#0099E0",
+          "AUTHORED": "#F8BE34",
+          "NEEDS_REWORK": "#DC4E41",
+          "REQUESTED": "#A2CC3E",
+          "SCENARIO_BUILT": "#8FC2E2"
+        }</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+
+    <panel>
+      <title>Coverage by Tactic</title>
+      <chart>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | stats count AS detections avg(f1_score) AS avg_f1 BY tactic
+            | eval avg_f1=round(avg_f1, 3)
+            | sort - detections
+            | rename tactic AS "MITRE Tactic" detections AS "Detections" avg_f1 AS "Avg F1"
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.orientation">horizontal</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.axisTitleX.text">Detection Count</option>
+        <option name="charting.axisTitleY.text">Tactic</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+  </row>
+
+  <!-- ===================================================================
+       Row 3: F1 score table per technique
+  ==================================================================== -->
+  <row>
+    <panel>
+      <title>Recent F1 Scores — All Techniques</title>
+      <table>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id sortby - f1_score
+            | eval f1_score=round(f1_score, 4)
+            | eval fp_rate=round(fp_rate, 4)
+            | eval health=case(
+                f1_score &gt;= 0.90, "GOOD",
+                f1_score &gt;= 0.75, "ACCEPTABLE",
+                true(), "NEEDS REWORK"
+              )
+            | table technique_id rule_name tactic state priority f1_score fp_rate validation_method health
+            | rename
+                technique_id AS "Technique"
+                rule_name AS "Rule Name"
+                tactic AS "Tactic"
+                state AS "State"
+                priority AS "Priority"
+                f1_score AS "F1 Score"
+                fp_rate AS "FP Rate"
+                validation_method AS "Validation"
+                health AS "Health"
+            | sort "Technique"
+          </query>
+          <earliest>-7d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">25</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Health">
+          <colorPalette type="map">{"GOOD": "#53A051", "ACCEPTABLE": "#F8BE34", "NEEDS REWORK": "#DC4E41"}</colorPalette>
+        </format>
+        <format type="color" field="F1 Score">
+          <colorPalette type="minMidMax" minColor="#DC4E41" midColor="#F8BE34" maxColor="#53A051" minValue="0" midValue="0.75" maxValue="1"></colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+
+  <!-- ===================================================================
+       Row 4: Alert volume (requires alerts forwarded to Splunk via HEC)
+  ==================================================================== -->
+  <row>
+    <panel>
+      <title>Recent Pipeline Run Summary (Budget Log)</title>
+      <table>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | where metric_type="pipeline_run_summary"
+            | sort - report_date
+            | head 7
+            | table report_date total_runs completed_runs failed_runs total_items_processed total_tokens_estimated
+            | rename
+                report_date AS "Date"
+                total_runs AS "Total Runs"
+                completed_runs AS "Completed"
+                failed_runs AS "Failed"
+                total_items_processed AS "Items Processed"
+                total_tokens_estimated AS "Est. Tokens"
+          </query>
+          <earliest>-30d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">true</option>
+        <option name="count">7</option>
+      </table>
+    </panel>
+
+    <panel>
+      <title>Top Rules by Alert Volume (24h)</title>
+      <chart>
+        <search>
+          <query>
+            | inputlookup detection_metrics_lookup
+            | dedup technique_id
+            | where alert_count_24h > 0
+            | sort - alert_count_24h
+            | head 15
+            | table rule_name alert_count_24h
+            | rename rule_name AS "Rule" alert_count_24h AS "Alerts (24h)"
+          </query>
+          <earliest>-24h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.orientation">horizontal</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.axisTitleX.text">Alert Count (24h)</option>
+        <option name="charting.axisTitleY.text">Rule</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+  </row>
+
+</dashboard>
