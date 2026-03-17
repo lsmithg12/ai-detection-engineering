@@ -7,6 +7,12 @@
     "1": {
       "name": "ProcessCreate",
       "ecs_fields": {
+        "event.code": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "EventID",
+          "note": "ECS universal field — present in all Sysmon and Windows Security events"
+        },
         "process.name": {
           "type": "keyword",
           "required": true,
@@ -27,7 +33,22 @@
           "required": true,
           "source_field": "ProcessId"
         },
+        "process.hash.sha256": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        },
+        "process.hash.md5": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Hashes"
+        },
         "process.parent.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ParentImage"
+        },
+        "process.parent.executable": {
           "type": "keyword",
           "required": false,
           "source_field": "ParentImage"
@@ -232,6 +253,11 @@
           "required": true,
           "source_field": "Image"
         },
+        "process.executable": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Image"
+        },
         "file.path": {
           "type": "keyword",
           "required": true,
@@ -241,6 +267,12 @@
           "type": "keyword",
           "required": true,
           "source_field": "TargetFilename"
+        },
+        "file.extension": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetFilename",
+          "note": "Extracted from TargetFilename by ECS ingest pipeline"
         },
         "host.name": {
           "type": "keyword",

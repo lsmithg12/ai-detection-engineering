@@ -1,0 +1,186 @@
+{
+  "source": "windows_security",
+  "version": "1.0",
+  "description": "Windows Security Event Log ECS field mappings. Covers logon events (4624/4625/4648), service events (7045/7036), and process events (4688). Supplements the Sysmon schema for detection rules that query Windows Security channel logs.",
+  "updated": "2026-03-17",
+  "event_types": {
+    "4624": {
+      "name": "AccountLogon",
+      "ecs_fields": {
+        "event.code": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "EventID"
+        },
+        "event.category": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Keywords",
+          "note": "ECS universal field — authentication, network, process, etc."
+        },
+        "winlog.event_data": {
+          "type": "object",
+          "required": false,
+          "source_field": "EventData",
+          "note": "Container namespace for Windows event-specific parameters"
+        },
+        "winlog.logon.type": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "LogonType",
+          "note": "Windows logon type: 2=Interactive, 3=Network, 10=RemoteInteractive"
+        },
+        "winlog.event_data.SubStatus": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "SubStatus",
+          "note": "NTSTATUS sub-code for failed logons (0xC000006D=bad username, 0xC0000064=unknown user)"
+        },
+        "winlog.event_data.TargetUserName": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetUserName"
+        },
+        "winlog.event_data.TargetDomainName": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetDomainName"
+        },
+        "winlog.event_data.IpAddress": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "IpAddress"
+        },
+        "winlog.event_data.WorkstationName": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "WorkstationName"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": false,
+          "source_field": "IpAddress"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "TargetUserName"
+        },
+        "host.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Computer"
+        }
+      }
+    },
+    "4625": {
+      "name": "AccountLogonFailed",
+      "ecs_fields": {
+        "event.code": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "EventID"
+        },
+        "event.category": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Keywords"
+        },
+        "winlog.event_data.SubStatus": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "SubStatus"
+        },
+        "winlog.event_data.TargetUserName": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetUserName"
+        },
+        "winlog.event_data.IpAddress": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "IpAddress"
+        },
+        "winlog.logon.type": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "LogonType"
+        },
+        "source.ip": {
+          "type": "ip",
+          "required": false,
+          "source_field": "IpAddress"
+        },
+        "user.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "TargetUserName"
+        },
+        "host.name": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "Computer"
+        }
+      }
+    },
+    "7045": {
+      "name": "ServiceInstalled",
+      "ecs_fields": {
+        "event.code": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "EventID"
+        },
+        "event.category": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Keywords"
+        },
+        "winlog.event_data.param1": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ServiceName",
+          "note": "Service name (param1 for SCM events)"
+        },
+        "winlog.event_data.param2": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ImagePath",
+          "note": "Service executable path (param2 for SCM events)"
+        },
+        "process.name": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ImagePath"
+        }
+      }
+    },
+    "7036": {
+      "name": "ServiceStateChange",
+      "ecs_fields": {
+        "event.code": {
+          "type": "keyword",
+          "required": true,
+          "source_field": "EventID"
+        },
+        "event.category": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "Keywords"
+        },
+        "winlog.event_data.param1": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "ServiceName",
+          "note": "Service name for state change events"
+        },
+        "winlog.event_data.param2": {
+          "type": "keyword",
+          "required": false,
+          "source_field": "State",
+          "note": "New service state: running, stopped, etc."
+        }
+      }
+    }
+  }
+}
