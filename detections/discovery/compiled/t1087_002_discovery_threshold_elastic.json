@@ -1,0 +1,32 @@
+{
+  "name": "Discovery Command Burst — Recon Tool Threshold",
+  "description": "Detects 3+ distinct recon tools (whoami, net.exe, ipconfig, etc.) executed on the same host within 60 seconds. Covers Fawkes automated enumeration commands.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "threshold",
+  "language": "lucene",
+  "query": "event.code: \"1\" AND process.name: (whoami.exe OR net.exe OR net1.exe OR ipconfig.exe OR systeminfo.exe OR tasklist.exe OR nltest.exe OR netstat.exe OR arp.exe OR nslookup.exe)",
+  "threshold": {
+    "field": ["host.name"],
+    "value": 3,
+    "cardinality": [{"field": "process.name", "value": 3}]
+  },
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0007", "name": "Discovery", "reference": "https://attack.mitre.org/tactics/TA0007/"},
+      "technique": [
+        {"id": "T1087", "name": "Account Discovery", "reference": "https://attack.mitre.org/techniques/T1087/",
+         "subtechnique": [{"id": "T1087.002", "name": "Domain Account", "reference": "https://attack.mitre.org/techniques/T1087/002/"}]},
+        {"id": "T1082", "name": "System Information Discovery", "reference": "https://attack.mitre.org/techniques/T1082/"}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-6m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Discovery Detection Pack", "Threshold", "Phase6"],
+  "false_positives": ["IT audit scripts", "Monitoring agents"],
+  "rule_id": "2e7a5c6d-8f9b-0c1d-2e3f-4a5b6c7d8e9f"
+}

@@ -1,0 +1,33 @@
+{
+  "_simulation": {
+    "description": "3 rapid-fire recon commands within 30 seconds from same host — Fawkes post-exploitation enumeration",
+    "technique": "T1087.002",
+    "fawkes_command": "whoami + net-enum + net-stat",
+    "expected_result": "ALERT",
+    "rule_type": "eql",
+    "sequence_window": "60s"
+  },
+  "attack_events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "1", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {"name": "whoami.exe", "executable": "C:\\Windows\\System32\\whoami.exe", "command_line": "whoami"},
+      "user": {"name": "victim_user"}
+    },
+    {
+      "@timestamp": "2026-03-15T10:00:15.000Z",
+      "event": {"code": "1", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {"name": "net.exe", "executable": "C:\\Windows\\System32\\net.exe", "command_line": "net user /domain"},
+      "user": {"name": "victim_user"}
+    },
+    {
+      "@timestamp": "2026-03-15T10:00:28.000Z",
+      "event": {"code": "1", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {"name": "netstat.exe", "executable": "C:\\Windows\\System32\\netstat.exe", "command_line": "netstat -ano"},
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+event.code: "8" AND NOT process.executable: (*\\MsMpEng.exe OR *\\csrss.exe OR *\\svchost.exe OR *\\wininit.exe OR *\\services.exe OR *\\lsass.exe OR *\\WerFault.exe OR *\\WUDFHost.exe OR *\\SearchIndexer.exe OR *\\msiexec.exe)

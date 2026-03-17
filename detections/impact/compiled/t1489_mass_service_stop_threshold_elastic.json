@@ -1,0 +1,30 @@
+{
+  "name": "Mass Service Stop — Pre-Ransomware Indicator",
+  "description": "Detects mass service stoppage: 3+ distinct services stopped on same host within 5 minutes, excluding normal Windows Update transitions.",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "threshold",
+  "language": "lucene",
+  "query": "event.code: \"7036\" AND winlog.event_data.param2: stopped AND NOT winlog.event_data.param1: (\"Windows Update\" OR \"Background Intelligent Transfer Service\" OR \"Windows Defender Advanced Threat Protection Service\")",
+  "threshold": {
+    "field": ["host.name"],
+    "value": 3,
+    "cardinality": [{"field": "winlog.event_data.param1", "value": 3}]
+  },
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0040", "name": "Impact", "reference": "https://attack.mitre.org/tactics/TA0040/"},
+      "technique": [
+        {"id": "T1489", "name": "Service Stop", "reference": "https://attack.mitre.org/techniques/T1489/"}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-11m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Impact Detection Pack", "Threshold", "Ransomware", "Phase6"],
+  "false_positives": ["Planned maintenance", "Windows Update reboots"],
+  "rule_id": "4a9c7e8f-0b1d-2e3f-4a5b-6c7d8e9f0a1b"
+}

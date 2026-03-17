@@ -1,0 +1,51 @@
+title: Process Injection Sequence — Handle Open Then Remote Thread Creation
+id: 9b4d2a3f-5c6e-7f8a-9b0c-1d2e3f4a5b6c
+status: experimental
+description: |
+  Detects the two-step process injection sequence: first a suspicious process opens
+  a handle to another process with full access rights (EID 10 — process access),
+  then creates a remote thread in that process (EID 8 — CreateRemoteThread).
+  This sequence matches Fawkes vanilla-injection and apc-injection commands.
+  The 10-second window is tight enough to exclude legitimate cross-process activity.
+references:
+  - https://attack.mitre.org/techniques/T1055/001/
+  - https://attack.mitre.org/techniques/T1055/004/
+  - https://github.com/galoryber/fawkes
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.privilege_escalation
+  - attack.t1055.001
+  - attack.t1055.004
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection_type: eql
+eql_query: |
+  sequence by host.name with maxspan=10s
+    [process where event.code == "10" and
+      winlog.event_data.GrantedAccess in
+        ("0x1F0FFF", "0x1F3FFF", "0x001F0FFF", "0x143A", "0x40", "0x1410") and
+      not process.executable : ("*\\MsMpEng.exe", "*\\csrss.exe",
+                                 "*\\svchost.exe", "*\\lsass.exe",
+                                 "*\\WerFault.exe", "*\\SearchIndexer.exe")]
+    [process where event.code == "8" and
+      not process.executable : ("*\\MsMpEng.exe", "*\\csrss.exe",
+                                 "*\\svchost.exe", "*\\WUDFHost.exe")]
+eql_tiebreaker: "@timestamp"
+eql_min_sequences: 1
+spl_correlation: |
+  index=sysmon (EventCode=10 OR EventCode=8)
+  | eval is_access=(EventCode=10 AND GrantedAccess IN ("0x1F0FFF","0x1F3FFF","0x001F0FFF"))
+  | eval is_thread=(EventCode=8)
+  | transaction host maxspan=10s
+  | where is_access=1 AND is_thread=1
+  | table _time, host, User, SourceImage, TargetImage
+falsepositives:
+  - Security software (EDR, AV) inspecting process memory
+  - .NET runtime JIT compilation cross-process activity
+  - WMI providers opening handles to managed processes
+  - Debuggers attached to processes in development environments
+level: critical

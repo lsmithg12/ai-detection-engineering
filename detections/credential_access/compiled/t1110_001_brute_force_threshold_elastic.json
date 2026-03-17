@@ -1,0 +1,30 @@
+{
+  "name": "Brute Force Login — Failed Logon Threshold",
+  "description": "Detects brute force login attacks: 5+ failed logon attempts (EID 4625) from the same source IP within 10 minutes.",
+  "risk_score": 47,
+  "severity": "medium",
+  "type": "threshold",
+  "language": "lucene",
+  "query": "event.code: \"4625\" AND NOT winlog.event_data.SubStatus: \"0xC000006D\"",
+  "threshold": {
+    "field": ["source.ip"],
+    "value": 5
+  },
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0006", "name": "Credential Access", "reference": "https://attack.mitre.org/tactics/TA0006/"},
+      "technique": [
+        {"id": "T1110", "name": "Brute Force", "reference": "https://attack.mitre.org/techniques/T1110/",
+         "subtechnique": [{"id": "T1110.001", "name": "Password Guessing", "reference": "https://attack.mitre.org/techniques/T1110/001/"}]}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-11m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Credential Access Detection Pack", "Threshold", "Phase6"],
+  "false_positives": ["Service accounts with expired passwords", "SSO retry logic"],
+  "rule_id": "1d6f4b5c-7e8a-9b0c-1d2e-3f4a5b6c7d8e"
+}

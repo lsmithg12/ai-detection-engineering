@@ -1,0 +1,5 @@
+index=wineventlog EventCode=7036 param2=stopped
+NOT (param1="Windows Update" OR param1="Background Intelligent Transfer Service")
+| bucket _time span=5m
+| stats dc(param1) as distinct_services values(param1) as services count by host, _time
+| where distinct_services >= 3

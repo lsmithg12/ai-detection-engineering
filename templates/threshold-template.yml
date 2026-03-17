@@ -1,0 +1,68 @@
+# Threshold Detection Rule Template
+# Use for volume-based anomaly detection: "Did event X happen more than N times in window T?"
+# Unlike Sigma rules (single event) or EQL rules (sequence), threshold rules count events
+# in a time window and alert when the count exceeds a threshold.
+#
+# Key differences from standard Sigma rules:
+# - detection_type: threshold  (not standard Sigma)
+# - threshold section: field, value, window, optional cardinality fields
+# - Validates via validation_threshold.py (not validation.py)
+#
+# Transpilation:
+# - Elastic: threshold rule type in Detection Engine (native support)
+# - Splunk: SPL with | bucket + | stats count + | where count > N
+#
+title: <Title — describes the volume-based behavior, e.g., "Brute Force Login Threshold">
+id: <uuid4 — generate with: python3 -c "import uuid; print(uuid.uuid4())">
+status: experimental
+description: |
+  <What volume behavior is being detected. Include:>
+  <1. What the base event is (what log type, what event code)>
+  <2. What the threshold is (N events in window T)>
+  <3. What the anomaly indicates (why N events in T is suspicious)>
+references:
+  - https://attack.mitre.org/techniques/<TXXXX>/
+author: blue-team-agent
+date: <YYYY/MM/DD>
+modified: <YYYY/MM/DD>
+tags:
+  - attack.<tactic>
+  - attack.<technique_id>
+  - detection.fawkes
+logsource:
+  product: windows
+  service: <sysmon|security|system|application>
+
+# Threshold-specific fields — not standard Sigma
+detection_type: threshold
+
+# Base filter — which events to count (same as Sigma selection)
+detection:
+  selection:
+    <field>: <value>          # e.g., event.code: "4625"
+    <field2>: <value2>        # Additional required conditions
+  filter_<name>:              # Optional: exclude known benign patterns
+    <field>: <value>
+  condition: selection [and not filter_<name>]
+
+# Threshold definition
+threshold:
+  field: <group_by_field>     # Count events per this field. e.g., "source.ip", "host.name", "process.name"
+  value: <min_count>          # Alert when count >= this. e.g., 5
+  window: <time_window>       # Time window. e.g., "10m", "60s", "5m", "1h"
+  cardinality_field: null     # Optional: count DISTINCT values of this field instead of raw events
+  cardinality_value: null     # Minimum distinct count to alert (used with cardinality_field)
+
+# Splunk SPL equivalent
+spl_query: |
+  index=<index> <base_filter_conditions>
+  | bucket _time span=<window>
+  | stats count by <group_by_field>, _time
+  | where count > <value>
+
+# Elastic Detection Engine threshold format (JSON embedded in YAML)
+elastic_threshold_type: threshold   # Used by siem.py to set "type": "threshold" in API payload
+
+falsepositives:
+  - <List specific known benign scenarios>
+level: <informational|low|medium|high|critical>

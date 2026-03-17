@@ -1,0 +1,52 @@
+title: PowerShell Execution Followed by Registry Persistence
+id: 0c5e3b4a-6d7f-8a9b-0c1d-2e3f4a5b6c7d
+status: experimental
+description: |
+  Detects the attack chain: PowerShell launched with execution policy bypass
+  flags followed by a registry Run key modification within 5 minutes on the
+  same host. This sequence matches Fawkes powershell + persist (registry method)
+  commands. Legitimate applications rarely modify Run keys immediately after
+  launching bypass-flagged PowerShell sessions.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1547/001/
+  - https://github.com/galoryber/fawkes
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.persistence
+  - attack.t1547.001
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection_type: eql
+eql_query: |
+  sequence by host.name with maxspan=300s
+    [process where event.code == "1" and
+      process.name : ("powershell.exe", "pwsh.exe") and
+      process.command_line : ("*-ExecutionPolicy*Bypass*", "*-ep*bypass*",
+                              "*-enc*", "*-EncodedCommand*", "*-e *",
+                              "*-NonInteractive*", "*-NoProfile*-WindowStyle*Hidden*")]
+    [registry where event.code == "13" and
+      registry.path : ("*\\CurrentVersion\\Run\\*",
+                       "*\\CurrentVersion\\RunOnce\\*",
+                       "*\\CurrentVersion\\RunServices\\*")]
+eql_tiebreaker: "@timestamp"
+eql_min_sequences: 1
+spl_correlation: |
+  index=sysmon (EventCode=1 OR EventCode=13)
+  | eval is_ps=(EventCode=1 AND (
+      match(CommandLine, "(?i)-ExecutionPolicy.*Bypass|(?i)-ep.*bypass|(?i)-enc|(?i)-EncodedCommand")
+    ))
+  | eval is_reg=(EventCode=13 AND match(TargetObject, "CurrentVersion\\Run"))
+  | transaction host maxspan=300s
+  | where is_ps=1 AND is_reg=1
+falsepositives:
+  - Software installers that use PowerShell to set up startup entries
+  - Configuration management tools (Ansible, DSC) modifying Run keys
+  - Legitimate software updaters using PowerShell with non-default execution policy
+level: high

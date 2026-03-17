@@ -1,0 +1,8 @@
+index=sysmon EventCode=1
+  (Image="*\\whoami.exe" OR Image="*\\net.exe" OR Image="*\\net1.exe"
+   OR Image="*\\ipconfig.exe" OR Image="*\\systeminfo.exe"
+   OR Image="*\\tasklist.exe" OR Image="*\\nltest.exe"
+   OR Image="*\\netstat.exe" OR Image="*\\arp.exe" OR Image="*\\nslookup.exe")
+| bucket _time span=60s
+| stats dc(Image) as distinct_tools values(Image) as tools count by host, _time, User
+| where distinct_tools >= 3

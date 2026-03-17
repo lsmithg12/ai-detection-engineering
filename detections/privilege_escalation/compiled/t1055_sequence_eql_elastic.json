@@ -1,0 +1,29 @@
+{
+  "name": "Process Injection Sequence \u2014 Handle Open Then Remote Thread Creation",
+  "description": "Detects process injection: suspicious process opens full-access handle to another process (EID 10) then creates remote thread (EID 8) within 10 seconds. Covers Fawkes vanilla-injection and apc-injection.",
+  "risk_score": 99,
+  "severity": "critical",
+  "type": "eql",
+  "language": "eql",
+  "query": "sequence by host.name with maxspan=10s\n  [process where event.code == \"10\" and\n    winlog.event_data.GrantedAccess in\n      (\"0x1F0FFF\", \"0x1F3FFF\", \"0x001F0FFF\", \"0x143A\", \"0x40\", \"0x1410\") and\n    not process.executable : (\"*\\\\MsMpEng.exe\", \"*\\\\csrss.exe\",\n                               \"*\\\\svchost.exe\", \"*\\\\lsass.exe\",\n                               \"*\\\\WerFault.exe\", \"*\\\\SearchIndexer.exe\")]\n  [process where event.code == \"8\" and\n    not process.executable : (\"*\\\\MsMpEng.exe\", \"*\\\\csrss.exe\",\n                               \"*\\\\svchost.exe\", \"*\\\\WUDFHost.exe\")]",
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0004", "name": "Privilege Escalation", "reference": "https://attack.mitre.org/tactics/TA0004/"},
+      "technique": [
+        {"id": "T1055", "name": "Process Injection", "reference": "https://attack.mitre.org/techniques/T1055/",
+         "subtechnique": [
+           {"id": "T1055.001", "name": "Dynamic-link Library Injection", "reference": "https://attack.mitre.org/techniques/T1055/001/"},
+           {"id": "T1055.004", "name": "Asynchronous Procedure Call", "reference": "https://attack.mitre.org/techniques/T1055/004/"}
+         ]}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-6m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Process Injection Detection Pack", "Fawkes", "EQL", "Phase6"],
+  "false_positives": ["Security software (EDR/AV)", ".NET JIT compilation", "Debuggers"],
+  "rule_id": "9b4d2a3f-5c6e-7f8a-9b0c-1d2e3f4a5b6c"
+}

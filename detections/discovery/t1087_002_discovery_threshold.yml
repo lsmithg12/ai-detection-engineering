@@ -1,0 +1,63 @@
+title: Discovery Command Burst — Recon Tool Threshold
+id: 2e7a5c6d-8f9b-0c1d-2e3f-4a5b6c7d8e9f
+status: experimental
+description: |
+  Detects rapid enumeration activity by alerting when 3 or more distinct
+  reconnaissance tools are executed on the same host within 60 seconds.
+  Uses cardinality counting (distinct process names) to avoid false positives
+  from scripts that call the same tool multiple times. Covers Fawkes
+  automated discovery commands: ps, whoami, net-enum, net-shares, net-stat,
+  arp, ifconfig, drives, env.
+references:
+  - https://attack.mitre.org/techniques/T1087/002/
+  - https://attack.mitre.org/techniques/T1082/
+  - https://github.com/galoryber/fawkes
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.discovery
+  - attack.t1087.002
+  - attack.t1082
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection_type: threshold
+detection:
+  selection:
+    event.code: "1"
+    process.name:
+      - whoami.exe
+      - net.exe
+      - net1.exe
+      - ipconfig.exe
+      - systeminfo.exe
+      - tasklist.exe
+      - nltest.exe
+      - netstat.exe
+      - arp.exe
+      - nslookup.exe
+  condition: selection
+threshold:
+  field: host.name
+  value: 3
+  window: "60s"
+  cardinality_field: process.name
+  cardinality_value: 3
+spl_query: |
+  index=sysmon EventCode=1
+    (Image="*\\whoami.exe" OR Image="*\\net.exe" OR Image="*\\net1.exe"
+     OR Image="*\\ipconfig.exe" OR Image="*\\systeminfo.exe"
+     OR Image="*\\tasklist.exe" OR Image="*\\nltest.exe"
+     OR Image="*\\netstat.exe" OR Image="*\\arp.exe" OR Image="*\\nslookup.exe")
+  | bucket _time span=60s
+  | stats dc(Image) as distinct_tools values(Image) as tools count by host, _time, User
+  | where distinct_tools >= 3
+elastic_threshold_type: threshold
+falsepositives:
+  - IT administrators running inventory or health-check scripts
+  - Monitoring agents collecting system telemetry with multiple tools
+  - Security scanners performing host discovery checks
+  - Automated patching systems that enumerate the environment
+level: high

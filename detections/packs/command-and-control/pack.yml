@@ -1,0 +1,54 @@
+name: Command and Control Detection Pack
+version: "1.0.0"
+description: |
+  Detects C2 communication patterns including HTTP/HTTPS beaconing with
+  suspicious characteristics. Covers Fawkes domain fronting and TLS cert
+  pinning evasion techniques.
+author: blue-team-agent
+created: "2026-03-15"
+modified: "2026-03-15"
+status: monitoring
+
+threat_actors:
+  - fawkes
+  - apt
+  - cobalt-strike
+mitre_tactics:
+  - command_and_control
+mitre_techniques:
+  - T1071.001
+
+platforms:
+  - windows
+
+data_requirements:
+  - source: sysmon_eid_3
+    description: Network connection events
+    required: true
+  - source: sysmon_eid_22
+    description: DNS query events
+    required: false
+
+rules:
+  - path: detections/command_and_control/t1071_001.yml
+    technique: T1071.001
+    type: sigma
+    required: true
+    status: monitoring
+    f1: 1.00
+
+quality:
+  min_f1: 0.90
+  min_evasion_resilience: 0.60
+  max_fp_rate: 0.05
+
+test_suite:
+  scenarios: []
+  evasion_variants: []
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-03-15"
+    changes:
+      - "Initial pack release with C2 beaconing detection"
+      - "MONITORING state, F1=1.00"

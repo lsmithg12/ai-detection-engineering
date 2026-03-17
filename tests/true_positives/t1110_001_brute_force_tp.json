@@ -1,0 +1,20 @@
+{
+  "_simulation": {
+    "description": "6 failed login attempts from same IP in 5 minutes — brute force attack",
+    "technique": "T1110.001",
+    "fawkes_command": "make-token (repeated attempts)",
+    "expected_result": "ALERT",
+    "rule_type": "threshold",
+    "threshold_field": "source.ip",
+    "threshold_value": 5,
+    "window": "10m"
+  },
+  "attack_events": [
+    {"@timestamp": "2026-03-15T10:00:00.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:00:30.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:01:00.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:01:30.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:02:00.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}},
+    {"@timestamp": "2026-03-15T10:02:30.000Z", "event": {"code": "4625"}, "source": {"ip": "10.0.0.50"}, "host": {"name": "DC-01"}, "user": {"name": "administrator"}, "winlog": {"event_data": {"SubStatus": "0xC000006A"}}}
+  ]
+}

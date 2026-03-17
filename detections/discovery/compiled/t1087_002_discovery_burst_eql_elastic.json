@@ -1,0 +1,27 @@
+{
+  "name": "Rapid Reconnaissance Command Burst",
+  "description": "Detects 3+ reconnaissance commands executed on the same host within 60 seconds, consistent with automated C2 post-exploitation enumeration (Fawkes ps/whoami/net-enum sequence).",
+  "risk_score": 73,
+  "severity": "high",
+  "type": "eql",
+  "language": "eql",
+  "query": "sequence by host.name with maxspan=60s\n  [process where event.code == \"1\" and\n    process.name in (\"whoami.exe\", \"net.exe\", \"net1.exe\", \"ipconfig.exe\",\n                     \"systeminfo.exe\", \"tasklist.exe\", \"nltest.exe\",\n                     \"netstat.exe\", \"arp.exe\", \"nslookup.exe\")]\n  [process where event.code == \"1\" and\n    process.name in (\"whoami.exe\", \"net.exe\", \"net1.exe\", \"ipconfig.exe\",\n                     \"systeminfo.exe\", \"tasklist.exe\", \"nltest.exe\",\n                     \"netstat.exe\", \"arp.exe\", \"nslookup.exe\")]\n  [process where event.code == \"1\" and\n    process.name in (\"whoami.exe\", \"net.exe\", \"net1.exe\", \"ipconfig.exe\",\n                     \"systeminfo.exe\", \"tasklist.exe\", \"nltest.exe\",\n                     \"netstat.exe\", \"arp.exe\", \"nslookup.exe\")]",
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {"id": "TA0007", "name": "Discovery", "reference": "https://attack.mitre.org/tactics/TA0007/"},
+      "technique": [
+        {"id": "T1087", "name": "Account Discovery", "reference": "https://attack.mitre.org/techniques/T1087/",
+         "subtechnique": [{"id": "T1087.002", "name": "Domain Account", "reference": "https://attack.mitre.org/techniques/T1087/002/"}]},
+        {"id": "T1082", "name": "System Information Discovery", "reference": "https://attack.mitre.org/techniques/T1082/"}
+      ]
+    }
+  ],
+  "index": ["sim-*"],
+  "from": "now-6m",
+  "interval": "5m",
+  "enabled": true,
+  "tags": ["Discovery Detection Pack", "Fawkes", "EQL", "Phase6"],
+  "false_positives": ["System administrators troubleshooting", "IT audit scripts"],
+  "rule_id": "8a3c1f2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b"
+}

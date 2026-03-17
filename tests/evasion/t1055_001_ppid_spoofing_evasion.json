@@ -1,0 +1,49 @@
+{
+  "_evasion": {
+    "technique": "T1055.001",
+    "evasion_variant": "ppid_spoofing",
+    "description": "Attacker uses PPID spoofing to make malicious process appear as child of explorer.exe, then creates remote thread. Tests if detection relies on parent process name.",
+    "bypass_attempt": "Spoofing parent process to explorer.exe to evade parent-based filters",
+    "expected_result": "SHOULD_ALERT",
+    "fawkes_command": "vanilla-injection",
+    "notes": "Fawkes does not implement PPID spoofing natively, but C2 operators can chain it with spawn. Our rule uses GrantedAccess on EID 10 which is NOT affected by PPID spoofing."
+  },
+  "events": [
+    {
+      "@timestamp": "2026-03-15T10:00:00.000Z",
+      "event": {"code": "10", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe",
+        "pid": 4521
+      },
+      "winlog": {
+        "event_data": {
+          "GrantedAccess": "0x1F0FFF",
+          "TargetImage": "C:\\Windows\\System32\\lsass.exe",
+          "TargetPid": "744"
+        }
+      },
+      "user": {"name": "victim_user"}
+    },
+    {
+      "@timestamp": "2026-03-15T10:00:01.000Z",
+      "event": {"code": "8", "category": "process"},
+      "host": {"name": "WORKSTATION-01"},
+      "process": {
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe",
+        "pid": 4521
+      },
+      "winlog": {
+        "event_data": {
+          "TargetImage": "C:\\Windows\\System32\\notepad.exe",
+          "NewThreadId": "7892",
+          "StartAddress": "0x7FFF12345678"
+        }
+      },
+      "user": {"name": "victim_user"}
+    }
+  ]
+}

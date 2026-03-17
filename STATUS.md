@@ -3,13 +3,15 @@
 ## Pipeline State
 
 - **Status**: Active
-- **Detections authored**: 29 (28 techniques + 1 companion registry rule)
+- **Total detection rules**: 37 (30 Sigma + 3 EQL + 4 threshold; 8 new from Phase 6)
 - **Detections monitoring (SIEM)**: 11
 - **Detections validated (deploy-ready)**: 12 (F1 >= 0.75)
-- **Detections needs rework**: 4 (F1 < 0.75)
-- **Detections authored (pending validation)**: 2
-- **Fawkes coverage**: 13/21 core techniques (62%)
-- **Validation method**: Elasticsearch-based (local JSON fallback for CI)
+- **Detections authored (pending validation)**: 10 (2 pre-Phase6 + 8 new Phase 6 rules)
+- **Detections needs rework**: 4 (F1 < 0.75: T1003.001, T1021.001, T1105, borderline)
+- **Fawkes coverage**: 14/21 core techniques (67%) — T1055.004 APC injection added
+- **Tactics covered**: 9 (Impact tactic added in Phase 6)
+- **Validation method**: Elasticsearch-based + EQL/threshold variants (local JSON fallback for CI)
+- **Phases complete**: 1, 2, 3, 4, 5, 6 (Phase 7 next)
 
 ## Agent Summary
 
@@ -83,10 +85,10 @@ See `plans/architecture-scalable-detection-platform.md` for the architectural vi
 |-------|--------|-----------------|
 | Phase 1 | COMPLETED (PR #52, 2026-03-13) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54, 2026-03-14) | Elasticsearch-based SIEM validation |
-| Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl → ES streaming validation + data source gap tracking |
-| Phase 4 | IN PROGRESS | Scalable architecture: 10 agents, threat model registry, log source registry |
-| Phase 5 | NOT STARTED | Data engineering: multi-platform simulation, data quality, schema evolution |
-| Phase 6 | NOT STARTED | Detection content: content packs, EQL, threshold rules, evasion testing |
+| Phase 3 | COMPLETED (PR #58, 2026-03-14) | Raw → Cribl → ES streaming validation + data source gap tracking |
+| Phase 4 | COMPLETED (PR #62, 2026-03-15) | 10 specialized agents, threat model registry, coordinator, log source registry |
+| Phase 5 | COMPLETED (PR #63, 2026-03-15) | Multi-platform simulation, data quality engine, schema versioning, per-source Cribl |
+| Phase 6 | COMPLETED (PR #65, 2026-03-17) | Content packs, EQL/threshold rules, evasion testing, perf profiling, continuous validation CI |
 | Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
 | Phase 8 | NOT STARTED | Advanced capabilities: Agent SDK, live C2, behavioral analytics, marketplace |
 
@@ -98,15 +100,14 @@ See `plans/architecture-scalable-detection-platform.md` for the architectural vi
 
 ## Recent Changes
 
-- **PR #59**: Phase 3 — Raw event converter, Cribl streaming validation, data source gap tracking
-- **Architecture redesign**: Phases 4-8 rebuilt for enterprise scale (threat model registry, 10 agents, multi-platform)
-- **PR #54**: Phase 2 — Elasticsearch-based SIEM validation with local fallback
-- **PR #53**: Quality agent run — 11 detections healthy
-- **PR #52**: Phase 1 — Fixed stuck detections, compiled Lucene/SPL for all 29 rules
-- **PR #50**: Quality agent run — 11 detections healthy
-- **PR #49**: Intel agent run — processed 4 reports
-- **PR #47**: Pipeline run — backslash normalization fix + blue-team authored 4 detections
+- **PR #65** (2026-03-17): Phase 6 — Content packs (9), EQL rules (3), threshold rules (4), T1055.004 Sigma, evasion tests (5), continuous-validation CI, performance profiler, EQL/threshold/evasion Python modules
+- **PR #63** (2026-03-15): Phase 5 — Data quality engine, multi-platform simulators (Linux/cloud/network/macOS), schema versioning, per-source Cribl pipelines, automated gap analysis
+- **PR #62** (2026-03-15): Phase 4 — 10 specialized agents, threat model registry (Fawkes + LockBit + Scattered Spider), coordinator, log source registry
+- **PR #60** (2026-03-15): Architecture redesign — Phases 4-8 rebuilt for enterprise scale
+- **PR #58** (2026-03-14): Phase 3 — Raw event converter, Cribl streaming validation, data source gap tracking
+- **PR #54** (2026-03-14): Phase 2 — Elasticsearch-based SIEM validation with local fallback
+- **PR #52** (2026-03-13): Phase 1 — Fixed stuck detections, compiled Lucene/SPL for all 29 rules
 
 ---
-*Updated 2026-03-15. See `autonomous/orchestration/config.yml` for agent configuration.*
+*Updated 2026-03-17. See `autonomous/orchestration/config.yml` for agent configuration.*
 

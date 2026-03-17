@@ -1,0 +1,55 @@
+title: Rapid Reconnaissance Command Burst
+id: 8a3c1f2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b
+status: experimental
+description: |
+  Detects rapid-fire reconnaissance commands typical of post-exploitation enumeration.
+  Matches 3+ discovery tools executed on the same host within 60 seconds — a pattern
+  consistent with automated C2 post-exploitation (Fawkes ps, whoami, net-enum, net-stat,
+  arp, ifconfig). Human administrators rarely run 3+ recon tools within 60 seconds.
+references:
+  - https://attack.mitre.org/techniques/T1087/002/
+  - https://github.com/galoryber/fawkes
+author: blue-team-agent
+date: 2026/03/15
+modified: 2026/03/15
+tags:
+  - attack.discovery
+  - attack.t1087.002
+  - attack.t1082
+  - attack.t1049
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection_type: eql
+eql_query: |
+  sequence by host.name with maxspan=60s
+    [process where event.code == "1" and
+      process.name in ("whoami.exe", "net.exe", "net1.exe", "ipconfig.exe",
+                       "systeminfo.exe", "tasklist.exe", "nltest.exe",
+                       "netstat.exe", "arp.exe", "nslookup.exe")]
+    [process where event.code == "1" and
+      process.name in ("whoami.exe", "net.exe", "net1.exe", "ipconfig.exe",
+                       "systeminfo.exe", "tasklist.exe", "nltest.exe",
+                       "netstat.exe", "arp.exe", "nslookup.exe")]
+    [process where event.code == "1" and
+      process.name in ("whoami.exe", "net.exe", "net1.exe", "ipconfig.exe",
+                       "systeminfo.exe", "tasklist.exe", "nltest.exe",
+                       "netstat.exe", "arp.exe", "nslookup.exe")]
+eql_tiebreaker: "@timestamp"
+eql_min_sequences: 1
+spl_correlation: |
+  index=sysmon EventCode=1
+    (Image="*\\whoami.exe" OR Image="*\\net.exe" OR Image="*\\net1.exe"
+     OR Image="*\\ipconfig.exe" OR Image="*\\systeminfo.exe"
+     OR Image="*\\tasklist.exe" OR Image="*\\nltest.exe"
+     OR Image="*\\netstat.exe" OR Image="*\\arp.exe" OR Image="*\\nslookup.exe")
+  | bucket _time span=60s
+  | stats dc(Image) as distinct_tools values(Image) as tools count by host, _time, User
+  | where distinct_tools >= 3
+falsepositives:
+  - System administrators troubleshooting network connectivity
+  - IT inventory or audit scripts running multiple recon commands
+  - Monitoring agents collecting system health data
+  - Security scanners performing host discovery
+level: high
