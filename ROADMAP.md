@@ -3,8 +3,8 @@
 Master plan for enhancing the AI Detection Engineering Lab from a single-threat-actor lab
 to an enterprise-grade, scalable detection engineering platform.
 
-**Last reviewed**: 2026-03-15
-**Current state**: 29 detection rules, 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-3 complete
+**Last reviewed**: 2026-03-17
+**Current state**: 37 detection rules (30 Sigma + 3 EQL + 4 threshold), 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-3 + Phase 6 complete
 **Architecture redesign**: Phases 4-8 rebuilt around real-world scaling concerns (see `plans/architecture-scalable-detection-platform.md`)
 
 ---
@@ -99,75 +99,72 @@ The redesigned phases address these proportions directly:
 
 ---
 
-## Phase 4: Scalable Architecture Foundation (Priority: HIGH)
+## Phase 4: Scalable Architecture Foundation — COMPLETED
 
-**Status**: NOT STARTED
-**Estimated effort**: 16-24 hours (multi-session)
-**Dependencies**: Phase 3 (complete)
+**Status**: COMPLETED — Merged to main via PR #62 (2026-03-15)
 
 **Plan**: [plans/phase4-scalable-architecture.md](plans/phase4-scalable-architecture.md)
 
 **Architecture**: [plans/architecture-scalable-detection-platform.md](plans/architecture-scalable-detection-platform.md)
 
-**Goal**: Transform from single-threat-actor lab to scalable, multi-threat, multi-platform architecture.
-
-**Scope**:
-- **Threat model registry**: Pluggable YAML-based threat models (`threat-intel/models/`) — Fawkes, Scattered Spider, LockBit, generic RAT
+**Delivered**:
+- **Threat model registry**: Pluggable YAML-based threat models (`threat-intel/models/`) — Fawkes, LockBit, Scattered Spider, generic schema
 - **Log source registry**: Structured `data-sources/registry/` with health check specs, field mappings, volume estimates
-- **Coverage analyst agent**: Auto-generates coverage matrix from detection state + all threat models
-- **Agent architecture refactor**: Split 5 monolithic agents into 10 specialized agents (3 tiers):
-  - **Tier 1 (Foundation)**: Data Onboarding, Threat Intel, Coverage Analyst
-  - **Tier 2 (Content)**: Detection Author, Scenario Engineer, Validation
-  - **Tier 3 (Operations)**: Deployment, Tuning, Security Gate
-  - **Orchestrator**: Coordinator agent for routing work and managing priorities
-- **State management**: Schema-enforced YAML with SQLite readiness
+- **Agent architecture refactor**: 5 monolithic → 10 specialized agents (31 files, 4,934 insertions):
+  - `author_agent.py` (465 lines), `validation_agent.py` (693 lines), `coverage_agent.py` (1,056 lines)
+  - `deployment_agent.py` (221 lines), `tuning_agent.py` (374 lines)
+- **Coordinator**: `autonomous/orchestration/coordinator.py` — routes work by priority + state
+- **CLI expansion**: `cli.py` extended with Phase 4 commands (+186 lines)
+- **State management**: Schema-enforced YAML with SQLite-ready design
 
-**Key deliverables**: 4 threat models, log source registry, 10 specialized agents, coordinator, auto-generated coverage matrix
+**State after Phase 4**: 5 → 10 agents, 3 threat models registered (Fawkes + 2 non-Fawkes), coordinator active
 
 ---
 
-## Phase 5: Data Engineering at Scale (Priority: HIGH)
+## Phase 5: Data Engineering at Scale — COMPLETED
 
-**Status**: NOT STARTED
-**Estimated effort**: 16-20 hours (multi-session)
-**Dependencies**: Phase 4 (log source registry, agent refactoring)
+**Status**: COMPLETED — Merged to main via PR #63 (2026-03-15)
 
 **Plan**: [plans/phase5-data-engineering.md](plans/phase5-data-engineering.md)
 
-**Goal**: Build the data engineering infrastructure real detection teams need: multi-platform simulation, data quality monitoring, schema evolution management.
-
-**Scope**:
+**Delivered**:
 - **Data quality monitoring engine**: Per-source health scoring (freshness, completeness, volume, schema compliance)
-- **Multi-platform simulation**: Linux auditd, AWS CloudTrail, Zeek network, macOS unified log generators
-- **Schema evolution management**: Versioned schema definitions, diff tool, detection impact analysis
-- **Raw event converter expansion**: Linux, cloud, network raw format converters
-- **Per-source Cribl pipelines**: Replace monolithic `cim_normalize` with source-specific pipelines
-- **Data source gap auto-detection**: Cross-reference coverage gaps with source registry
+- **Multi-platform simulation**: Linux auditd, AWS CloudTrail, Zeek network, macOS unified log generators added to `simulator/`
+- **Schema evolution management**: Versioned schema definitions in `gaps/data-sources/` with diff tool and detection impact analysis
+- **Raw event converter expansion**: `simulator/raw_events.py` extended for Linux, CloudTrail, Zeek formats
+- **Per-source Cribl pipelines**: Replaced monolithic `cim_normalize` with dynamic per-source routing in Cribl Stream
+- **Automated gap analysis**: `feat(gaps)` — cross-references coverage gaps with source registry; auto-creates GitHub Issues for data source gaps
+- **Security hardening**: Scanner false positives fixed, credentials scrubbed from simulation scenario files
 
-**Key deliverables**: Data quality engine, 4 new platform simulators, schema versioning, per-source Cribl pipelines
+**State after Phase 5**: Multi-platform simulation active, data quality scoring live, Cribl per-source routing deployed
 
 ---
 
-## Phase 6: Detection Content at Scale (Priority: HIGH)
+## Phase 6: Detection Content at Scale — COMPLETED
 
-**Status**: NOT STARTED
-**Estimated effort**: 16-20 hours (multi-session)
-**Dependencies**: Phase 4 (agent refactoring), Phase 5 recommended
+**Status**: COMPLETED — Merged to main via PR #65 (2026-03-17)
 
 **Plan**: [plans/phase6-detection-content.md](plans/phase6-detection-content.md)
 
-**Goal**: Scale from 29 individual Sigma rules to a comprehensive detection library with content packs, multi-rule-type support, evasion testing, and continuous validation.
+**Delivered**:
+- **Content pack framework**: 9 versioned packs with `pack.yml` + `CHANGELOG.md` (8 tactic-based + process-injection)
+- **EQL rule support**: 3 new EQL rules (T1055 sequence, T1059+T1547 cross-tactic, T1087.002 discovery burst)
+  - New validation module: `autonomous/orchestration/validation_eql.py`
+  - New template: `templates/eql-template.yml`
+- **Threshold rule support**: 4 new threshold rules (T1110.001 brute force, T1087.002 discovery burst, T1486 file encryption, T1489 mass service stop)
+  - New validation module: `autonomous/orchestration/validation_threshold.py`
+  - New template: `templates/threshold-template.yml`
+- **Evasion resilience testing**: 5 evasion test cases for T1055.001, T1059.001, T1071.001, T1547.001 bypass variants
+  - New module: `autonomous/orchestration/validation_evasion.py`
+  - Test files in `tests/evasion/`
+- **Continuous validation CI**: `.github/workflows/continuous-validation.yml` (7th workflow) — weekly re-validation + regression detection
+- **Detection performance profiling**: `autonomous/orchestration/performance.py` — 3 scale tiers (10K/100K/1M events)
+- **New Sigma rule**: T1055.004 APC injection (QueueUserAPC via Sysmon EID 8)
+- **CLI extensions**: `pack list/validate/deploy` + `perf` commands in `cli.py`
+- **Bugs found & fixed**: 5 bugs patched (f1_score naming, TP test structure, unused filter condition, wrong MITRE URL, wrong technique ID extraction in EQL validation)
+- **New coverage**: T1055.004 (was gap) + Impact tactic (T1486 threshold + T1489) — 9 tactics total
 
-**Scope**:
-- **Content pack framework**: Group related detections into versioned, deployable packs
-- **EQL rule support**: Multi-event correlation rules (kill chain sequences)
-- **Threshold rule support**: Volume-based aggregation rules (brute force, discovery bursts)
-- **Evasion resilience testing**: Systematic testing against adversary tradecraft variants
-- **Continuous validation**: Weekly re-validation of deployed rules, regression detection
-- **Detection performance profiling**: Query cost measurement at simulated scale
-- **Coverage expansion sprint**: Close gaps to 75%+ Fawkes coverage + non-Fawkes detections
-
-**Key deliverables**: Content packs, EQL rules, threshold rules, evasion test suite, continuous validation CI, coverage to 75%+
+**State after Phase 6**: 37 rules (30 Sigma + 3 EQL + 4 threshold), 14/21 Fawkes coverage (67%), 9 MITRE tactics
 
 ---
 
@@ -217,17 +214,17 @@ Each capability is independent and can be pursued based on interest and availabl
 
 ## Quick Reference: Current State vs Target
 
-| Metric | Phase 3 (Current) | Phase 4 | Phase 5 | Phase 6 | Phase 7 | Phase 8 |
-|--------|-------------------|---------|---------|---------|---------|---------|
-| Threat actors | 1 (Fawkes) | 4+ | 4+ | 4+ | 4+ | N |
-| Platforms | Windows | Windows | Win/Linux/Cloud/Net | All | All | All |
-| Detections | 29 Sigma | 29 | 29+ | 45+ (Sigma+EQL+threshold) | 50+ | 60+ |
-| Deployed | 11 | 11 | 15+ | 35+ | 40+ | 50+ |
-| Coverage (Fawkes) | 62% | 62% | 65% | 75%+ | 80%+ | 90%+ |
-| Agents | 5 monolithic | 10 specialized | 10 | 10 | 10 | SDK-based |
-| Data quality | None | Registered | Monitored + scored | Monitored | Monitored + alerted | Monitored |
-| Feedback loop | None | None | None | Evasion testing | Analyst TP/FP + auto-tune | SOAR |
-| CI gates | 6 workflows | 6 | 6 | 7 (continuous validation) | 8 (regression) | 10+ |
+| Metric | Phases 1-6 (Current) | Phase 7 Target | Phase 8 Target |
+|--------|---------------------|----------------|----------------|
+| Threat actors | 3 registered (Fawkes, LockBit, Scattered Spider) | 4+ | N |
+| Platforms | Win + Linux + Cloud + Network (sim) | All validated | All |
+| Detections | 37 (30 Sigma + 3 EQL + 4 threshold) | 50+ | 60+ |
+| Deployed | 11 MONITORING | 40+ | 50+ |
+| Coverage (Fawkes) | 67% (14/21) | 80%+ | 90%+ |
+| Agents | 10 specialized + coordinator | 10 + tuning feedback | SDK-based |
+| Data quality | Monitored + scored (Phase 5) | Monitored + alerted | Monitored |
+| Feedback loop | Evasion testing (Phase 6) | Analyst TP/FP + auto-tune | SOAR |
+| CI gates | 7 (continuous-validation added Phase 6) | 8 (regression gate) | 10+ |
 
 ---
 

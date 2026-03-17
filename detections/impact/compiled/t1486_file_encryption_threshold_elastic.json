@@ -5,9 +5,9 @@
   "severity": "critical",
   "type": "threshold",
   "language": "lucene",
-  "query": "event.code: \"11\" AND NOT process.name: (MsMpEng.exe OR TiWorker.exe OR svchost.exe OR SearchIndexer.exe OR WmiPrvSE.exe)",
+  "query": "event.code: \"11\" AND NOT process.executable: (*\\\\Windows\\ Defender\\\\MsMpEng.exe OR *\\\\System32\\\\TiWorker.exe OR *\\\\System32\\\\svchost.exe OR *\\\\System32\\\\SearchIndexer.exe OR *\\\\System32\\\\WmiPrvSE.exe)",
   "threshold": {
-    "field": ["process.name"],
+    "field": ["process.executable"],
     "value": 10
   },
   "threat": [

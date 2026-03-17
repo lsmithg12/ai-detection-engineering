@@ -26,12 +26,12 @@ detection:
   selection:
     event.code: "11"
   filter_system:
-    process.name:
-      - MsMpEng.exe
-      - TiWorker.exe
-      - svchost.exe
-      - SearchIndexer.exe
-      - WmiPrvSE.exe
+    process.executable|contains:
+      - '\Windows Defender\MsMpEng.exe'
+      - '\Windows\System32\TiWorker.exe'
+      - '\Windows\System32\svchost.exe'
+      - '\Windows\System32\SearchIndexer.exe'
+      - '\Windows\System32\WmiPrvSE.exe'
   condition: selection and not filter_system
 threshold:
   field: process.name
@@ -41,8 +41,9 @@ threshold:
   cardinality_value: null
 spl_query: |
   index=sysmon EventCode=11
-  NOT (Image="*\\MsMpEng.exe" OR Image="*\\TiWorker.exe"
-       OR Image="*\\svchost.exe" OR Image="*\\SearchIndexer.exe")
+  NOT (Image="*\\Windows Defender\\MsMpEng.exe" OR Image="*\\System32\\TiWorker.exe"
+       OR Image="*\\System32\\svchost.exe" OR Image="*\\System32\\SearchIndexer.exe"
+       OR Image="*\\System32\\WmiPrvSE.exe")
   | bucket _time span=30s
   | stats count by Image, _time, host
   | where count > 10

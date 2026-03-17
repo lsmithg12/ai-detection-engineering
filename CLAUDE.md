@@ -235,7 +235,7 @@ ai-detection-engineering/
 ├── setup.sh                           # One-command setup (--elastic/--splunk/--both/--cribl/--full)
 ├── Makefile                           # Quick commands (make setup, make agent, etc.)
 ├── mcp-config.example.json            # MCP server configuration template
-├── detections/                        # Detection-as-Code rules (29 Sigma rules)
+├── detections/                        # Detection-as-Code rules (37 rules: 30 Sigma + 3 EQL + 4 threshold)
 │   ├── <tactic>/                      # One directory per MITRE tactic
 │   │   ├── <technique>.yml            # Sigma rule
 │   │   └── compiled/                  # Transpiled outputs
@@ -392,17 +392,19 @@ cd autonomous && python3 orchestration/cli.py status
 cd autonomous && python3 orchestration/cli.py deploy --validated
 ```
 
-### Current Detection State (2026-03-15)
+### Current Detection State (2026-03-17)
 
-- **29 Sigma rules** across 8 MITRE tactics (all have compiled Lucene + SPL)
+- **37 rules** across 9 MITRE tactics: 30 Sigma + 3 EQL + 4 threshold (all compiled)
 - **11 MONITORING** (deployed to Elastic + Splunk, all healthy)
 - **12 VALIDATED** (F1 >= 0.75, deploy-ready)
-- **2 AUTHORED** (pending validation)
+- **10 AUTHORED** (pending validation: 2 pre-Phase6 + 8 new from Phase 6)
 - **4 needs rework** (F1 < 0.75: T1003.001, T1021.001, T1105, T1059.003/T1082/T1190/T1204.002 are borderline)
 - **Threat actors**: 1 (Fawkes) — target: 4+ after Phase 4
-- **Fawkes coverage**: 13/21 core techniques (62%)
+- **Fawkes coverage**: 14/21 core techniques (67%) — T1055.004 APC injection now covered
 - **Platforms**: Windows only — target: Win/Linux/Cloud/Network after Phase 5
 - **Validation method**: ES-based (Phase 2) + Cribl streaming path (Phase 3); local JSON fallback for CI
+- **Phase 6 additions**: 9 content packs, 3 EQL rules, 4 threshold rules, 1 Sigma rule, 5 evasion tests,
+  continuous-validation CI (#7 workflow), EQL/threshold/evasion/perf Python modules, 2 new templates
 
 See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed detection health.
 
@@ -412,10 +414,10 @@ See `coverage/attack-matrix.md` for the full matrix and `STATUS.md` for deployed
 |-------|--------|-----------------|
 | Phase 1 | COMPLETED (PR #52) | Fixed stuck detections, compiled all outputs |
 | Phase 2 | COMPLETED (PR #54) | Elasticsearch-based SIEM validation |
-| Phase 3 | COMPLETED (2026-03-14) | Raw → Cribl streaming validation + data source gaps |
-| Phase 4 | NOT STARTED | Scalable architecture: 10 agents, threat model registry, log source registry |
-| Phase 5 | NOT STARTED | Data engineering: multi-platform simulation, data quality, schema evolution |
-| Phase 6 | NOT STARTED | Detection content: content packs, EQL, threshold rules, evasion testing |
+| Phase 3 | COMPLETED (PR #58, 2026-03-14) | Raw → Cribl streaming validation + data source gaps |
+| Phase 4 | COMPLETED (PR #62, 2026-03-15) | 10 specialized agents, threat model registry, coordinator, log source registry |
+| Phase 5 | COMPLETED (PR #63, 2026-03-15) | Multi-platform simulation, data quality engine, schema versioning, per-source Cribl pipelines |
+| Phase 6 | COMPLETED (PR #65, 2026-03-17) | Content packs, EQL/threshold rules, evasion testing, perf profiling |
 | Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
 | Phase 8 | NOT STARTED | Advanced capabilities: Agent SDK, live C2, behavioral analytics, marketplace |
 

@@ -1,6 +1,7 @@
 index=sysmon EventCode=11
-NOT (Image="*\\MsMpEng.exe" OR Image="*\\TiWorker.exe"
-     OR Image="*\\svchost.exe" OR Image="*\\SearchIndexer.exe")
+NOT (Image="*\\Windows Defender\\MsMpEng.exe" OR Image="*\\System32\\TiWorker.exe"
+     OR Image="*\\System32\\svchost.exe" OR Image="*\\System32\\SearchIndexer.exe"
+     OR Image="*\\System32\\WmiPrvSE.exe")
 | bucket _time span=30s
 | stats count by Image, _time, host
 | where count > 10
