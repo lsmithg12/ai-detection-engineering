@@ -753,6 +753,109 @@ def cmd_perf(args):
         print("         perf --report")
 
 
+# ---------------------------------------------------------------------------
+# Phase 7 commands — Operational Excellence
+# ---------------------------------------------------------------------------
+
+def cmd_sla(args):
+    """Show SLA metrics for detections."""
+    from orchestration import sla
+
+    if getattr(args, "technique_id", None):
+        result = sla.calculate_sla(args.technique_id)
+        if getattr(args, "format", "table") == "json":
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"\n  SLA: {result.get('technique_id','?')} [{result.get('sla_status','?')}]")
+            print(f"  Priority:     {result.get('priority','?')}")
+            print(f"  SLA target:   {result.get('sla_target_hours','?')}h")
+            print(f"  End-to-end:   {result.get('end_to_end_hours','N/A')}h")
+            phases = result.get("phases", {})
+            for phase_name, hours in phases.items():
+                if hours is not None:
+                    print(f"  {phase_name}: {hours:.1f}h")
+    elif getattr(args, "month", None):
+        result = sla.generate_monthly_report(args.month)
+        print(result)
+    elif getattr(args, "breaches", False):
+        breaches = sla.check_breaches()
+        if not breaches:
+            print("  No SLA breaches found.")
+            return
+        for record in breaches:
+            print(f"  [{record.get('sla_status','?')}] {record.get('technique_id','?')} "
+                  f"— {record.get('end_to_end_hours','?')}h / {record.get('sla_target_hours','?')}h")
+    else:
+        all_status = sla.get_all_sla_status()
+        fmt = getattr(args, "format", "table")
+        if fmt == "json":
+            print(json.dumps(all_status, indent=2))
+        else:
+            print(f"\n  {'Technique':<14} {'Priority':<10} {'End-to-End (h)':>14} {'SLA Target':>10} {'Status':<10}")
+            print(f"  {'-'*60}")
+            if isinstance(all_status, list):
+                for row in all_status:
+                    print(
+                        f"  {row.get('technique_id', '?'):<14} "
+                        f"{row.get('priority', '?'):<10} "
+                        f"{str(row.get('end_to_end_hours', '?')):>14} "
+                        f"{str(row.get('sla_target_hours', '?')):>10} "
+                        f"{row.get('sla_status', '?'):<10}"
+                    )
+            else:
+                print(f"  {all_status}")
+
+
+def cmd_health_check(args):
+    """Run detection health checks."""
+    from orchestration.health_monitor import DetectionHealthMonitor
+
+    monitor = DetectionHealthMonitor()
+    list_only = getattr(args, "list_only", False)
+    no_issues = getattr(args, "no_issues", False)
+
+    create_issues = not (no_issues or list_only)
+    result = monitor.run(create_issues=create_issues)
+
+    checks_run = result.get("checks_run", 0) if isinstance(result, dict) else 0
+    alerts_found = result.get("alerts_found", 0) if isinstance(result, dict) else 0
+    issues_created = result.get("issues_created", 0) if isinstance(result, dict) else 0
+    issues_updated = result.get("issues_updated", 0) if isinstance(result, dict) else 0
+
+    print(f"\n  Health Check Results")
+    print(f"  Checks run:       {checks_run}")
+    print(f"  Alerts found:     {alerts_found}")
+    if not list_only:
+        print(f"  Issues created:   {issues_created}")
+        print(f"  Issues updated:   {issues_updated}")
+
+    if alerts_found == 0:
+        print("\n  All deployed rules are healthy — no issues detected.")
+
+
+def cmd_dashboard_update(args):
+    """Push metrics to detection health dashboard."""
+    import subprocess as _subprocess
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    script = repo_root / "monitoring" / "dashboards" / "ingest-metrics.py"
+
+    if not script.exists():
+        print(f"  Error: dashboard script not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script)]
+    if getattr(args, "dry_run", False):
+        cmd.append("--dry-run")
+
+    print(f"  Running: {' '.join(cmd)}")
+    proc = _subprocess.run(cmd, cwd=str(repo_root))
+    if proc.returncode != 0:
+        print(f"  dashboard-update exited with code {proc.returncode}")
+    else:
+        print("  dashboard-update complete.")
+
+
 def cmd_pack_deploy(args):
     """Deploy all required rules in a pack to active SIEMs."""
     import yaml
@@ -919,6 +1022,22 @@ def main():
     p_perf.add_argument("--all", action="store_true", help="Profile all detections")
     p_perf.add_argument("--report", action="store_true", help="Show stored performance results")
 
+    # sla (Phase 7 -- SLA metrics)
+    p_sla = sub.add_parser("sla", help="Show SLA metrics for detections")
+    p_sla.add_argument("technique_id", nargs="?", help="Specific technique ID")
+    p_sla.add_argument("--month", help="Month to report (YYYY-MM)")
+    p_sla.add_argument("--breaches", action="store_true", help="Show only SLA breaches")
+    p_sla.add_argument("--format", choices=["table", "json"], default="table")
+
+    # health-check (Phase 7 -- detection health monitoring)
+    p_hc = sub.add_parser("health-check", help="Run detection health checks")
+    p_hc.add_argument("--no-issues", action="store_true", help="Don't create GitHub issues")
+    p_hc.add_argument("--list-only", action="store_true", help="List alerts without creating issues")
+
+    # dashboard-update (Phase 7 -- push metrics to dashboard)
+    p_du = sub.add_parser("dashboard-update", help="Push metrics to detection health dashboard")
+    p_du.add_argument("--dry-run", action="store_true", help="Preview without indexing")
+
     # pack (Phase 6 -- content pack management)
     p_pack = sub.add_parser("pack", help="Content pack management")
     p_pack_sub = p_pack.add_subparsers(dest="pack_command", required=True)
@@ -946,6 +1065,9 @@ def main():
         "schema-diff": cmd_schema_diff,
         "data-gaps": cmd_data_gaps,
         "perf": cmd_perf,
+        "sla": cmd_sla,
+        "health-check": cmd_health_check,
+        "dashboard-update": cmd_dashboard_update,
     }
     if args.command == "pack":
         pack_cmd_map = {

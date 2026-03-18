@@ -4,6 +4,7 @@
 
 .PHONY: help setup setup-elastic setup-splunk setup-both setup-full start stop \
         down logs sim-logs status clean agent transpile-elastic transpile-splunk \
+        dashboard-update sla pipeline-stats health-check feedback \
         share-check
 
 # Default SIEM (override with: make setup SIEM=splunk)
@@ -82,6 +83,22 @@ transpile-splunk: ## Transpile all Sigma rules to Splunk SPL
 # ─── Data ────────────────────────────────────────────────────────
 ingest-samples: ## Load sample Attack Range data into SIEMs
 	@chmod +x pipeline/fetch-attack-range-data.sh && bash pipeline/fetch-attack-range-data.sh samples
+
+# ─── Phase 7: Operational Excellence ──────────────────────────────
+dashboard-update: ## Push detection metrics to Kibana/Splunk dashboard
+	@cd autonomous && python3 orchestration/cli.py dashboard-update
+
+sla: ## Show SLA metrics (set TECHNIQUE=T1055.001 or MONTH=2026-03 for details)
+	@cd autonomous && python3 orchestration/cli.py sla $(if $(TECHNIQUE),$(TECHNIQUE),) $(if $(MONTH),--month $(MONTH),)
+
+pipeline-stats: ## Generate monthly pipeline performance report
+	@python3 monitoring/generate-pipeline-report.py
+
+health-check: ## Run detection health checks and create GitHub issues for problems
+	@cd autonomous && python3 orchestration/cli.py health-check
+
+feedback: ## Record analyst feedback (set TECHNIQUE, VERDICT, REASON)
+	@cd autonomous && python3 orchestration/cli.py feedback $(TECHNIQUE) --verdict $(VERDICT) --reason "$(REASON)"
 
 # ─── Sharing ─────────────────────────────────────────────────────
 share-check: ## Verify the project is ready to share (clean, documented)

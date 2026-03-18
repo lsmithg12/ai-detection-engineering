@@ -1,0 +1,86 @@
+name: Detection Regression Test
+
+on:
+  pull_request:
+    paths:
+      - 'detections/**'
+
+jobs:
+  regression:
+    name: Regression Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Find changed detection files
+        id: changes
+        run: |
+          changed=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD -- 'detections/**/*.yml' | grep -v '/compiled/' || echo "")
+          echo "files=$changed" >> $GITHUB_OUTPUT
+
+      - name: Run regression tests
+        id: regression
+        continue-on-error: false
+        run: |
+          if [ -n "${{ steps.changes.outputs.files }}" ]; then
+            python autonomous/orchestration/regression.py \
+              --files "${{ steps.changes.outputs.files }}" \
+              --commit-sha "${{ github.sha }}" \
+              --pr-number "${{ github.event.pull_request.number }}"
+          else
+            echo "No detection files changed — skipping regression check"
+          fi
+
+      - name: Post regression report as PR comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'tests/results/regression-report.md';
+
+            let body;
+            if (fs.existsSync(reportPath)) {
+              body = fs.readFileSync(reportPath, 'utf8');
+            } else {
+              body = '## Detection Regression Test Results\n\nNo detection files were changed — regression check skipped.';
+            }
+
+            // Find and update existing bot comment, or create a new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('## Detection Regression Test Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

@@ -11,7 +11,7 @@
 - **Fawkes coverage**: 14/21 core techniques (67%) — T1055.004 APC injection added
 - **Tactics covered**: 9 (Impact tactic added in Phase 6)
 - **Validation method**: Elasticsearch-based + EQL/threshold variants (local JSON fallback for CI)
-- **Phases complete**: 1, 2, 3, 4, 5, 6 (Phase 7 next)
+- **Phases complete**: 1, 2, 3, 4, 5, 6 (Phase 7 in progress)
 
 ## Agent Summary
 
@@ -89,7 +89,7 @@ See `plans/architecture-scalable-detection-platform.md` for the architectural vi
 | Phase 4 | COMPLETED (PR #62, 2026-03-15) | 10 specialized agents, threat model registry, coordinator, log source registry |
 | Phase 5 | COMPLETED (PR #63, 2026-03-15) | Multi-platform simulation, data quality engine, schema versioning, per-source Cribl |
 | Phase 6 | COMPLETED (PR #65, 2026-03-17) | Content packs, EQL/threshold rules, evasion testing, perf profiling, continuous validation CI |
-| Phase 7 | NOT STARTED | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
+| Phase 7 | IN PROGRESS (branch: infra/phase7-operational-excellence) | Operational excellence: feedback loops, regression testing, SLAs, dashboards |
 | Phase 8 | NOT STARTED | Advanced capabilities: Agent SDK, live C2, behavioral analytics, marketplace |
 
 ## Token Budget

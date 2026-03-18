@@ -41,6 +41,44 @@ AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
 CONFIG_PATH = AUTONOMOUS_DIR / "orchestration" / "config.yml"
 
+
+def _emit_pipeline_metrics(
+    agent_name: str,
+    run_id: str,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    duration: float,
+    result: dict,
+):
+    """Write per-run metrics to monitoring/pipeline-metrics.jsonl."""
+    metrics_path = REPO_ROOT / "monitoring" / "pipeline-metrics.jsonl"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Extract state transitions from result if present
+    state_transitions = result.get("state_transitions", {}) if isinstance(result, dict) else {}
+    f1_scores = result.get("f1_scores", {}) if isinstance(result, dict) else {}
+    errors = 1 if (isinstance(result, dict) and result.get("error")) else 0
+
+    entry = {
+        "timestamp": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "run_id": run_id,
+        "agent": agent_name,
+        "run_type": "single",
+        "duration_minutes": round(duration / 60, 2),
+        "tokens_estimated": result.get("tokens_estimated", 0) if isinstance(result, dict) else 0,
+        "detections_processed": result.get("detections_reviewed",
+                                 result.get("items_processed",
+                                 result.get("techniques_processed", 0))) if isinstance(result, dict) else 0,
+        "state_transitions": state_transitions,
+        "errors": errors,
+        "retries": result.get("retries", 0) if isinstance(result, dict) else 0,
+        "f1_scores": f1_scores,
+        "coverage_delta": result.get("coverage_delta", 0.0) if isinstance(result, dict) else 0.0,
+    }
+
+    with open(metrics_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
 # Agent module mapping (Phase 4 topology: 8 specialized agents)
 AGENT_MODULES = {
     "intel": "orchestration.agents.intel_agent",
@@ -271,6 +309,16 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
     budget.log_run(agent_name, duration, items or 1,
                    status="completed" if not result.get("error") else "error")
     print(f"  [budget] Logged run: {duration:.1f}s, {items or 1} items")
+
+    # 5b. Write pipeline performance metrics
+    _emit_pipeline_metrics(
+        agent_name=agent_name,
+        run_id=run_id,
+        start_time=start_time,
+        end_time=end_time,
+        duration=duration,
+        result=result,
+    )
 
     # 6. Retrospective prompt
     retro = learnings.get_retrospective_prompt(agent_name, run_id)

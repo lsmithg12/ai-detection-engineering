@@ -1,0 +1,3 @@
+{"timestamp": "2026-03-17T13:33:00.808885+00:00", "technique_id": "T1055.001", "verdict": "fp", "reason": "test - legitimate AV memory scan", "analyst": "lsmit"}
+{"timestamp": "2026-03-17T13:33:00.929633+00:00", "technique_id": "T1055.001", "verdict": "tp", "reason": "confirmed Fawkes injection", "analyst": "lsmit"}
+{"timestamp": "2026-03-17T13:33:01.052562+00:00", "technique_id": "T1059.001", "verdict": "fp", "reason": "IT admin running PowerShell scripts", "analyst": "lsmit"}
