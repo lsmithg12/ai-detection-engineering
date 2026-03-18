@@ -1,6 +1,6 @@
 {
   "technique_id": "T1105",
-  "date": "2026-03-08T22:30:13Z",
+  "date": "2026-03-18T12:33:53Z",
   "sigma_rule": "detections\\execution\\t1105.yml",
   "metrics": {
     "tp": 1,
@@ -16,20 +16,27 @@
     "total_benign": 2
   },
   "quality_tier": "needs_rework",
-  "validated_at": "2026-03-08T22:30:13Z",
-  "validated_by": "blue-team-agent",
-  "validation_method": "local_json",
+  "validation_method": "elasticsearch",
+  "validated_by": "validation-agent",
   "siem_targets": [
     "elasticsearch",
     "splunk"
   ],
-  "sigma_rule_path": "detections/execution/t1105.yml",
-  "scenario_path": "simulator/scenarios/t1105.json",
+  "sigma_rule_path": "detections\\execution\\t1105.yml",
+  "scenario_path": "simulator\\scenarios\\t1105.json",
   "attack_event_count": 3,
   "benign_event_count": 2,
   "quality_tier_criteria": {
     "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
     "validated": "F1 >= 0.75",
     "needs_rework": "F1 < 0.75"
+  },
+  "validation_details": {
+    "index": "sim-validation-0a1074d0",
+    "query": "(event.code:11 AND (file.extension:(exe OR dll OR scr OR cpl))) AND (process.executable:(*\\\\ProgramData\\\\* OR *\\\\AppData\\\\Local\\\\Temp\\\\* OR *\\\\AppData\\\\Roaming\\\\* OR *\\\\Users\\\\Public\\\\* OR *\\\\Windows\\",
+    "events_ingested": 5,
+    "query_hits": 1,
+    "query_time_ms": 23,
+    "errors": []
   }
 }
