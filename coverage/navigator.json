@@ -1,0 +1,938 @@
+{
+  "name": "Detection Coverage — Auto-Generated",
+  "versions": {
+    "attack": "14",
+    "navigator": "4.5",
+    "layer": "4.5"
+  },
+  "domain": "enterprise-attack",
+  "description": "Auto-generated detection coverage layer. 28 detections across 4 threat models. Generated: 2026-03-18T12:50:13Z",
+  "filters": {
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD",
+      "Office 365",
+      "Google Workspace",
+      "IaaS",
+      "Network",
+      "Containers"
+    ]
+  },
+  "sorting": 3,
+  "layout": {
+    "layout": "side",
+    "aggregateFunction": "max",
+    "showID": true,
+    "showName": true,
+    "showAggregateScores": true,
+    "countUnscored": false
+  },
+  "hideDisabled": false,
+  "techniques": [
+    {
+      "techniqueID": "T1003.001",
+      "score": 0,
+      "comment": "Threat models: Scattered Spider (UNC3944); F1: 0.00; Status: AUTHORED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffa500",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "AUTHORED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\credential_access\\t1003_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.001",
+      "score": 50,
+      "comment": "F1: 0.50; Status: AUTHORED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffa500",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "AUTHORED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.5"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1021_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.002",
+      "score": 0,
+      "comment": "Threat models: LockBit 3.0 (Black); Status: NO_DETECTION",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1027",
+      "score": 100,
+      "comment": "Threat models: LockBit 3.0 (Black); F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1027.yml"
+        },
+        {
+          "name": "priority",
+          "value": "medium"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027.001",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: binary-inflate",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1046",
+      "score": 100,
+      "comment": "F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\discovery\\t1046.yml"
+        },
+        {
+          "name": "priority",
+          "value": "medium"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1047",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent, LockBit 3.0 (Black); Status: NO_DETECTION; Commands: wmi",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1053.005",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan, LockBit 3.0 (Black); F1: 1.00; Status: MONITORING; Commands: schtask",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\persistence\\t1053_005.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055.001",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent; F1: 1.00; Status: VALIDATED; Commands: vanilla-injection",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\privilege_escalation\\t1055_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055.004",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: apc-injection",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1055.012",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: threadless-inject",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1055.013",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: opus-injection",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1055.015",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: poolparty-injection",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1056.001",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan; Status: NO_DETECTION; Commands: keylog",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1059.001",
+      "score": 95,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan, LockBit 3.0 (Black), Scattered Spider (UNC3944); F1: 0.95; Status: MONITORING; Commands: powershell",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.95"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections/execution/t1059_001_powershell_bypass.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.003",
+      "score": 75,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan, LockBit 3.0 (Black); F1: 0.75; Status: VALIDATED; Commands: run, shell, spawn, inline-execute",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.75"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1059_003.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1070.001",
+      "score": 100,
+      "comment": "Threat models: LockBit 3.0 (Black); F1: 1.00; Status: MONITORING",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1070_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1070.006",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: timestomp",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1071.001",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan; F1: 1.00; Status: MONITORING; Commands: sleep",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\command_and_control\\t1071_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1078.004",
+      "score": 100,
+      "comment": "Threat models: Scattered Spider (UNC3944); F1: 1.00; Status: MONITORING",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1078_004.yml"
+        },
+        {
+          "name": "priority",
+          "value": "medium"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1082",
+      "score": 75,
+      "comment": "Threat models: Generic Remote Access Trojan; F1: 0.75; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.75"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1082.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1083",
+      "score": 100,
+      "comment": "F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\discovery\\t1083.yml"
+        },
+        {
+          "name": "priority",
+          "value": "medium"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1090.001",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: socks5",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1098",
+      "score": 0,
+      "comment": "Threat models: Scattered Spider (UNC3944); Status: NO_DETECTION",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1105",
+      "score": 50,
+      "comment": "Threat models: Generic Remote Access Trojan; F1: 0.50; Status: AUTHORED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffa500",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "AUTHORED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.5"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1105.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1113",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan; Status: NO_DETECTION; Commands: screenshot",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1115",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan; Status: NO_DETECTION; Commands: clipboard",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1133",
+      "score": 85,
+      "comment": "Threat models: LockBit 3.0 (Black); F1: 0.86; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.857"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1133.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.001",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent; F1: 1.00; Status: MONITORING; Commands: steal-token",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections/credential_access/t1134_001_lsass_token_theft.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.003",
+      "score": 0,
+      "comment": "Threat models: Fawkes C2 Agent; Status: NO_DETECTION; Commands: make-token",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1190",
+      "score": 75,
+      "comment": "Threat models: LockBit 3.0 (Black); F1: 0.75; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.75"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1190.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1204.002",
+      "score": 75,
+      "comment": "Threat models: Generic Remote Access Trojan; F1: 0.75; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.75"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1204_002.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1219",
+      "score": 100,
+      "comment": "Threat models: Scattered Spider (UNC3944); F1: 1.00; Status: MONITORING",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\initial_access\\t1219.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1484.002",
+      "score": 0,
+      "comment": "Threat models: Scattered Spider (UNC3944); Status: NO_DETECTION",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1486",
+      "score": 100,
+      "comment": "Threat models: LockBit 3.0 (Black), Scattered Spider (UNC3944); F1: 1.00; Status: MONITORING",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1486.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1490",
+      "score": 100,
+      "comment": "Threat models: LockBit 3.0 (Black); F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1490.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1543.003",
+      "score": 85,
+      "comment": "Threat models: Fawkes C2 Agent; F1: 0.86; Status: VALIDATED; Commands: service -action create",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.857"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\persistence\\t1543_003.yml"
+        },
+        {
+          "name": "priority",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.001",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent, Generic Remote Access Trojan; F1: 1.00; Status: MONITORING; Commands: persist -method registry",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections/persistence/t1547_001_registry_run_key.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1562.001",
+      "score": 100,
+      "comment": "Threat models: Fawkes C2 Agent, LockBit 3.0 (Black); F1: 1.00; Status: MONITORING; Commands: autopatch, start-clr",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1562_001.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1562.004",
+      "score": 85,
+      "comment": "F1: 0.86; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "0.857"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1562_004.yml"
+        },
+        {
+          "name": "priority",
+          "value": "medium"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1562.006",
+      "score": 100,
+      "comment": "F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\defense_evasion\\t1562_006.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1566.004",
+      "score": 100,
+      "comment": "Threat models: Scattered Spider (UNC3944); F1: 1.00; Status: MONITORING",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#00ff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "MONITORING"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\initial_access\\t1566_004.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1567.002",
+      "score": 0,
+      "comment": "Threat models: Scattered Spider (UNC3944); Status: NO_DETECTION",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1569.002",
+      "score": 100,
+      "comment": "F1: 1.00; Status: VALIDATED",
+      "enabled": true,
+      "showSubtechniques": false,
+      "color": "#ffff00",
+      "metadata": [
+        {
+          "name": "status",
+          "value": "VALIDATED"
+        },
+        {
+          "name": "f1_score",
+          "value": "1.0"
+        },
+        {
+          "name": "sigma_rule",
+          "value": "detections\\execution\\t1569_002.yml"
+        },
+        {
+          "name": "priority",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1621",
+      "score": 0,
+      "comment": "Threat models: Scattered Spider (UNC3944); Status: NO_DETECTION",
+      "enabled": true,
+      "showSubtechniques": false
+    }
+  ],
+  "gradient": {
+    "colors": [
+      "#ff6347",
+      "#ffa500",
+      "#ffff00",
+      "#90ee90",
+      "#00ff00"
+    ],
+    "minValue": 0,
+    "maxValue": 100
+  },
+  "legendItems": [
+    {
+      "label": "Monitoring (deployed + healthy)",
+      "color": "#00ff00"
+    },
+    {
+      "label": "Deployed",
+      "color": "#90ee90"
+    },
+    {
+      "label": "Validated (F1 >= 0.75)",
+      "color": "#ffff00"
+    },
+    {
+      "label": "Authored (pending validation)",
+      "color": "#ffa500"
+    },
+    {
+      "label": "Requested (no rule yet)",
+      "color": "#ff6347"
+    }
+  ],
+  "showTacticRowBackground": true,
+  "tacticRowBackground": "#dddddd",
+  "selectTechniquesAcrossTactics": true,
+  "selectSubtechniquesWithParent": false,
+  "selectVisibleTechniques": false,
+  "metadata": [
+    {
+      "name": "generated_by",
+      "value": "coverage_agent.py"
+    },
+    {
+      "name": "generated_at",
+      "value": "2026-03-18T12:50:13Z"
+    },
+    {
+      "name": "threat_models",
+      "value": "Fawkes C2 Agent, Generic Remote Access Trojan, LockBit 3.0 (Black), Scattered Spider (UNC3944)"
+    },
+    {
+      "name": "total_detections",
+      "value": "28"
+    }
+  ]
+}
