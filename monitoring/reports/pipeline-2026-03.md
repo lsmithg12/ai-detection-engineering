@@ -41,4 +41,4 @@
 
 > No pipeline metrics yet — run agents to generate `autonomous\orchestration\pipeline-metrics.jsonl`
 
-*Generated 2026-03-17T13:18:11Z*
+*Generated 2026-03-17T13:34:23Z*

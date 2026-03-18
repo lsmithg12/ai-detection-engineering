@@ -34,6 +34,7 @@ class RegressionResult:
     delta: float
     status: str  # "PASS", "WARN", "FAIL"
     message: str
+    local_validated: bool = False  # True when current_f1 came from local keyword validator
 
 
 # ---------------------------------------------------------------------------
@@ -60,13 +61,37 @@ def load_baseline(technique_id: str) -> float | None:
         if path.exists():
             try:
                 data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-                # Support both flat {"f1_score": 0.9} and nested {"results": {"f1_score": 0.9}}
+                # Support flat {"f1_score": 0.9} and nested metrics/results variants
                 if "f1_score" in data:
                     return float(data["f1_score"])
-                if "results" in data and "f1_score" in data["results"]:
-                    return float(data["results"]["f1_score"])
+                for nested_key in ("metrics", "results"):
+                    if nested_key in data and "f1_score" in data[nested_key]:
+                        return float(data[nested_key]["f1_score"])
             except (json.JSONDecodeError, KeyError, ValueError):
                 pass
+    return None
+
+
+def load_local_baseline(technique_id: str) -> float | None:
+    """Load the *local* F1 baseline from a previous regression snapshot.
+
+    This reads the ``local_f1`` key written by :func:`save_snapshot` into
+    ``tests/results/{technique_id}_regression.json``.  Using a local-vs-local
+    baseline prevents false FAILs caused by comparing keyword-based local F1
+    (~0.5) against ES-based full-SIEM F1 (~1.0).
+
+    Returns ``None`` when no local baseline has been stored yet (first run).
+    """
+    normalized = technique_id.lower().replace(".", "_")
+    snapshot_path = _RESULTS_DIR / f"{normalized}_regression.json"
+    if not snapshot_path.is_file():
+        return None
+    try:
+        data: dict[str, Any] = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        if "local_f1" in data:
+            return float(data["local_f1"])
+    except (json.JSONDecodeError, KeyError, ValueError):
+        pass
     return None
 
 
@@ -169,7 +194,7 @@ def validate_local(rule_path: str, tp_path: str, tn_path: str) -> float:
 
     # --- True Positives ---
     tp_events: list[dict[str, Any]] = []
-    if tp_file.exists():
+    if tp_file.is_file():
         try:
             tp_events = _load_events(tp_file)
         except (json.JSONDecodeError, ValueError):
@@ -177,7 +202,7 @@ def validate_local(rule_path: str, tp_path: str, tn_path: str) -> float:
 
     # --- True Negatives ---
     tn_events: list[dict[str, Any]] = []
-    if tn_file.exists():
+    if tn_file.is_file():
         try:
             tn_events = _load_events(tn_file)
         except (json.JSONDecodeError, ValueError):
@@ -283,17 +308,24 @@ def check_regression(technique_id: str, rule_path: str) -> RegressionResult:
 
     current_f1 = current_f1_raw
 
-    if baseline is None:
-        # No prior baseline to compare against
+    # Prefer local-vs-local comparison to avoid comparing keyword-based F1
+    # (~0.5) against ES-based full-SIEM F1 (~1.0) which causes spurious FAILs.
+    local_baseline = load_local_baseline(technique_id)
+    if local_baseline is None:
+        # First local run — establish baseline and always PASS
         return RegressionResult(
             technique_id=technique_id,
             rule_name=rule_name,
-            previous_f1=0.0,
+            previous_f1=current_f1,
             current_f1=current_f1,
             delta=0.0,
             status="PASS",
-            message=f"No baseline found; new rule scored F1={current_f1:.2f}",
+            message=f"First local run; baseline established at F1={current_f1:.2f}",
+            local_validated=True,
         )
+
+    # Local baseline exists — compare local-vs-local
+    baseline = local_baseline
 
     delta = round(current_f1 - baseline, 4)
 
@@ -327,6 +359,7 @@ def check_regression(technique_id: str, rule_path: str) -> RegressionResult:
         delta=delta,
         status=status,
         message=message,
+        local_validated=True,
     )
 
 
@@ -399,7 +432,8 @@ def check_changed_files(file_list: str) -> list[RegressionResult]:
 # Report generation
 # ---------------------------------------------------------------------------
 
-_STATUS_EMOJI = {"PASS": "✅", "WARN": "⚠️", "FAIL": "❌"}
+# ASCII-safe status markers — render cleanly in GitHub Markdown and all terminals
+_STATUS_EMOJI = {"PASS": "[ PASS ]", "WARN": "[ WARN ]", "FAIL": "[ FAIL ]"}
 
 
 def generate_report(results: list[RegressionResult]) -> str:
@@ -478,13 +512,18 @@ def save_snapshot(
     for r in results:
         normalized = r.technique_id.lower().replace(".", "_")
         snapshot_path = _RESULTS_DIR / f"{normalized}_regression.json"
-        record = {
+        record: dict[str, Any] = {
             "technique_id": r.technique_id,
             "timestamp": timestamp,
             "f1_score": r.current_f1,
             "commit_sha": commit_sha,
             "pr_number": pr_number,
         }
+        # Write local_f1 only when the score came from the local keyword validator.
+        # This key is used by load_local_baseline() for local-vs-local comparison on
+        # subsequent runs, preventing spurious FAILs from mixing ES and local F1 values.
+        if r.local_validated:
+            record["local_f1"] = r.current_f1
         snapshot_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
 
@@ -518,7 +557,8 @@ def main(argv: list[str] | None = None) -> int:
     report = generate_report(results)
     save_snapshot(results, commit_sha=args.commit_sha, pr_number=args.pr_number)
 
-    print(report)
+    # Write to stdout with UTF-8 encoding regardless of terminal setting
+    sys.stdout.buffer.write((report + "\n").encode("utf-8", errors="replace"))
 
     fail_count = sum(1 for r in results if r.status == "FAIL")
     return 1 if fail_count > 0 else 0

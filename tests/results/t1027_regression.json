@@ -1,0 +1,8 @@
+{
+  "technique_id": "T1027",
+  "timestamp": "2026-03-18T12:04:39.025145+00:00",
+  "f1_score": 0.75,
+  "commit_sha": "",
+  "pr_number": 0,
+  "local_f1": 0.75
+}
