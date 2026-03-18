@@ -1,13 +1,13 @@
 technique_id: T1027
 title: Obfuscated Files or Information
-status: VALIDATED
+status: DEPLOYED
 priority: medium
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
 scenario_file: simulator\scenarios\t1027.json
 sigma_rule: detections\defense_evasion\t1027.yml
-deployed_date: ''
+deployed_date: '2026-03-18T12:42:48Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -48,6 +48,24 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-18T12:42:48Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-18T12:42:48Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-18T12:42:48Z'
+  agent: deployment
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-18T12:42:48Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: deployed_date'
 compiled_lucene: detections\defense_evasion\compiled\t1027.lucene
 compiled_spl: detections\defense_evasion\compiled\t1027.spl
 mitre_tactic: defense_evasion
+elastic_rule_id: 51769bc6-46a9-4375-8195-b08af4ecf23e
+splunk_saved_search: Obfuscated Files or Information T1027

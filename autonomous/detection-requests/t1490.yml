@@ -1,13 +1,13 @@
 technique_id: T1490
 title: Inhibit System Recovery
-status: VALIDATED
+status: DEPLOYED
 priority: high
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-cat-s-got-your-files-lynx-ransomware.yml
 scenario_file: simulator\scenarios\t1490.json
 sigma_rule: detections\execution\t1490.yml
-deployed_date: ''
+deployed_date: '2026-03-18T12:42:54Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -48,6 +48,24 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-18T12:42:54Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-18T12:42:54Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-18T12:42:54Z'
+  agent: deployment
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-18T12:42:54Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: deployed_date'
 compiled_lucene: detections\execution\compiled\t1490.lucene
 compiled_spl: detections\execution\compiled\t1490.spl
 mitre_tactic: execution
+elastic_rule_id: 6b1554bd-e969-4ba8-9cba-fb622a942fbb
+splunk_saved_search: Inhibit System Recovery T1490

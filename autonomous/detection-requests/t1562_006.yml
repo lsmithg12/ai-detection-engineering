@@ -1,13 +1,13 @@
 technique_id: T1562.006
 title: 'Impair Defenses: Indicator Blocking'
-status: VALIDATED
+status: DEPLOYED
 priority: high
 requested_by: intel
 requested_date: '2026-03-08T14:12:14Z'
 intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
 scenario_file: simulator\scenarios\t1562_006.json
 sigma_rule: detections\defense_evasion\t1562_006.yml
-deployed_date: ''
+deployed_date: '2026-03-18T12:42:56Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -43,8 +43,25 @@ changelog:
 - date: '2026-03-13T12:00:00Z'
   agent: blue-team
   action: transition:AUTHORED->VALIDATED
-  details: 'Phase 1 remediation: rule fixed/rewritten, F1=1.0 after TP split and manual
-    review'
+  details: 'Phase 1 remediation: rule fixed/rewritten, F1=1.0 after TP split and manual review'
+- date: '2026-03-18T12:42:56Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-18T12:42:56Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-18T12:42:56Z'
+  agent: deployment
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-18T12:42:56Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: deployed_date'
 compiled_lucene: detections\defense_evasion\compiled\t1562_006.lucene
 compiled_spl: detections\defense_evasion\compiled\t1562_006.spl
 mitre_tactic: defense_evasion
+elastic_rule_id: 5071364e-8ea8-4eb7-bf7a-1fea06c85597
+splunk_saved_search: 'Impair Defenses: Indicator Blocking T1562.006'
