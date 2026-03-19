@@ -15,11 +15,10 @@ import datetime
 import json
 from pathlib import Path
 
-import yaml
-
 from orchestration.state import StateManager
 from orchestration import learnings
 from orchestration import claude_llm
+from orchestration.siem import check_elastic, _load_infra_config, _basic_auth
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -29,6 +28,124 @@ FEEDBACK_DIR = MONITORING_DIR / "feedback"
 
 AGENT_NAME = "tuning"
 ALL_AGENTS = ["intel", "red-team", "author", "validation", "deployment", "tuning", "security"]
+
+
+# ---------------------------------------------------------------------------
+# Live SIEM health queries (ISSUE-016)
+# ---------------------------------------------------------------------------
+
+def _es_alert_count(rule_name: str, time_range: str,
+                    es_url: str, es_auth: tuple) -> int:
+    """Query Elastic for alert count for a specific rule in a time range."""
+    import urllib.request
+    import urllib.error
+
+    query = {
+        "query": {"bool": {"must": [
+            {"term": {"kibana.alert.rule.name": rule_name}},
+            {"range": {"@timestamp": {"gte": time_range}}}
+        ]}}
+    }
+
+    try:
+        body = json.dumps(query).encode("utf-8")
+        req = urllib.request.Request(
+            f"{es_url}/.alerts-security.alerts-default/_count",
+            data=body, method="POST",
+            headers={
+                "Authorization": _basic_auth(es_auth[0], es_auth[1]),
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+            return data.get("count", 0)
+    except Exception:
+        return -1  # -1 indicates query failure
+
+
+def compute_live_health(request: dict, es_url: str, es_auth: tuple) -> dict | None:
+    """Query Elastic for actual alert telemetry for a deployed rule.
+
+    Returns dict with live metrics, or None if ES is unreachable.
+    """
+    rule_name = request.get("title", "")
+    if not rule_name:
+        return None
+
+    alerts_24h = _es_alert_count(rule_name, "now-24h", es_url, es_auth)
+    alerts_7d = _es_alert_count(rule_name, "now-7d", es_url, es_auth)
+
+    if alerts_24h == -1:
+        return None  # ES unreachable
+
+    return {
+        "alert_volume_24h": max(alerts_24h, 0),
+        "alert_volume_7d": max(alerts_7d, 0),
+    }
+
+
+def _create_investigate_issue(request: dict, health: dict, days_inactive: int):
+    """Create a GitHub Issue when a rule is flagged INVESTIGATE (ISSUE-017)."""
+    import os
+    import urllib.request
+    import urllib.error
+
+    tid = request.get("technique_id", "?")
+    title_text = request.get("title", tid)
+    health_score = health.get("health_score", 0)
+
+    issue_title = f"[Health] {title_text} ({tid}) — no alerts {days_inactive}+ days"
+    issue_body = f"""Rule has not fired in {days_inactive} days.
+
+**Possible causes:**
+- Rule query doesn't match current index schema
+- Attack simulation data doesn't cover this technique
+- Rule was disabled in the SIEM
+
+**Action required:** Re-validate rule against current sim data, check SIEM rule status.
+
+**Detection request:** `autonomous/detection-requests/{tid.lower().replace('.', '_')}.yml`
+**Health score:** {health_score}
+"""
+
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        mcp_path = REPO_ROOT / ".mcp.json"
+        if mcp_path.exists():
+            with open(mcp_path) as f:
+                mcp = json.load(f)
+            token = (mcp.get("mcpServers", {})
+                     .get("github", {})
+                     .get("env", {})
+                     .get("GITHUB_PERSONAL_ACCESS_TOKEN", ""))
+    if not token:
+        print(f"    [{tid}] INVESTIGATE: no GitHub token — skipping issue creation")
+        return
+
+    payload = json.dumps({
+        "title": issue_title,
+        "body": issue_body,
+        "labels": ["health-check", "needs-review"],
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://api.github.com/repos/lsmithg12/ai-detection-engineering/issues",
+        data=payload, method="POST",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read())
+            print(f"    [{tid}] INVESTIGATE issue created: {data.get('html_url', '')}")
+    except urllib.error.HTTPError as e:
+        print(f"    [{tid}] INVESTIGATE issue creation failed: HTTP {e.code}")
+    except Exception as e:
+        print(f"    [{tid}] INVESTIGATE issue creation failed: {e}")
 
 
 def _today() -> str:
@@ -238,6 +355,9 @@ def run(state_manager: StateManager) -> dict:
     run_id = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
     print(f"  [tuning] Starting tuning agent run {run_id}")
 
+    # 0. Re-read state from disk (ISSUE-015 — pick up deployment agent changes)
+    state_manager.reload()
+
     # 1. Load briefing + cross-agent journals
     briefing = learnings.get_briefing(AGENT_NAME)
     print(f"  [tuning] {briefing}")
@@ -282,13 +402,40 @@ def run(state_manager: StateManager) -> dict:
     print(f"  [tuning] Found {len(all_active)} active detections "
           f"({len(deployed)} DEPLOYED, {len(monitoring)} MONITORING)")
 
-    # 4. Calculate health for each
+    # 4. Probe ES availability for live health scoring (ISSUE-016)
+    es_url = None
+    es_auth = None
+    es_live = False
+    try:
+        infra = _load_infra_config()
+        es_url = infra.get("elasticsearch", {}).get("url", "http://localhost:9200")
+        es_user = infra.get("elasticsearch", {}).get("user", "elastic")
+        es_pass = infra.get("elasticsearch", {}).get("pass", "changeme")
+        es_auth = (es_user, es_pass)
+        es_live = check_elastic()
+    except Exception:
+        pass
+
+    if es_live:
+        print(f"  [tuning] Elasticsearch reachable — using live alert telemetry")
+    else:
+        print(f"  [tuning] Elasticsearch offline — using stored health values")
+
+    # 5. Calculate health for each
     results = []
     fleet_stats = {"total": len(all_active), "healthy": 0, "tune": 0,
                    "review": 0, "investigate": 0, "retire": 0}
 
     for request in all_active:
         tid = request["technique_id"]
+
+        # Override stored alert volumes with live data when ES is reachable
+        if es_live and es_url and es_auth:
+            live = compute_live_health(request, es_url, es_auth)
+            if live is not None:
+                request["alert_volume_24h"] = live["alert_volume_24h"]
+                request["alert_volume_7d"] = live["alert_volume_7d"]
+
         health = calculate_health(request)
         action, reason = recommend_action(health)
 
@@ -314,6 +461,10 @@ def run(state_manager: StateManager) -> dict:
             "action": action,
             "reason": reason,
         })
+
+        # INVESTIGATE escalation — create GitHub Issue (ISSUE-017)
+        if action == "INVESTIGATE":
+            _create_investigate_issue(request, health, health["days_deployed"])
 
         # Transition DEPLOYED -> MONITORING if healthy
         if action == "HEALTHY" and request.get("status") == "DEPLOYED":

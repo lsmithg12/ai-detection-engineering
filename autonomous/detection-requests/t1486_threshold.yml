@@ -1,0 +1,42 @@
+technique_id: "T1486_THRESHOLD"
+title: "Rapid File Modification Burst — Ransomware Indicator (Threshold)"
+status: "AUTHORED"
+priority: "critical"
+mitre_tactic: "impact"
+rule_type: "threshold"
+
+requested_by: "blue-team"
+requested_date: "2026-03-15T00:00:00Z"
+intel_report: "threat-intel/fawkes/fawkes-ttp-mapping.md"
+
+scenario_file: ""
+sigma_rule: "detections/impact/t1486_file_encryption_threshold.yml"
+compiled_lucene: ""
+compiled_spl: "detections/impact/compiled/t1486_file_encryption_threshold.spl"
+compiled_artifact: "detections/impact/compiled/t1486_file_encryption_threshold_elastic.json"
+secondary_techniques: []
+
+deployed_date: ""
+elastic_rule_id: ""
+splunk_saved_search: ""
+
+last_quality_review: ""
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+
+cost_estimate: "low"
+auto_deploy_eligible: false
+
+fawkes_commands: []
+
+changelog:
+  - date: "2026-03-15T00:00:00Z"
+    agent: "blue-team"
+    action: "created"
+    details: "Phase 6 threshold rule for ransomware file encryption detection"
+  - date: "2026-03-19T00:00:00Z"
+    agent: "remediation"
+    action: "registered"
+    details: "Fix Pack 1 — registered orphaned Phase 6 threshold rule in state machine"

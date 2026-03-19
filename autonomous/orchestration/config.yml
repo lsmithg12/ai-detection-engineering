@@ -43,6 +43,7 @@ agents:
     max_tokens_estimate: 30000
     auto_deploy_threshold: 0.90
     max_tune_retries: 2
+    refinement_timeout_seconds: 300
     claude_tasks:
       - "Suggest rule improvements when F1 < threshold"
 
@@ -70,6 +71,7 @@ agents:
     max_tokens_estimate: 20000
     block_on_critical: true
     auto_fix_enabled: true
+    create_pr: false               # Output is PR review comment, not mergeable content
     scan_patterns_file: "autonomous/security/scan-patterns.yml"
 
 # Infrastructure endpoints

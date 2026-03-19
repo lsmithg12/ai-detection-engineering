@@ -36,12 +36,11 @@ MAX_REPORTS = 5
 MODELS_DIR = REPO_ROOT / "threat-intel" / "models"
 
 # Search query templates — {month} and {year} are filled at runtime
+# ISSUE-004: Reduced from 5 to 3 queries to stay within budget
 SEARCH_QUERIES = [
     "threat actor TTPs {month} {year}",
     "MITRE ATT&CK technique used in the wild {month} {year}",
-    "malware analysis report {month} {year}",
     "CISA advisory {month} {year}",
-    "detection engineering blog {month} {year}",
 ]
 
 PRIORITY_SOURCES = [
@@ -473,6 +472,11 @@ Return ONLY a JSON array (no markdown fences, no commentary):
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         response = "\n".join(lines)
+
+    # ISSUE-004: Guard against error strings before JSON parse
+    if response.startswith("Error:") or response.startswith("I "):
+        print(f"  [intel] Claude CLI returned non-JSON response: {response[:200]}")
+        return []
 
     try:
         reports = json.loads(response)

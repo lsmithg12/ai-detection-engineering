@@ -1,0 +1,42 @@
+technique_id: "T1055_EQL"
+title: "Process Injection Sequence — Handle Open Then Remote Thread Creation (EQL)"
+status: "AUTHORED"
+priority: "critical"
+mitre_tactic: "privilege_escalation"
+rule_type: "eql"
+
+requested_by: "blue-team"
+requested_date: "2026-03-15T00:00:00Z"
+intel_report: "threat-intel/fawkes/fawkes-ttp-mapping.md"
+
+scenario_file: ""
+sigma_rule: "detections/privilege_escalation/t1055_sequence_eql.yml"
+compiled_lucene: ""
+compiled_spl: "detections/privilege_escalation/compiled/t1055_sequence_eql.spl"
+compiled_artifact: "detections/privilege_escalation/compiled/t1055_sequence_eql_elastic.json"
+secondary_techniques: ["T1055.001", "T1055.004"]
+
+deployed_date: ""
+elastic_rule_id: ""
+splunk_saved_search: ""
+
+last_quality_review: ""
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+
+cost_estimate: "low"
+auto_deploy_eligible: false
+
+fawkes_commands: ["vanilla-injection", "apc-injection"]
+
+changelog:
+  - date: "2026-03-15T00:00:00Z"
+    agent: "blue-team"
+    action: "created"
+    details: "Phase 6 EQL sequence rule for process injection"
+  - date: "2026-03-19T00:00:00Z"
+    agent: "remediation"
+    action: "registered"
+    details: "Fix Pack 1 — registered orphaned Phase 6 EQL rule in state machine"

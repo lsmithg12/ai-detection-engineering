@@ -98,6 +98,13 @@ class StateManager:
         self.states = self.schema["states"]
         REQUESTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    def reload(self):
+        """Re-read schema from disk. Call at the start of each agent run
+        in pipeline mode so agents see state changes from prior agents."""
+        self.schema = _load_schema()
+        self.valid_transitions = self.schema["valid_transitions"]
+        self.states = self.schema["states"]
+
     def _request_path(self, technique_id: str) -> Path:
         return REQUESTS_DIR / _technique_to_filename(technique_id)
 
@@ -209,6 +216,17 @@ class StateManager:
         artifact_paths = self.schema.get("artifact_paths", {})
         missing = []
         for artifact in exit_artifacts:
+            # For EQL/threshold rules, compiled_artifact replaces compiled_lucene
+            if artifact == "compiled_lucene" and data.get("rule_type") in ("eql", "threshold"):
+                ca = data.get("compiled_artifact", "")
+                if ca and (REPO_ROOT / ca).exists():
+                    continue  # compiled_artifact found — skip compiled_lucene check
+
+            # Check explicit path in request first, then fall back to template
+            explicit_path = data.get(artifact, "")
+            if explicit_path and (REPO_ROOT / explicit_path).exists():
+                continue
+
             tmpl = artifact_paths.get(artifact, "")
             if tmpl:
                 resolved = tmpl.format(

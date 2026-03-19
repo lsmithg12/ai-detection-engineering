@@ -100,6 +100,12 @@ health-check: ## Run detection health checks and create GitHub issues for proble
 feedback: ## Record analyst feedback (set TECHNIQUE, VERDICT, REASON)
 	@cd autonomous && python3 orchestration/cli.py feedback $(TECHNIQUE) --verdict $(VERDICT) --reason "$(REASON)"
 
+# ─── Maintenance ─────────────────────────────────────────────
+clean-branches: ## Delete merged agent branches and prune remotes
+	git fetch --prune
+	git branch --merged main | grep "agent/" | xargs -r git branch -d
+	@echo "Cleaned merged agent branches"
+
 # ─── Sharing ─────────────────────────────────────────────────────
 share-check: ## Verify the project is ready to share (clean, documented)
 	@echo "Checking share readiness..."

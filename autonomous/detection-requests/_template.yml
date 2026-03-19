@@ -12,11 +12,14 @@ requested_by: "intel_agent"
 requested_date: "2026-01-01T00:00:00Z"
 intel_report: ""                     # Path to intel report that triggered this request
 
-# Artifacts (populated as detection progresses)
+# Rule type and artifacts (populated as detection progresses)
+rule_type: "sigma"                   # sigma | eql | threshold
 scenario_file: ""                    # Path to simulator scenario JSON
 sigma_rule: ""                       # Path to Sigma YAML rule
 compiled_lucene: ""                  # Path to compiled Lucene query
 compiled_spl: ""                     # Path to compiled SPL query
+compiled_artifact: ""               # Path to pre-built _elastic.json (EQL/threshold only)
+secondary_techniques: []             # For cross-tactic rules (e.g., [T1059.001, T1547.001])
 
 # Deployment
 deployed_date: ""

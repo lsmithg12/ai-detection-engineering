@@ -14,6 +14,7 @@ Called by agent_runner.py. Implements run(state_manager) interface.
 
 import datetime
 import json
+import re
 from pathlib import Path
 
 import yaml
@@ -39,6 +40,28 @@ DETECTIONS_DIR = REPO_ROOT / "detections"
 TESTS_DIR = REPO_ROOT / "tests"
 
 AGENT_NAME = "validation"
+
+SIGMA_REQUIRED_KEYS = {"title", "logsource", "detection"}
+
+
+def extract_yaml_from_response(raw: str) -> str:
+    """Extract YAML from Claude response, handling markdown fences and surrounding text."""
+    # Try to find fenced block first (handles ```yaml, ```yml, or plain ```)
+    match = re.search(r'```(?:ya?ml)?\s*\n(.*?)```', raw, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    # If no fence, try to find YAML by looking for typical Sigma starting lines
+    lines = raw.strip().split('\n')
+    yaml_start = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('title:') or stripped.startswith('logsource:'):
+            yaml_start = i
+            break
+    if yaml_start is not None:
+        return '\n'.join(lines[yaml_start:]).strip()
+    # Last resort: return as-is
+    return raw.strip()
 MAX_DETECTIONS = 5
 AUTO_DEPLOY_THRESHOLD = 0.90
 MAX_FP_RATE_AUTO_DEPLOY = 0.05
@@ -381,6 +404,14 @@ def validate_single(request: dict, state_manager: StateManager, run_id: str,
         attack_events = scenario.get("events", {}).get("attack_sequence", [])
         benign_events = scenario.get("events", {}).get("benign_similar", [])
 
+        # Load configurable timeout (default 300s)
+        agent_cfg = claude_llm._load_agent_config(AGENT_NAME)
+        refinement_timeout = agent_cfg.get("refinement_timeout_seconds", 300)
+
+        # Save original rule for quality gate revert
+        original_rule_yaml = rule_path.read_text(encoding="utf-8")
+        original_f1 = metrics["f1_score"]
+
         for attempt in range(1, MAX_TUNE_RETRIES + 1):
             print(f"    [validation] Retry {attempt}/{MAX_TUNE_RETRIES}: "
                   f"F1={metrics['f1_score']} < {AUTO_DEPLOY_THRESHOLD}, asking Claude to refine")
@@ -396,30 +427,57 @@ def validate_single(request: dict, state_manager: StateManager, run_id: str,
             fn_summary = json.dumps(fn_events[:3], indent=2)[:1500] if fn_events else "None"
             fp_summary = json.dumps(fp_events[:3], indent=2)[:1500] if fp_events else "None"
 
-            # Include SIEM-specific errors if available (query syntax issues, etc.)
+            # Build field comparison table for FN events
+            field_mismatch_table = ""
+            if fn_events:
+                rule_data = yaml.safe_load(current_rule_yaml) or {}
+                detection = rule_data.get("detection", {})
+                selection_fields = set()
+                for key, val in detection.items():
+                    if key.startswith("selection") and isinstance(val, dict):
+                        selection_fields.update(f.split("|")[0] for f in val.keys())
+                if selection_fields:
+                    mismatches = []
+                    sample = fn_events[0]
+                    for field in sorted(selection_fields):
+                        actual = _get_nested(sample, field)
+                        mismatches.append(f"  {field}: rule expects match, event has: {repr(actual)}")
+                    field_mismatch_table = "Field analysis (first FN event):\n" + "\n".join(mismatches)
+
+            # Include SIEM-specific errors if available
             siem_error_context = ""
             if siem_errors:
                 siem_error_context = f"""
 Elasticsearch query errors (the compiled Lucene query failed):
 {chr(10).join('- ' + e for e in siem_errors)}
-The compiled Lucene query was: {lucene[:300] if lucene else 'N/A'}
 Fix the Sigma rule to avoid generating Lucene syntax that Elasticsearch rejects.
 """
 
             refine_prompt = f"""This Sigma rule scored F1={metrics['f1_score']} (target >= {AUTO_DEPLOY_THRESHOLD}).
 
-Attack events that SHOULD have triggered but DIDN'T (false negatives):
+## Compiled Lucene Query (what the SIEM actually runs)
+{lucene[:500] if lucene else 'N/A (no Lucene query available)'}
+
+## False Negatives — events that SHOULD match but DON'T
 {fn_summary}
 
-Benign events that SHOULD NOT have triggered but DID (false positives):
+## False Positives — events that SHOULD NOT match but DO
 {fp_summary}
-{siem_error_context}
-Current rule:
+
+## {field_mismatch_table}
+
+## SIEM Query Errors
+{siem_error_context if siem_error_context else 'None'}
+
+## Current Sigma Rule
 {current_rule_yaml}
 
-Fix the rule. The field names in the events are the source of truth -- your rule's
-selection fields must match the event field paths exactly.
-Return ONLY the corrected Sigma YAML -- no markdown fences, no explanation."""
+Diagnose why the false negatives don't match the Lucene query. Common causes:
+- Field name mismatch (e.g., rule uses process.name but event has process.executable)
+- Wildcard pattern too narrow (e.g., *\\\\cmd.exe won't match C:\\\\Windows\\\\System32\\\\cmd.exe)
+- Missing OR condition for variant field values
+
+Return ONLY the corrected Sigma YAML. No markdown fences, no explanation."""
 
             refine_result = claude_llm.ask(
                 prompt=refine_prompt,
@@ -430,25 +488,23 @@ Return ONLY the corrected Sigma YAML -- no markdown fences, no explanation."""
                 ),
                 allowed_tools=[],
                 max_turns=1,
-                timeout_seconds=150,
+                timeout_seconds=refinement_timeout,
             )
 
             if refine_result["success"]:
-                refined_yaml = refine_result["response"].strip()
-                # Strip markdown fences
-                if refined_yaml.startswith("```"):
-                    lines = refined_yaml.split("\n")
-                    if lines[0].startswith("```"):
-                        lines = lines[1:]
-                    if lines and lines[-1].strip() == "```":
-                        lines = lines[:-1]
-                    refined_yaml = "\n".join(lines)
+                refined_yaml = extract_yaml_from_response(refine_result["response"])
 
                 try:
                     parsed_refined = yaml.safe_load(refined_yaml)
-                    if not isinstance(parsed_refined, dict) or "detection" not in parsed_refined:
-                        print(f"    [validation] Retry {attempt}: output is not a valid Sigma rule")
+                    if not isinstance(parsed_refined, dict):
+                        print(f"    [validation] Retry {attempt}: output is not a valid YAML dict")
                         continue
+                    # Validate Sigma schema
+                    missing_keys = SIGMA_REQUIRED_KEYS - set(parsed_refined.keys())
+                    if missing_keys:
+                        print(f"    [validation] Retry {attempt}: missing Sigma fields: {missing_keys}")
+                        continue
+
                     rule_path.write_text(refined_yaml, encoding="utf-8")
                     print(f"    [validation] Claude refined rule ({len(refined_yaml)} chars)")
 
@@ -500,6 +556,19 @@ Return ONLY the corrected Sigma YAML -- no markdown fences, no explanation."""
                           f"FP={metrics['fp']}/{metrics['total_benign']}, "
                           f"F1={metrics['f1_score']}, FP_rate={metrics['fp_rate']}")
                     print(f"    [validation] Quality: {quality_tier}")
+
+                    # Quality gate: if refinement made it worse than best so far, revert
+                    if metrics["f1_score"] < original_f1:
+                        print(f"    [validation] Refinement degraded F1 ({metrics['f1_score']} < {original_f1}) — reverting to best")
+                        rule_path.write_text(original_rule_yaml, encoding="utf-8")
+                        metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+                        quality_tier = assess_quality(metrics)
+                        break
+
+                    # Track best intermediate result so revert goes to best, not first
+                    if metrics["f1_score"] > original_f1:
+                        original_f1 = metrics["f1_score"]
+                        original_rule_yaml = rule_path.read_text(encoding="utf-8")
 
                     if metrics["f1_score"] >= AUTO_DEPLOY_THRESHOLD:
                         print(f"    [validation] F1 target met after {attempt} retry(ies)")

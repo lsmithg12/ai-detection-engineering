@@ -567,6 +567,75 @@ def _cleanup_index(es_url: str, index_name: str, auth: tuple):
         pass  # ILM safety net will clean up orphans
 
 
+def validate_against_live_siem(
+    compiled_lucene: str,
+    technique_id: str = "",
+    es_url: str | None = None,
+    es_auth: tuple | None = None,
+) -> dict | None:
+    """
+    Run compiled query against persistent sim-attack and sim-baseline indices.
+
+    Unlike validate_against_elasticsearch() which uses ephemeral indices,
+    this queries the standing simulation data to cross-check detection quality
+    against a larger, more realistic dataset.
+
+    Returns dict with live TP/FP counts, or None if ES unreachable.
+    """
+    if es_url is None or es_auth is None:
+        infra = _load_infra_config()
+        es = infra.get("elasticsearch", {})
+        if es_url is None:
+            es_url = es.get("url", "http://localhost:9200")
+        if es_auth is None:
+            es_auth = (es.get("user", "elastic"), es.get("pass", "changeme"))
+
+    if not _check_es_reachable(es_url, es_auth):
+        return None
+
+    if not compiled_lucene or not compiled_lucene.strip():
+        return {"siem_tp_count": 0, "siem_fp_count": 0, "siem_precision": 0.0}
+
+    query_body = {
+        "query": {
+            "query_string": {
+                "query": compiled_lucene,
+                "default_operator": "AND",
+                "analyze_wildcard": True,
+            }
+        },
+        "size": 0,  # Count only
+    }
+
+    def _run_count(index: str) -> int:
+        try:
+            status, resp = _es_request(
+                f"{es_url}/{index}/_count",
+                method="POST",
+                data={"query": query_body["query"]},
+                auth=es_auth,
+                timeout=10,
+            )
+            if isinstance(resp, dict):
+                return resp.get("count", 0)
+        except Exception:
+            pass
+        return 0
+
+    attack_hits = _run_count("sim-attack")
+    baseline_hits = _run_count("sim-baseline")
+
+    total = attack_hits + baseline_hits
+    precision = attack_hits / total if total > 0 else 0.0
+
+    return {
+        "siem_tp_count": attack_hits,
+        "siem_fp_count": baseline_hits,
+        "siem_precision": round(precision, 3),
+        "technique_id": technique_id,
+    }
+
+
 def create_validation_infrastructure(es_url: str | None = None,
                                      es_auth: tuple | None = None) -> bool:
     """
