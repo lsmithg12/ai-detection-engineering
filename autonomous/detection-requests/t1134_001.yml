@@ -13,7 +13,7 @@ compiled_spl: ''
 deployed_date: '2026-03-01T00:00:00Z'
 elastic_rule_id: 69c68ad8-ab9c-4e1b-9cba-47a4f87392a2
 splunk_saved_search: LSASS Token Theft T1134.001
-last_quality_review: '2026-03-19T11:18:47Z'
+last_quality_review: '2026-03-19T18:38:17Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -77,5 +77,9 @@ changelog:
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-19T11:18:47Z'
   agent: tuning
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-19T18:38:17Z'
+  agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
