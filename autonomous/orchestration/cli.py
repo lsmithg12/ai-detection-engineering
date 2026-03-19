@@ -27,8 +27,21 @@ from orchestration.state import StateManager
 
 def cmd_status(args):
     sm = StateManager()
+    all_requests = sm.list_all()
     summary = sm.status_summary()
     total = 0
+
+    # Build lookup for VALIDATED manual-deploy tier (F1 0.75-0.89)
+    manual_deploy = []
+    auto_deploy = []
+    for r in all_requests:
+        if r.get("status") == "VALIDATED":
+            if r.get("auto_deploy_eligible"):
+                auto_deploy.append(r.get("technique_id", "?"))
+            else:
+                f1 = r.get("quality_score", 0)
+                manual_deploy.append(f"{r.get('technique_id', '?')} (F1={f1})")
+
     for state in ["REQUESTED", "SCENARIO_BUILT", "AUTHORED", "VALIDATED",
                    "DEPLOYED", "MONITORING", "TUNED", "RETIRED"]:
         techniques = summary.get(state, [])
@@ -37,6 +50,14 @@ def cmd_status(args):
             print(f"\n  {state} ({len(techniques)})")
             for t in techniques:
                 print(f"    - {t}")
+            # Show sub-tiers for VALIDATED
+            if state == "VALIDATED" and (manual_deploy or auto_deploy):
+                if auto_deploy:
+                    print(f"    [auto-deploy eligible: {len(auto_deploy)}]")
+                if manual_deploy:
+                    print(f"    [manual deploy needed: {len(manual_deploy)}]")
+                    for m in manual_deploy:
+                        print(f"      * {m}")
     if not total:
         print("  No detection requests found.")
     else:
@@ -833,6 +854,75 @@ def cmd_health_check(args):
         print("\n  All deployed rules are healthy — no issues detected.")
 
 
+def cmd_export_status(args):
+    """Generate STATUS.md from state machine ground truth."""
+    sm = StateManager()
+    all_requests = sm.list_all()
+    summary = sm.status_summary()
+    repo_root = Path(__file__).resolve().parent.parent.parent
+
+    # Count by state
+    by_state = {}
+    for state in ["REQUESTED", "SCENARIO_BUILT", "AUTHORED", "VALIDATED",
+                   "DEPLOYED", "MONITORING", "TUNED", "RETIRED"]:
+        by_state[state] = summary.get(state, [])
+
+    # Count by rule_type
+    rule_types = {"sigma": 0, "eql": 0, "threshold": 0}
+    for r in all_requests:
+        rt = r.get("rule_type", "sigma")
+        rule_types[rt] = rule_types.get(rt, 0) + 1
+
+    total = len(all_requests)
+    monitoring = len(by_state["MONITORING"])
+    validated = len(by_state["VALIDATED"])
+    authored = len(by_state["AUTHORED"])
+    deployed = len(by_state["DEPLOYED"])
+
+    # Count needs_rework
+    needs_rework = sum(1 for r in all_requests
+                       if r.get("quality_score", 0) > 0 and r.get("quality_score", 0) < 0.75)
+
+    content = f"""# Detection Pipeline Status
+
+> Auto-generated from state machine on {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+> Run `cd autonomous && python3 orchestration/cli.py export-status` to regenerate
+
+## Summary
+
+| Metric | Count |
+|--------|-------|
+| Total rules | {total} |
+| Sigma | {rule_types['sigma']} |
+| EQL | {rule_types['eql']} |
+| Threshold | {rule_types['threshold']} |
+| MONITORING | {monitoring} |
+| DEPLOYED | {deployed} |
+| VALIDATED | {validated} |
+| AUTHORED | {authored} |
+| Needs rework | {needs_rework} |
+
+## By State
+
+"""
+    for state in ["MONITORING", "DEPLOYED", "VALIDATED", "AUTHORED",
+                   "SCENARIO_BUILT", "REQUESTED", "TUNED", "RETIRED"]:
+        techniques = by_state.get(state, [])
+        if techniques:
+            content += f"### {state} ({len(techniques)})\n\n"
+            for tid in sorted(techniques):
+                req = sm.get(tid)
+                title = req.get("title", "") if req else ""
+                f1 = req.get("quality_score", "") if req else ""
+                f1_str = f" (F1={f1})" if f1 else ""
+                content += f"- {tid}: {title}{f1_str}\n"
+            content += "\n"
+
+    status_path = repo_root / "STATUS.md"
+    status_path.write_text(content, encoding="utf-8")
+    print(f"  STATUS.md regenerated ({total} rules)")
+
+
 def cmd_dashboard_update(args):
     """Push metrics to detection health dashboard."""
     import subprocess as _subprocess
@@ -1022,6 +1112,9 @@ def main():
     p_perf.add_argument("--all", action="store_true", help="Profile all detections")
     p_perf.add_argument("--report", action="store_true", help="Show stored performance results")
 
+    # export-status (Fix Pack 1 -- regenerate STATUS.md from state machine)
+    sub.add_parser("export-status", help="Regenerate STATUS.md from state machine ground truth")
+
     # sla (Phase 7 -- SLA metrics)
     p_sla = sub.add_parser("sla", help="Show SLA metrics for detections")
     p_sla.add_argument("technique_id", nargs="?", help="Specific technique ID")
@@ -1068,6 +1161,7 @@ def main():
         "sla": cmd_sla,
         "health-check": cmd_health_check,
         "dashboard-update": cmd_dashboard_update,
+        "export-status": cmd_export_status,
     }
     if args.command == "pack":
         pack_cmd_map = {

@@ -18,6 +18,7 @@ import yaml
 
 from orchestration.state import StateManager
 from orchestration import learnings
+from orchestration import claude_llm
 
 AUTONOMOUS_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = AUTONOMOUS_DIR.parent
@@ -492,6 +493,88 @@ def log_findings(pr_number: int, agent: str, findings: list[dict]):
             f.write(json.dumps(entry) + "\n")
 
 
+# ─── Claude Quality Review (ISSUE-022) ──────────────────────────
+
+def claude_quality_review(changed_rules: list[dict]) -> list[dict]:
+    """Ask Claude to review detection rule quality for PRs touching detections/.
+
+    Returns a list of finding dicts compatible with the existing findings format.
+    """
+    if not claude_llm.is_available():
+        return []
+
+    if not changed_rules:
+        return []
+
+    # Build a compact summary of the rules for Claude
+    rules_summary = []
+    for rule in changed_rules[:5]:  # Cap at 5 rules to stay within token budget
+        rules_summary.append({
+            "file": rule.get("file", ""),
+            "content": rule.get("content", "")[:2000],  # Truncate large rules
+        })
+
+    prompt = f"""Review these detection rules for quality issues. Be concise.
+
+{json.dumps(rules_summary, indent=2)}
+
+Check for:
+1. Overly broad conditions that would cause false positives in production
+2. Simple evasion techniques (rename binary, change path, encode command)
+3. Missing condition fields that should be present for the log source
+4. Field names that don't match ECS schema (Elastic Common Schema)
+5. Wildcard patterns that are too narrow or too broad
+
+Return ONLY a JSON array of findings. Each finding must have:
+  file (string), severity ("CRITICAL" or "WARN" or "INFO"), description (string)
+
+If no issues found, return an empty array: []"""
+
+    result = claude_llm.ask(
+        prompt=prompt,
+        agent_name="security",
+        allowed_tools=[],
+        max_turns=1,
+        timeout_seconds=120,
+    )
+
+    if not result["success"]:
+        print(f"  [security] Claude quality review skipped: {result.get('error', 'unknown')}")
+        return []
+
+    response = result["response"].strip()
+    # Strip markdown fences if present
+    if response.startswith("```"):
+        lines = response.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        response = "\n".join(lines)
+
+    try:
+        claude_findings = json.loads(response)
+        if not isinstance(claude_findings, list):
+            return []
+
+        # Convert to standard finding format
+        findings = []
+        for cf in claude_findings:
+            findings.append({
+                "severity": cf.get("severity", "INFO"),
+                "category": "ClaudeQualityReview",
+                "file": cf.get("file", ""),
+                "line": 0,
+                "finding": cf.get("description", ""),
+                "snippet": "",
+            })
+        print(f"  [security] Claude quality review: {len(findings)} finding(s)")
+        return findings
+    except (json.JSONDecodeError, TypeError):
+        print(f"  [security] Could not parse Claude quality review response")
+        return []
+
+
 # ─── Main Entry Point ────────────────────────────────────────────
 
 def run(state_manager: StateManager, pr_number: int = None) -> dict:
@@ -561,6 +644,23 @@ def run(state_manager: StateManager, pr_number: int = None) -> dict:
 
     # Pipeline integrity check (uses file list, not content)
     all_findings.extend(scan_pipeline_integrity(filenames, pr_agent))
+
+    # 3b. Claude quality review for detection rule PRs (ISSUE-022)
+    detection_files = [
+        pf for pf in pr_files
+        if pf.get("filename", "").startswith("detections/")
+        and pf.get("status") != "removed"
+        and (pf.get("filename", "").endswith(".yml") or pf.get("filename", "").endswith(".yaml"))
+    ]
+    if detection_files:
+        print(f"  [security] PR touches {len(detection_files)} detection rule(s) — running Claude review")
+        rules_for_review = []
+        for pf in detection_files:
+            content = get_file_content_from_pr(pf)
+            if content:
+                rules_for_review.append({"file": pf["filename"], "content": content})
+        claude_findings = claude_quality_review(rules_for_review)
+        all_findings.extend(claude_findings)
 
     # 4. Determine verdict
     verdict, verdict_reason = determine_verdict(all_findings)

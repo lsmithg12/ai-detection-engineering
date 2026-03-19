@@ -390,6 +390,6 @@ def ask_with_web_search(
         agent_name=agent_name,
         system_prompt=system_prompt,
         allowed_tools=["Bash(curl:*)"],
-        max_turns=6,
+        max_turns=15,  # ISSUE-004: 5 queries x ~3 turns each
         timeout_seconds=timeout_seconds,
     )

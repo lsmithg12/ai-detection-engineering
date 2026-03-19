@@ -238,11 +238,65 @@ def deploy_to_splunk(request: dict, spl_query: str, sigma_rule: dict) -> dict | 
 
 # ─── Orchestration ───────────────────────────────────────────────
 
-def deploy_to_siems(request: dict, lucene: str, spl: str, sigma_rule: dict) -> dict:
-    """Deploy to all available SIEMs. Returns deployment results."""
+def deploy_elastic_payload(request: dict, payload: dict) -> dict | None:
+    """Deploy a pre-built Elastic Detection Engine rule (EQL/threshold).
+
+    The payload is the full JSON body from a compiled *_elastic.json file.
+    """
+    if not check_elastic():
+        print("    [siem] Elastic not available — skipping")
+        return None
+
+    infra = _load_infra_config()
+    es = infra.get("elasticsearch", {})
+    kibana_url = infra.get("kibana", {}).get("url", "http://localhost:5601")
+    user = es.get("user", "elastic")
+    password = es.get("pass", "changeme")
+
+    # Ensure a unique rule_id (copy to avoid mutating caller's dict)
+    payload = {**payload}
+    if "rule_id" not in payload:
+        payload["rule_id"] = str(uuid4())
+
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        f"{kibana_url}/api/detection_engine/rules",
+        data=data, method="POST",
+        headers={
+            "kbn-xsrf": "true",
+            "Content-Type": "application/json",
+            "Authorization": _basic_auth(user, password),
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+            rule_id = payload.get("rule_id", "")
+            print(f"    [siem] Elastic {payload.get('type', 'query')} rule created: {result.get('id', rule_id)}")
+            return {"rule_id": rule_id, "elastic_id": result.get("id", "")}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()[:300]
+        print(f"    [siem] Elastic deploy failed ({e.code}): {body}")
+        return None
+    except Exception as e:
+        print(f"    [siem] Elastic deploy error: {e}")
+        return None
+
+
+def deploy_to_siems(request: dict, lucene: str, spl: str, sigma_rule: dict,
+                    elastic_payload: dict | None = None) -> dict:
+    """Deploy to all available SIEMs. Returns deployment results.
+
+    For EQL/threshold rules, pass elastic_payload (pre-built _elastic.json)
+    which bypasses inline Lucene payload construction.
+    """
     results = {}
 
-    elastic_result = deploy_to_elastic(request, lucene, sigma_rule)
+    if elastic_payload:
+        elastic_result = deploy_elastic_payload(request, elastic_payload)
+    else:
+        elastic_result = deploy_to_elastic(request, lucene, sigma_rule)
     if elastic_result:
         results["elastic"] = elastic_result
 

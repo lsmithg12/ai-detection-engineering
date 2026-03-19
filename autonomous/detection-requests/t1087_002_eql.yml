@@ -1,0 +1,42 @@
+technique_id: "T1087.002_EQL"
+title: "Rapid Reconnaissance Command Burst (EQL)"
+status: "AUTHORED"
+priority: "high"
+mitre_tactic: "discovery"
+rule_type: "eql"
+
+requested_by: "blue-team"
+requested_date: "2026-03-15T00:00:00Z"
+intel_report: "threat-intel/fawkes/fawkes-ttp-mapping.md"
+
+scenario_file: ""
+sigma_rule: "detections/discovery/t1087_002_discovery_burst_eql.yml"
+compiled_lucene: ""
+compiled_spl: "detections/discovery/compiled/t1087_002_discovery_burst_eql.spl"
+compiled_artifact: "detections/discovery/compiled/t1087_002_discovery_burst_eql_elastic.json"
+secondary_techniques: ["T1082"]
+
+deployed_date: ""
+elastic_rule_id: ""
+splunk_saved_search: ""
+
+last_quality_review: ""
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+
+cost_estimate: "low"
+auto_deploy_eligible: false
+
+fawkes_commands: ["ps", "whoami", "net-enum", "net-stat", "arp", "ifconfig"]
+
+changelog:
+  - date: "2026-03-15T00:00:00Z"
+    agent: "blue-team"
+    action: "created"
+    details: "Phase 6 EQL burst detection for discovery commands"
+  - date: "2026-03-19T00:00:00Z"
+    agent: "remediation"
+    action: "registered"
+    details: "Fix Pack 1 — registered orphaned Phase 6 EQL rule in state machine"

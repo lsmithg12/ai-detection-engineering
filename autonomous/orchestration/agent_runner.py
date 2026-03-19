@@ -128,13 +128,102 @@ def _generate_run_id() -> str:
     return f"{date}-{short_id}"
 
 
-def _create_branch(agent_name: str, run_id: str) -> str:
+def _create_branch(agent_name: str, run_id: str) -> tuple[str, bool]:
+    """Create a feature branch for the agent run.
+
+    Returns (branch_name, had_stash) — had_stash indicates whether we stashed
+    dirty tree changes that should be restored on cleanup.
+    """
     branch = f"agent/{agent_name}/{run_id}"
-    # Ensure we're on main first
+
+    # Guard: check for dirty working tree (ISSUE-007)
+    had_stash = False
+    status = _run_git(["status", "--porcelain"])
+    if status.strip():
+        print(f"  [{agent_name}] Dirty tree detected — stashing changes")
+        _run_git(["stash", "--include-untracked", "-m",
+                  f"auto-stash-before-{agent_name}-{run_id}"])
+        had_stash = True
+
+    # Prune stale remote tracking branches (ISSUE-020)
+    try:
+        _run_git(["fetch", "--prune"])
+    except RuntimeError:
+        pass  # Non-fatal — fetch may fail offline
+
     _run_git(["checkout", "main"])
     _run_git(["pull", "origin", "main"])
     _run_git(["checkout", "-b", branch])
-    return branch
+    return branch, had_stash
+
+
+def _cleanup_branch(original_branch: str = "main", had_stash: bool = False):
+    """Return to main and restore stash if we saved one."""
+    try:
+        _run_git(["checkout", original_branch])
+        if had_stash:
+            _run_git(["stash", "pop"])
+            print(f"  [runner] Restored stashed changes")
+    except RuntimeError as e:
+        print(f"  [runner] Cleanup warning: {e}")
+
+
+# Files that don't constitute substantive changes worth a PR (ISSUE-006)
+BOOKKEEPING_FILES = {
+    "threat-intel/digest.md",
+    "monitoring/pipeline-metrics.jsonl",
+    "autonomous/budget-log.jsonl",
+    "autonomous/security/audit-log.jsonl",
+    "monitoring/reports/",
+}
+
+
+def _has_substantive_changes(branch: str) -> bool:
+    """Check if the branch has changes beyond bookkeeping files."""
+    try:
+        diff = _run_git(["diff", "--name-only", f"main...{branch}"])
+    except RuntimeError:
+        return True  # Assume substantive if we can't check
+    changed = {f.strip() for f in diff.strip().split('\n') if f.strip()}
+    substantive = set()
+    for f in changed:
+        is_bookkeeping = any(f == bk or f.startswith(bk) for bk in BOOKKEEPING_FILES)
+        if not is_bookkeeping:
+            substantive.add(f)
+    return len(substantive) > 0
+
+
+def _record_run_summary(agent_name: str, run_id: str, result: dict, duration: float):
+    """Auto-record a machine-generated run summary to learnings (ISSUE-005).
+
+    Replaces the printed retrospective prompt with actual recorded data.
+    """
+    summary_entry = {
+        "run_id": run_id,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "agent": agent_name,
+        "type": "retrospective",
+        "category": "general",
+        "title": f"Run {run_id} summary",
+        "description": "",
+        "duration_s": round(duration, 1),
+    }
+    if isinstance(result, dict):
+        summary_entry["description"] = result.get("summary", "completed")
+        summary_entry["items_processed"] = result.get(
+            "detections_reviewed",
+            result.get("items_processed",
+                       result.get("techniques_processed", 0)))
+        if result.get("error"):
+            summary_entry["type"] = "error"
+    else:
+        summary_entry["description"] = "completed"
+
+    learnings_dir = AUTONOMOUS_DIR / "learnings"
+    learnings_dir.mkdir(parents=True, exist_ok=True)
+    learnings_path = learnings_dir / f"{agent_name}.jsonl"
+    with open(learnings_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(summary_entry) + "\n")
 
 
 def _commit_and_push(branch: str, agent_name: str, summary: str):
@@ -268,8 +357,9 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
 
     # 3. Create branch (skip in dry-run)
     branch = None
+    had_stash = False
     if not dry_run:
-        branch = _create_branch(agent_name, run_id)
+        branch, had_stash = _create_branch(agent_name, run_id)
         print(f"  [{agent_name}] Created branch: {branch}")
 
     # 4. Import and run the agent
@@ -291,7 +381,6 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
             result = module.run(sm)
     except Exception as e:
         print(f"  [{agent_name}] Agent failed: {e}")
-        # Record the failure as a learning
         learnings.record(
             agent_name, run_id, "error", "general",
             f"Agent crashed: {type(e).__name__}",
@@ -320,29 +409,43 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
         result=result,
     )
 
-    # 6. Retrospective prompt
-    retro = learnings.get_retrospective_prompt(agent_name, run_id)
-    print(f"\n  {retro}\n")
+    # 6. Auto-retrospective — record run summary to learnings (ISSUE-005)
+    _record_run_summary(agent_name, run_id, result, duration)
 
     # 7. Commit, push, PR (skip in dry-run)
-    if not dry_run and branch:
-        summary = result.get("summary", "completed") if isinstance(result, dict) else "completed"
-        try:
-            pushed = _commit_and_push(branch, agent_name, summary)
-        except RuntimeError as e:
-            print(f"  [{agent_name}] Git push failed: {e}")
-            pushed = False
+    try:
+        if not dry_run and branch:
+            # Check config for PR suppression (ISSUE-021)
+            import yaml as _yaml
+            agent_cfg = {}
+            if CONFIG_PATH.exists():
+                with open(CONFIG_PATH) as f:
+                    cfg = _yaml.safe_load(f) or {}
+                agent_cfg = cfg.get("agents", {}).get(agent_name, {})
 
-        if pushed:
-            pr_title = f"[{agent_name.replace('-',' ').title()}] {summary}"
-            learnings_section = ""
-            recent = learnings.get_relevant_lessons(agent_name, "general", max_entries=3)
-            if recent:
-                learnings_section = "\n## Learnings\n" + "\n".join(
-                    f"- [{e['type']}] {e['title']}: {e['description']}" for e in recent
-                )
+            summary = result.get("summary", "completed") if isinstance(result, dict) else "completed"
+            try:
+                pushed = _commit_and_push(branch, agent_name, summary)
+            except RuntimeError as e:
+                print(f"  [{agent_name}] Git push failed: {e}")
+                pushed = False
 
-            pr_body = f"""## Summary
+            # Suppress PRs for agents that don't produce mergeable content (ISSUE-021)
+            create_pr = agent_cfg.get("create_pr", True)
+            if pushed and create_pr:
+                # Suppress no-op PRs (ISSUE-006)
+                if not _has_substantive_changes(branch):
+                    print(f"  [{agent_name}] Only bookkeeping changes — skipping PR creation")
+                else:
+                    pr_title = f"[{agent_name.replace('-',' ').title()}] {summary}"
+                    learnings_section = ""
+                    recent = learnings.get_relevant_lessons(agent_name, "general", max_entries=3)
+                    if recent:
+                        learnings_section = "\n## Learnings\n" + "\n".join(
+                            f"- [{e['type']}] {e['title']}: {e['description']}" for e in recent
+                        )
+
+                    pr_body = f"""## Summary
 {summary}
 
 ## Run Details
@@ -354,7 +457,13 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
 ---
 *Generated by Patronus Agent Runner*
 """
-            _create_pr(branch, agent_name, pr_title, pr_body)
+                    _create_pr(branch, agent_name, pr_title, pr_body)
+            elif pushed and not create_pr:
+                print(f"  [{agent_name}] PR creation disabled for this agent (config.yml)")
+    finally:
+        # Restore stashed changes if we had any (ISSUE-007)
+        if had_stash and not dry_run:
+            _cleanup_branch("main", had_stash=True)
 
     print(f"\n  [{agent_name}] Run {run_id} complete.")
 
@@ -383,10 +492,21 @@ def run_pipeline(pipeline_agents: list[str], dry_run: bool = False):
 
     sm = StateManager()
 
-    # Create single branch for entire pipeline
+    # Create single branch for entire pipeline (with dirty-tree handling)
     branch = None
+    had_stash = False
     if not dry_run:
         branch = f"agent/pipeline/{run_id}"
+        # Guard: stash dirty working tree before checkout (ISSUE-007)
+        status = _run_git(["status", "--porcelain"])
+        if status.strip():
+            _run_git(["stash", "--include-untracked", "-m",
+                       f"auto-stash-before-pipeline-{run_id}"])
+            had_stash = True
+        try:
+            _run_git(["fetch", "--prune"])
+        except RuntimeError:
+            pass
         _run_git(["checkout", "main"])
         _run_git(["pull", "origin", "main"])
         _run_git(["checkout", "-b", branch])
@@ -461,6 +581,10 @@ def run_pipeline(pipeline_agents: list[str], dry_run: bool = False):
 *Generated by Patronus Pipeline Runner*
 """
         _create_pr(branch, "pipeline", pr_title, pr_body)
+
+    # Restore stashed changes if we had any (ISSUE-007)
+    if had_stash and not dry_run:
+        _cleanup_branch("main", had_stash=True)
 
     print(f"\n  [pipeline] Pipeline {run_id} complete.")
 

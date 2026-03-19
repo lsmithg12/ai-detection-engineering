@@ -50,28 +50,53 @@ def deploy_single(request: dict, state_manager: StateManager) -> dict:
     sigma_path_rel = request.get("sigma_rule", "")
     lucene_path_rel = request.get("compiled_lucene", "")
     spl_path_rel = request.get("compiled_spl", "")
+    compiled_artifact_rel = request.get("compiled_artifact", "")
+    rule_type = request.get("rule_type", "sigma")
 
-    if not sigma_path_rel or not lucene_path_rel:
-        result["error"] = "Missing artifacts (sigma_rule or compiled_lucene)"
-        print(f"    [deployment] Skipping {tid} -- missing artifacts")
+    # Diagnostic error messages (ISSUE-012)
+    missing = []
+    if not sigma_path_rel:
+        missing.append("sigma_rule field empty in detection-request")
+    if not lucene_path_rel and not compiled_artifact_rel:
+        missing.append("compiled_lucene and compiled_artifact both empty")
+    if sigma_path_rel and not (REPO_ROOT / sigma_path_rel).exists():
+        missing.append(f"sigma file not found: {sigma_path_rel}")
+    if lucene_path_rel and not (REPO_ROOT / lucene_path_rel).exists() and not compiled_artifact_rel:
+        missing.append(f"lucene file not found: {lucene_path_rel}")
+
+    if missing:
+        details = "; ".join(missing)
+        result["error"] = details
+        print(f"    [deployment] Skipping {tid} -- {details}")
         return result
 
     sigma_full = REPO_ROOT / sigma_path_rel
-    lucene_full = REPO_ROOT / lucene_path_rel
     spl_full = REPO_ROOT / spl_path_rel if spl_path_rel else None
-
-    if not sigma_full.exists() or not lucene_full.exists():
-        result["error"] = "Artifact files not found on disk"
-        print(f"    [deployment] Skipping {tid} -- files not found")
-        return result
 
     with open(sigma_full, encoding="utf-8") as f:
         sigma_data = yaml.safe_load(f)
-    lucene = lucene_full.read_text(encoding="utf-8").strip()
     spl = spl_full.read_text(encoding="utf-8").strip() if spl_full and spl_full.exists() else ""
 
+    # For EQL/threshold rules, use pre-built _elastic.json directly
+    elastic_payload = None
+    if rule_type in ("eql", "threshold") and compiled_artifact_rel:
+        artifact_full = REPO_ROOT / compiled_artifact_rel
+        if artifact_full.exists():
+            with open(artifact_full, encoding="utf-8") as f:
+                elastic_payload = json.load(f)
+            lucene = ""  # Not used for EQL/threshold
+            print(f"    [deployment] Using pre-built {rule_type} artifact: {compiled_artifact_rel}")
+        else:
+            result["error"] = f"compiled_artifact not found: {compiled_artifact_rel}"
+            print(f"    [deployment] Skipping {tid} -- {result['error']}")
+            return result
+    else:
+        lucene_full = REPO_ROOT / lucene_path_rel
+        lucene = lucene_full.read_text(encoding="utf-8").strip()
+
     print(f"    [deployment] Deploying {tid} -- {request.get('title', '')}")
-    deploy_results = deploy_to_siems(request, lucene, spl, sigma_data)
+    deploy_results = deploy_to_siems(request, lucene, spl, sigma_data,
+                                      elastic_payload=elastic_payload)
 
     if not deploy_results:
         result["error"] = "No SIEMs available"
@@ -106,6 +131,24 @@ def deploy_single(request: dict, state_manager: StateManager) -> dict:
         print(f"    [deployment] {tid} -> DEPLOYED ({' + '.join(deploy_details)})")
         result["status"] = "deployed"
         result["siem_targets"] = deploy_details
+
+        # ISSUE-015: If SIEM confirms rule is active, go straight to MONITORING
+        rule_active = False
+        if "elastic" in deploy_results:
+            elastic_r = deploy_results["elastic"]
+            # Elastic Detection Engine returns the rule with enabled=true on success
+            if elastic_r and elastic_r.get("enabled", elastic_r.get("rule_id")):
+                rule_active = True
+        if rule_active:
+            try:
+                state_manager.transition(
+                    tid, "MONITORING", agent=AGENT_NAME,
+                    details="Rule confirmed active in SIEM after deployment",
+                )
+                print(f"    [deployment] {tid} -> MONITORING (confirmed active)")
+                result["status"] = "monitoring"
+            except ValueError:
+                pass  # DEPLOYED is fine — tuning agent will promote later
     except ValueError as e:
         result["error"] = f"DEPLOYED transition failed: {e}"
         print(f"    [deployment] DEPLOYED transition failed for {tid}: {e}")
@@ -191,9 +234,21 @@ def run(state_manager: StateManager) -> dict:
 
     if not eligible:
         print("  [deployment] No VALIDATED detections eligible for deployment.")
+        # ISSUE-013: Surface the dead zone — rules validated but not auto-deploy eligible
+        manual_deploy = [r for r in validated if not r.get("auto_deploy_eligible")]
+        if manual_deploy:
+            print(f"  [deployment] {len(manual_deploy)} VALIDATED rules need manual deploy (F1 < 0.90):")
+            for r in manual_deploy:
+                f1 = r.get("quality_score", 0)
+                print(f"    - {r['technique_id']} (F1={f1:.2f}) — deploy manually: cli.py deploy --validated")
         return {"summary": "No eligible detections", "detections_deployed": 0}
 
     print(f"  [deployment] Found {len(eligible)} VALIDATED detections eligible for deployment")
+
+    # ISSUE-013: Also log skipped manual-deploy rules
+    manual_deploy = [r for r in validated if not r.get("auto_deploy_eligible")]
+    if manual_deploy:
+        print(f"  [deployment] Note: {len(manual_deploy)} additional VALIDATED rules need manual deploy (F1 0.75-0.89)")
 
     # 4. Deploy each
     results = []
@@ -206,7 +261,7 @@ def run(state_manager: StateManager) -> dict:
         deploy_result = deploy_single(request, state_manager)
         results.append(deploy_result)
 
-        if deploy_result["status"] == "deployed":
+        if deploy_result["status"] in ("deployed", "monitoring"):
             deployed += 1
 
     # 5. Summary
