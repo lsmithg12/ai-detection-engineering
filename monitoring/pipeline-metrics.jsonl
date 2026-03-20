@@ -1,0 +1,1 @@
+{"timestamp": "2026-03-20T18:30:03Z", "run_id": "20260320-1fa0a8", "agent": "quality", "run_type": "single", "duration_minutes": 0.02, "tokens_estimated": 0, "detections_processed": 16, "state_transitions": {}, "errors": 0, "retries": 0, "f1_scores": {}, "coverage_delta": 0.0}
