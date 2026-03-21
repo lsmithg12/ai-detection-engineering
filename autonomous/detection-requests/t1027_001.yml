@@ -1,11 +1,11 @@
 technique_id: T1027.001
 title: "Detection for T1027.001 \u2014 Pad binary to exceed AV scan size limit"
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
-scenario_file: ''
+scenario_file: simulator\scenarios\t1027_001.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
@@ -32,6 +32,14 @@ changelog:
   agent: intel
   action: update
   details: 'Updated fields: data_source_gaps'
+- date: '2026-03-21T13:13:38Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-21T13:13:38Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:

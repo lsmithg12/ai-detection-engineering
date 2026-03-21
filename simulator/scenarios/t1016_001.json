@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1016.001",
+  "technique_name": "Detection for T1016.001 — ARP table (host discovery)",
+  "description": "Simulates Detection for T1016.001 — ARP table (host discovery) attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-21T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "arp.exe",
+          "executable": "C:\\Windows\\System32\\arp.exe",
+          "command_line": "arp  -a",
+          "parent": {
+            "pid": 4412,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016.001",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes arp command spawns arp.exe -a to enumerate the local ARP cache for host discovery"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:33.109Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7901,
+          "name": "arp.exe",
+          "executable": "C:\\Windows\\System32\\arp.exe",
+          "command_line": "arp  -a -N 10.10.10.1",
+          "parent": {
+            "pid": 4412,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016.001",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes arp command follows up with interface-specific ARP enumeration to map subnet neighbors"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:34.802Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7965,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c arp -a > C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\~tmp.dat",
+          "parent": {
+            "pid": 4412,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016.001",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes redirects ARP output to a staging file in AppData for exfiltration or in-memory parsing by the C2 agent"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-21T08:55:10.213Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3120,
+          "name": "arp.exe",
+          "executable": "C:\\Windows\\System32\\arp.exe",
+          "command_line": "arp  -a",
+          "parent": {
+            "pid": 2884,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1016.001",
+          "description": "Developer manually runs arp -a from cmd.exe during routine network troubleshooting — identical command line but parent is cmd.exe launched from a terminal, not a suspicious AppData binary"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T08:02:45.677Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 1560,
+          "name": "arp.exe",
+          "executable": "C:\\Windows\\System32\\arp.exe",
+          "command_line": "arp  -a",
+          "parent": {
+            "pid": 812,
+            "name": "NetworkDiagnostics.exe",
+            "executable": "C:\\Windows\\System32\\NetworkDiagnostics.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1016.001",
+          "description": "Windows Network Diagnostics tool legitimately invokes arp.exe during automated connectivity troubleshooting — SYSTEM context and trusted parent distinguish it from attack"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable"
+    ],
+    "notes": "Detection should focus on arp.exe spawned by processes residing outside trusted system paths (e.g., parent.executable matching AppData, Temp, or ProgramData paths). The critical differentiator is process.parent.executable — legitimate arp.exe invocations originate from cmd.exe, powershell.exe, or known Windows diagnostics binaries in System32, NOT from user-space AppData binaries. A high-fidelity rule would combine: process.name == 'arp.exe' AND process.parent.executable matching *\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\*. Rapid successive arp.exe calls (sequence events 1+2) and output redirection to AppData (event 3) are strong behavioral indicators of automated host discovery by a C2 implant."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

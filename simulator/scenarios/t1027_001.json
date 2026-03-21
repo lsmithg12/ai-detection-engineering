@@ -1,0 +1,237 @@
+{
+  "technique_id": "T1027.001",
+  "technique_name": "Detection for T1027.001 — Pad binary to exceed AV scan size limit",
+  "description": "Simulates Detection for T1027.001 — Pad binary to exceed AV scan size limit attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-21T09:14:22.341Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c \"powershell -Command [System.IO.File]::WriteAllBytes('C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe', ([System.IO.File]::ReadAllBytes('C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe') + (New-Object byte[] 100000000)))\"",
+          "parent": {
+            "pid": 6120,
+            "name": "update_helper.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1027.001",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes binary inflation — cmd.exe child of C2 agent inflates the binary with null bytes via PowerShell to push file size past AV scan threshold (~100 MB)"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:23.877Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "update_helper.exe",
+          "path": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "extension": "exe"
+        },
+        "process": {
+          "pid": 9104,
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "command_line": "powershell -Command [System.IO.File]::WriteAllBytes('C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe', ([System.IO.File]::ReadAllBytes('C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe') + (New-Object byte[] 100000000)))",
+          "parent": {
+            "pid": 7832,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1027.001",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Padded binary written back to disk in user AppData\\Roaming\\Microsoft — anomalous file overwrite of an executable by powershell.exe in a non-system path"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:31.204Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6120,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "command_line": "update_helper.exe",
+          "parent": {
+            "pid": 4488,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1027.001",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Padded Fawkes C2 agent executed from user AppData\\Roaming\\Microsoft — masquerades as a Microsoft update helper; inflated binary evades AV size-gated scanning"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-21T08:45:10.512Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "OneDriveSetup.exe",
+          "path": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDriveSetup.exe",
+          "extension": "exe"
+        },
+        "process": {
+          "pid": 3312,
+          "name": "OneDrive.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+          "command_line": "OneDrive.exe /background",
+          "parent": {
+            "pid": 1088,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1027.001",
+          "description": "Legitimate Microsoft OneDrive self-update writing a large setup executable to a user AppData path — similar location and file type but written by a signed parent process"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T08:51:03.789Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5540,
+          "name": "MicrosoftEdgeUpdate.exe",
+          "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+          "command_line": "MicrosoftEdgeUpdate.exe /svc",
+          "parent": {
+            "pid": 1088,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1027.001",
+          "description": "Legitimate Microsoft Edge update helper executing from user AppData\\Local\\Microsoft — same user-writable AppData path pattern and update-helper naming convention as the attack, but spawned from svchost.exe (not explorer) and uses a known Microsoft path"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "file.path",
+      "process.executable",
+      "process.command_line",
+      "process.parent.name",
+      "process.name"
+    ],
+    "notes": "Detection should flag: (1) powershell.exe or cmd.exe writing/overwriting an .exe in AppData\\Roaming\\Microsoft with a large byte-array append pattern in the command line, and (2) executables in AppData\\Roaming\\Microsoft spawned by explorer.exe. Tune out: OneDrive/Edge/Teams update binaries in AppData\\Local\\Microsoft written by their own signed parent processes. Key discriminator: attack parent chain is update_helper.exe -> cmd.exe -> powershell.exe; benign chain is svchost.exe -> update binary."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

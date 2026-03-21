@@ -352,11 +352,7 @@ def run_agent(agent_name: str, pr_number: int = None, dry_run: bool = False):
         for p in pending:
             print(f"    [{p['status']}] {p['technique_id']} --{p.get('title','')}")
 
-    # 2. Load learnings briefing
-    briefing = learnings.get_briefing(agent_name)
-    print(f"\n  {briefing}\n")
-
-    # 3. Create branch (skip in dry-run)
+    # 2. Create branch (skip in dry-run)
     branch = None
     had_stash = False
     if not dry_run:

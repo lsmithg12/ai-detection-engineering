@@ -1,11 +1,11 @@
 technique_id: T1016
 title: "Detection for T1016 \u2014 Network interface configuration"
-status: REQUESTED
+status: SCENARIO_BUILT
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
-scenario_file: ''
+scenario_file: simulator\scenarios\t1016.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
@@ -24,6 +24,14 @@ changelog:
   agent: intel
   action: update
   details: 'Updated fields: threat_actors, fawkes_commands'
+- date: '2026-03-21T13:11:57Z'
+  agent: red-team
+  action: update
+  details: 'Updated fields: scenario_file'
+- date: '2026-03-21T13:11:57Z'
+  agent: red-team
+  action: transition:REQUESTED->SCENARIO_BUILT
+  details: 'Scenario generated: 3 attack, 2 benign events'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:

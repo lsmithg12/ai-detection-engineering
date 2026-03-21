@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1033",
+  "technique_name": "Detection for T1033 — Current user and privileges",
+  "description": "Simulates Detection for T1033 — Current user and privileges attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-21T09:14:22.341Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "whoami.exe",
+          "executable": "C:\\Windows\\System32\\whoami.exe",
+          "command_line": "whoami /all /fo list",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1033",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent (svc_updater.exe) spawns whoami /all to enumerate current user identity and privileges"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:24.887Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7901,
+          "name": "net.exe",
+          "executable": "C:\\Windows\\System32\\net.exe",
+          "command_line": "net user dkim /domain",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1033",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent queries domain user account details for dkim via net user /domain"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:27.103Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7944,
+          "name": "query.exe",
+          "executable": "C:\\Windows\\System32\\query.exe",
+          "command_line": "query user",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1033",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent enumerates active logged-on sessions via query user to confirm interactive access"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-21T09:02:11.554Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4412,
+          "name": "whoami.exe",
+          "executable": "C:\\Windows\\System32\\whoami.exe",
+          "command_line": "whoami",
+          "parent": {
+            "pid": 3108,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1033",
+          "description": "Developer running whoami from an interactive cmd.exe session — legitimate, no /all flag, parent is cmd.exe not a suspicious AppData binary"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:08:45.219Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5880,
+          "name": "net.exe",
+          "executable": "C:\\Windows\\System32\\net.exe",
+          "command_line": "net user dkim /domain",
+          "parent": {
+            "pid": 2764,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1033",
+          "description": "IT support script launched via Explorer by the user to verify their own domain account — same command but parent is explorer.exe, not an AppData executable"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.executable",
+      "process.parent.name"
+    ],
+    "notes": "Detection should key on whoami /all, net user /domain, or query user spawned by a parent process residing in AppData\\Roaming. The combination of (1) user-discovery commands AND (2) a non-standard AppData parent is the high-fidelity signal. Benign events use the same commands but are parented by cmd.exe or explorer.exe — do NOT alert on parent path = System32 or Windows. Consider a sequence/correlation rule: 2+ discovery commands from the same parent PID within 30 seconds is near-certain C2 enumeration."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
