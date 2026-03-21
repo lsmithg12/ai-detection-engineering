@@ -16,7 +16,11 @@ Fallback (CI, nested session, or CLI unavailable):
 import datetime
 import json
 import re
+import urllib.request
+import urllib.error
+from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urljoin
 
 import yaml
 
@@ -55,6 +59,91 @@ PRIORITY_SOURCES = [
     "research.splunk.com",
     "thedfirreport.com",
 ]
+
+# Index pages to scrape for recent threat reports
+INTEL_INDEX_URLS = [
+    "https://www.cisa.gov/news-events/cybersecurity-advisories",
+    "https://thedfirreport.com/",
+    "https://elastic.co/security-labs",
+]
+
+
+class _HTMLTextExtractor(HTMLParser):
+    """Extract readable text and links from HTML."""
+
+    def __init__(self):
+        super().__init__()
+        self._parts: list[str] = []
+        self._links: list[dict] = []
+        self._skip = False
+        self._href: str | None = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "nav", "footer", "noscript"):
+            self._skip = True
+        if tag == "a":
+            for name, val in attrs:
+                if name == "href" and val:
+                    self._href = val
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "nav", "footer", "noscript"):
+            self._skip = False
+        if tag == "a":
+            self._href = None
+
+    def handle_data(self, data):
+        if self._skip:
+            return
+        text = data.strip()
+        if text:
+            self._parts.append(text)
+            if self._href:
+                self._links.append({"text": text, "href": self._href})
+
+    def get_text(self) -> str:
+        return " ".join(self._parts)
+
+    def get_links(self) -> list[dict]:
+        return self._links
+
+
+def _fetch_page(url: str, max_bytes: int = 300_000, timeout: int = 30) -> dict | None:
+    """Fetch a URL with Python urllib. Returns {text, links, url} or None."""
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read(max_bytes).decode("utf-8", errors="replace")
+        parser = _HTMLTextExtractor()
+        parser.feed(raw)
+        text = re.sub(r"\s+", " ", parser.get_text()).strip()
+        # Resolve relative URLs
+        links = []
+        for link in parser.get_links():
+            href = link["href"]
+            if href.startswith("#"):
+                continue
+            links.append({"text": link["text"], "href": urljoin(url, href)})
+        return {"text": text[:15000], "links": links, "url": url}
+    except Exception as e:
+        print(f"    [intel] Fetch failed ({url}): {e}")
+        return None
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """Remove markdown code fences from Claude responses."""
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines)
+    return text.strip()
+
 
 # Data source requirements per technique category
 # Maps MITRE technique prefixes to the data sources they need
@@ -404,104 +493,132 @@ def search_web_for_intel(
     max_reports: int = 3,
 ) -> list[dict]:
     """
-    Use Claude CLI with WebSearch/WebFetch to find new threat intel.
+    Fetch threat intel from the web using Python urllib + Claude analysis.
 
-    Sends search queries to Claude, which searches the web, reads reports,
-    and returns structured technique data as JSON.
+    Two-phase approach (replaces single Claude CLI + curl call):
+      Phase 1: Python fetches index page, extracts text + links (no Claude)
+      Phase 2: Claude picks best report URLs from links (pure reasoning)
+      Phase 3: Python fetches each report page (no Claude)
+      Phase 4: Claude extracts MITRE techniques from report text (pure reasoning)
 
-    Returns a list of report dicts, each with keys:
-      title, source, date_published, threat_actors, platforms, techniques, raw_summary
+    This is much more reliable than the old approach because:
+      - No Bash(curl:*) tool restriction or max-turns issues
+      - Claude only does analysis (what it's good at), not web fetching
+      - Python urllib handles redirects, encoding, timeouts natively
     """
+    # Phase 1: Fetch an index page with Python
+    print("  [intel] Fetching threat intel index pages...")
+    index_page = None
+    for url in INTEL_INDEX_URLS:
+        page = _fetch_page(url)
+        if page and page["links"]:
+            index_page = page
+            print(f"    [intel] Fetched index: {url} ({len(page['links'])} links)")
+            break
+        elif page:
+            print(f"    [intel] Fetched {url} but found no links")
+
+    if not index_page:
+        print("  [intel] Could not fetch any index pages — skipping web search")
+        return []
+
+    # Phase 2: Ask Claude to pick the best report links (pure reasoning)
     if not claude_llm.is_available():
-        print("  [intel] Claude CLI not available — skipping web search")
+        print("  [intel] Claude CLI not available — skipping link analysis")
         return []
 
-    already_covered = ", ".join(sorted(existing_techniques)[:20])
-    priority_sites = ", ".join(PRIORITY_SOURCES[:5])
+    # Build a summary of links for Claude to choose from
+    link_lines = []
+    for link in index_page["links"][:100]:
+        href = link["href"]
+        if not href.startswith("http"):
+            continue
+        link_lines.append(f"- [{link['text'][:80]}]({href})")
+    links_summary = "\n".join(link_lines)
 
-    # Keep system prompt simple — no special chars that cmd.exe could mangle.
-    # Technical instructions (sed patterns, URLs) go in the prompt via stdin.
-    system_prompt = (
-        "You are a threat intelligence analyst. You have curl via the Bash tool. "
-        "Be FAST and return results as a JSON array. No markdown, no explanation."
-    )
+    if not links_summary:
+        print("  [intel] No usable links found on index page")
+        return []
 
-    # Build a combined prompt with all queries
-    queries_block = "\n".join(f"- {q}" for q in queries[:3])
-
-    prompt = f"""You have curl access. Find {max_reports} recent threat reports with MITRE ATT&CK techniques.
-
-IMPORTANT SECURITY NOTE: Always strip HTML/script tags from curl output to avoid
-triggering antivirus on malicious code samples in reports. Use this pattern:
-  curl -sL "<url>" | sed 's/<script[^>]*>.*<\\/script>//g; s/<[^>]*>//g' | head -300
-
-INSTRUCTIONS — be fast, limit to 2-3 curl calls total:
-1. Fetch ONE of these index pages to find recent report URLs:
-   curl -sL "https://www.cisa.gov/news-events/cybersecurity-advisories" | sed 's/<[^>]*>//g' | head -200
-   curl -sL "https://elastic.co/security-labs" | sed 's/<[^>]*>//g' | head -200
-   curl -sL "https://thedfirreport.com/" | sed 's/<[^>]*>//g' | head -200
-2. Pick the 1-2 most recent report links from the index page
-3. Fetch each report with HTML stripped (see pattern above)
-4. Extract MITRE ATT&CK technique IDs from the text content
-5. Return JSON immediately — do NOT fetch additional pages
-
-Topics of interest:
-{queries_block}
-
-Skip these techniques (already covered): {already_covered}
-
-Return ONLY a JSON array (no markdown fences, no commentary):
-[{{
-  "title": "Report Title",
-  "source": "https://...",
-  "date_published": "2026-03-01",
-  "threat_actors": ["Actor Name"],
-  "platforms": ["Windows"],
-  "techniques": [
-    {{"id": "T1059.001", "name": "PowerShell", "description": "Used PowerShell for execution", "priority": "high"}}
-  ],
-  "raw_summary": "Brief 2-3 sentence summary"
-}}]"""
-
-    print(f"  [intel] Sending web search request to Claude CLI...")
-    result = claude_llm.ask_with_web_search(
-        prompt=prompt,
+    queries_str = ", ".join(queries[:3])
+    pick_result = claude_llm.ask_for_analysis(
+        question=(
+            f"Pick up to {max_reports} threat intelligence report links from this list. "
+            f"Topics of interest: {queries_str}. "
+            "Choose specific reports or advisories — NOT category pages, nav links, or tag pages. "
+            "Return ONLY a JSON array: "
+            '[{"title": "Report Title", "url": "https://..."}]'
+        ),
+        context=f"Links from {index_page['url']}:\n{links_summary}",
         agent_name="intel",
-        system_prompt=system_prompt,
-        timeout_seconds=300,
     )
 
-    if not result["success"]:
-        print(f"  [intel] Web search failed: {result.get('error', 'unknown')}")
-        return []
-
-    # Parse response
-    response = result["response"].strip()
-    # Strip markdown fences if present
-    if response.startswith("```"):
-        lines = response.split("\n")
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        response = "\n".join(lines)
-
-    # ISSUE-004: Guard against error strings before JSON parse
-    if response.startswith("Error:") or response.startswith("I "):
-        print(f"  [intel] Claude CLI returned non-JSON response: {response[:200]}")
+    if not pick_result["success"]:
+        print(f"  [intel] Claude failed to pick links: {pick_result.get('error')}")
         return []
 
     try:
-        reports = json.loads(response)
-        if not isinstance(reports, list):
-            print(f"  [intel] Claude returned non-array JSON, wrapping")
-            reports = [reports]
-        print(f"  [intel] Claude found {len(reports)} reports via web search")
-        return reports[:max_reports]
-    except json.JSONDecodeError as e:
-        print(f"  [intel] Failed to parse Claude web search response: {e}")
-        print(f"  [intel] Raw response (first 500 chars): {response[:500]}")
+        resp = _strip_markdown_fences(pick_result["response"])
+        picked = json.loads(resp)
+        if not isinstance(picked, list):
+            picked = [picked]
+    except json.JSONDecodeError:
+        print(f"  [intel] Could not parse link selection: {pick_result['response'][:200]}")
         return []
+
+    print(f"  [intel] Claude selected {len(picked)} reports to fetch")
+
+    # Phase 3 + 4: Fetch each report and extract techniques
+    already_covered = ", ".join(sorted(existing_techniques)[:20])
+    reports = []
+
+    for link in picked[:max_reports]:
+        url = link.get("url", "")
+        title = link.get("title", "Unknown Report")
+        if not url:
+            continue
+
+        print(f"    [intel] Fetching: {title[:70]}...")
+        page = _fetch_page(url)
+        if not page:
+            continue
+
+        print(f"    [intel] Analyzing report ({len(page['text'])} chars)...")
+        extract_result = claude_llm.ask_for_analysis(
+            question=(
+                "Extract all MITRE ATT&CK techniques from this threat report. "
+                f"Skip already-covered techniques: {already_covered}. "
+                "Return ONLY a JSON object with this structure (no markdown fences): "
+                '{"title": "Report Title", '
+                '"source": "' + url + '", '
+                '"date_published": "YYYY-MM-DD", '
+                '"threat_actors": ["Actor Name"], '
+                '"platforms": ["Windows"], '
+                '"techniques": [{"id": "T1059.001", "name": "PowerShell", '
+                '"description": "How it was used", "priority": "high"}], '
+                '"raw_summary": "2-3 sentence summary of the report"}'
+            ),
+            context=page["text"][:10000],
+            agent_name="intel",
+        )
+
+        if not extract_result["success"]:
+            print(f"    [intel] Failed to analyze: {title[:60]}")
+            continue
+
+        try:
+            resp = _strip_markdown_fences(extract_result["response"])
+            report = json.loads(resp)
+            if not report.get("source"):
+                report["source"] = url
+            reports.append(report)
+            tech_count = len(report.get("techniques", []))
+            print(f"    [intel] Extracted {tech_count} techniques from: {title[:60]}")
+        except json.JSONDecodeError:
+            print(f"    [intel] Could not parse analysis for: {title[:60]}")
+            print(f"    [intel] Raw (first 300): {extract_result['response'][:300]}")
+
+    return reports
 
 
 def fill_fawkes_gaps(
