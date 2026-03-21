@@ -1,0 +1,1 @@
+(event.category:process AND process.name:wmic.exe AND (process.command_line:*\/node\:* AND process.command_line:*process\ call\ create*)) AND (NOT ((process.parent.name:(CcmExec.exe OR sccmexec.exe OR mmc.exe OR services.exe)) OR (user.name:SYSTEM AND user.domain:NT\ AUTHORITY AND process.command_line:*process\ call\ create*)))

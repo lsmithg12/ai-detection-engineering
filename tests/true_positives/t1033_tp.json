@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:14:22.341Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "whoami.exe",
+      "executable": "C:\\Windows\\System32\\whoami.exe",
+      "command_line": "whoami /all /fo list",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1033",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent (svc_updater.exe) spawns whoami /all to enumerate current user identity and privileges"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:24.887Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7901,
+      "name": "net.exe",
+      "executable": "C:\\Windows\\System32\\net.exe",
+      "command_line": "net user dkim /domain",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1033",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent queries domain user account details for dkim via net user /domain"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:27.103Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7944,
+      "name": "query.exe",
+      "executable": "C:\\Windows\\System32\\query.exe",
+      "command_line": "query user",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1033",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent enumerates active logged-on sessions via query user to confirm interactive access"
+    }
+  }
+]

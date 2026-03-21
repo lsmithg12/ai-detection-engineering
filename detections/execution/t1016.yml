@@ -1,0 +1,52 @@
+title: Network Configuration Discovery via Suspicious Parent Process
+id: 8f3a1c2d-4e5b-4f6a-9c8d-1e2f3a4b5c6d
+status: experimental
+description: >
+  Detects network interface configuration discovery tools (ipconfig, arp, netstat, route, nbtstat)
+  spawned by a parent process located outside of trusted system or program directories.
+  Adversaries using C2 agents (e.g., Fawkes) dropped to user-writable paths will execute
+  these tools to enumerate network topology for lateral movement planning.
+  Benign invocations from cmd.exe, powershell.exe, or known IT tools in Program Files are excluded.
+author: Detection Engineering — Blue Team Agent
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://attack.mitre.org/techniques/T1016/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.discovery
+  - attack.t1016
+  - attack.t1016.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.category: process
+    event.type: start
+    process.name|contains:
+      - ipconfig.exe
+      - arp.exe
+      - netstat.exe
+      - route.exe
+      - nbtstat.exe
+  filter_trusted_parent_path:
+    process.parent.executable|startswith:
+      - 'C:\Windows\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection and not filter_trusted_parent_path
+falsepositives:
+  - Third-party monitoring agents installed outside of Program Files or Windows directories
+  - Custom IT automation scripts running from non-standard paths (e.g., C:\Tools\)
+  - Software deployment systems that stage executables in user-accessible directories
+  - Legitimate admin use of portable tools — review process.parent.executable and user context
+level: medium
+fields:
+  - process.name
+  - process.command_line
+  - process.executable
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name

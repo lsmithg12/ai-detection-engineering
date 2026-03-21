@@ -1,0 +1,1 @@
+event.category="process" event.type="start" process.name IN ("*ipconfig.exe*", "*arp.exe*", "*netstat.exe*", "*route.exe*", "*nbtstat.exe*") NOT (process.parent.executable IN ("C:\\Windows\\*", "C:\\Program Files\\*", "C:\\Program Files (x86)\\*")) | table process.name,process.command_line,process.executable,process.parent.name,process.parent.executable,user.name,host.name

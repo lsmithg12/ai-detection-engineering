@@ -1,12 +1,12 @@
 technique_id: T1027.001
 title: "Detection for T1027.001 \u2014 Pad binary to exceed AV scan size limit"
-status: SCENARIO_BUILT
+status: AUTHORED
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1027_001.json
-sigma_rule: ''
+sigma_rule: detections\defense_evasion\t1027_001.yml
 deployed_date: ''
 last_quality_review: ''
 quality_score: 0.0
@@ -40,6 +40,14 @@ changelog:
   agent: red-team
   action: transition:REQUESTED->SCENARIO_BUILT
   details: 'Scenario generated: 3 attack, 2 benign events'
+- date: '2026-03-21T13:31:42Z'
+  agent: author
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl, mitre_tactic'
+- date: '2026-03-21T13:31:42Z'
+  agent: author
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -54,3 +62,6 @@ data_source_requirements:
   - process.command_line
 data_source_gaps:
 - GAP-008
+compiled_lucene: detections\defense_evasion\compiled\t1027_001.lucene
+compiled_spl: detections\defense_evasion\compiled\t1027_001.spl
+mitre_tactic: defense_evasion

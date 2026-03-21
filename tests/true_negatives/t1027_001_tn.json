@@ -1,0 +1,83 @@
+[
+  {
+    "@timestamp": "2026-03-21T08:45:10.512Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "file": {
+      "name": "OneDriveSetup.exe",
+      "path": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDriveSetup.exe",
+      "extension": "exe"
+    },
+    "process": {
+      "pid": 3312,
+      "name": "OneDrive.exe",
+      "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+      "command_line": "OneDrive.exe /background",
+      "parent": {
+        "pid": 1088,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1027.001",
+      "description": "Legitimate Microsoft OneDrive self-update writing a large setup executable to a user AppData path \u2014 similar location and file type but written by a signed parent process"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T08:51:03.789Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5540,
+      "name": "MicrosoftEdgeUpdate.exe",
+      "executable": "C:\\Users\\clee\\AppData\\Local\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+      "command_line": "MicrosoftEdgeUpdate.exe /svc",
+      "parent": {
+        "pid": 1088,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1027.001",
+      "description": "Legitimate Microsoft Edge update helper executing from user AppData\\Local\\Microsoft \u2014 same user-writable AppData path pattern and update-helper naming convention as the attack, but spawned from svchost.exe (not explorer) and uses a known Microsoft path"
+    }
+  }
+]

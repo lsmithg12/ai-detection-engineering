@@ -1,0 +1,1 @@
+(process.name:arp.exe AND process.command_line:*\-a*) AND (NOT (process.parent.executable:(C\:\\Windows\\System32\\* OR C\:\\Windows\\SysWOW64\\* OR C\:\\Windows\\explorer.exe* OR C\:\\Program\ Files\\* OR C\:\\Program\ Files\ \(x86\)\\*)))

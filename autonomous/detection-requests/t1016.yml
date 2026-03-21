@@ -1,12 +1,12 @@
 technique_id: T1016
 title: "Detection for T1016 \u2014 Network interface configuration"
-status: SCENARIO_BUILT
+status: AUTHORED
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1016.json
-sigma_rule: ''
+sigma_rule: detections\execution\t1016.yml
 deployed_date: ''
 last_quality_review: ''
 quality_score: 0.0
@@ -32,7 +32,18 @@ changelog:
   agent: red-team
   action: transition:REQUESTED->SCENARIO_BUILT
   details: 'Scenario generated: 3 attack, 2 benign events'
+- date: '2026-03-21T13:30:25Z'
+  agent: author
+  action: update
+  details: 'Updated fields: sigma_rule, compiled_lucene, compiled_spl, mitre_tactic'
+- date: '2026-03-21T13:30:25Z'
+  agent: author
+  action: transition:SCENARIO_BUILT->AUTHORED
+  details: Sigma rule authored, transpiled to Lucene + SPL
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
 - ifconfig
+compiled_lucene: detections\execution\compiled\t1016.lucene
+compiled_spl: detections\execution\compiled\t1016.spl
+mitre_tactic: execution

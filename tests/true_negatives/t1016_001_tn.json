@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-21T08:55:10.213Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3120,
+      "name": "arp.exe",
+      "executable": "C:\\Windows\\System32\\arp.exe",
+      "command_line": "arp  -a",
+      "parent": {
+        "pid": 2884,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1016.001",
+      "description": "Developer manually runs arp -a from cmd.exe during routine network troubleshooting \u2014 identical command line but parent is cmd.exe launched from a terminal, not a suspicious AppData binary"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T08:02:45.677Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 1560,
+      "name": "arp.exe",
+      "executable": "C:\\Windows\\System32\\arp.exe",
+      "command_line": "arp  -a",
+      "parent": {
+        "pid": 812,
+        "name": "NetworkDiagnostics.exe",
+        "executable": "C:\\Windows\\System32\\NetworkDiagnostics.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1016.001",
+      "description": "Windows Network Diagnostics tool legitimately invokes arp.exe during automated connectivity troubleshooting \u2014 SYSTEM context and trusted parent distinguish it from attack"
+    }
+  }
+]
