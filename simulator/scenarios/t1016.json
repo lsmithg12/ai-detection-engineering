@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1016",
+  "technique_name": "Detection for T1016 — Network interface configuration",
+  "description": "Simulates Detection for T1016 — Network interface configuration attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-21T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "ipconfig.exe",
+          "executable": "C:\\Windows\\System32\\ipconfig.exe",
+          "command_line": "ipconfig /all",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent (svc_updater.exe) spawns ipconfig /all to enumerate network interface configuration"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:34.109Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7961,
+          "name": "arp.exe",
+          "executable": "C:\\Windows\\System32\\arp.exe",
+          "command_line": "arp -a",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes arp command maps local network neighbours — supports lateral movement planning"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T09:14:35.872Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 8044,
+          "name": "route.exe",
+          "executable": "C:\\Windows\\System32\\route.exe",
+          "command_line": "route print",
+          "parent": {
+            "pid": 5124,
+            "name": "svc_updater.exe",
+            "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1016",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes ifconfig/route command enumerates routing table to identify accessible subnets"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-21T08:52:11.203Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4412,
+          "name": "ipconfig.exe",
+          "executable": "C:\\Windows\\System32\\ipconfig.exe",
+          "command_line": "ipconfig /all",
+          "parent": {
+            "pid": 3208,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1016",
+          "description": "User-initiated ipconfig /all from interactive cmd.exe — legitimate network troubleshooting by dkim"
+        }
+      },
+      {
+        "@timestamp": "2026-03-21T08:55.47.918Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6630,
+          "name": "ipconfig.exe",
+          "executable": "C:\\Windows\\System32\\ipconfig.exe",
+          "command_line": "ipconfig /release && ipconfig /renew",
+          "parent": {
+            "pid": 1192,
+            "name": "CorpIT-Support.exe",
+            "executable": "C:\\Program Files\\Corp IT\\CorpIT-Support.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1016",
+          "description": "Corp IT support tool running ipconfig release/renew as SYSTEM — routine DHCP remediation task"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable"
+    ],
+    "notes": "Detection should focus on network discovery binaries (ipconfig.exe, arp.exe, route.exe) spawned by processes in user-writable paths (AppData\\Local\\Temp). The parent process path C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe is a high-fidelity indicator. Benign events share the same child process name but have legitimate parents (interactive cmd.exe or known IT tooling). A compound rule requiring BOTH the child binary being a network enum tool AND the parent living in a temp/user-writable path will sharply reduce FPs while maintaining TP coverage."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
