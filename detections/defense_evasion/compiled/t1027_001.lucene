@@ -1,0 +1,1 @@
+(event.code:1 AND (process.name:(*powershell.exe OR *pwsh.exe)) AND (process.command_line:*WriteAllBytes* AND process.command_line:*New\-Object\ byte\[\]*)) OR (event.code:1 AND process.name:cmd.exe AND (process.command_line:*WriteAllBytes* AND process.command_line:*New\-Object\ byte\[\]*))

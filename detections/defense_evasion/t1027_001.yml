@@ -1,0 +1,54 @@
+title: Fawkes Binary Inflation via PowerShell WriteAllBytes Padding
+id: a7c3e1f2-9b84-4d56-bc12-3e7f2a0d5c89
+status: experimental
+description: >
+  Detects binary inflation (T1027.001) where a process appends large null-byte arrays to an
+  executable using PowerShell System.IO.File::WriteAllBytes combined with New-Object byte[]
+  to push the file size past AV scan thresholds. This is a known Fawkes C2 agent technique.
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1027/001/
+tags:
+  - attack.defense_evasion
+  - attack.t1027.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_powershell_inflation:
+    event.code: '1'
+    process.name|endswith:
+      - 'powershell.exe'
+      - 'pwsh.exe'
+    process.command_line|contains|all:
+      - 'WriteAllBytes'
+      - 'New-Object byte[]'
+  selection_cmd_spawned_inflation:
+    event.code: '1'
+    process.name: 'cmd.exe'
+    process.command_line|contains|all:
+      - 'WriteAllBytes'
+      - 'New-Object byte[]'
+  condition: 1 of selection_*
+  filter_system_paths:
+    process.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+falsepositives:
+  - Legitimate software packaging or installer scripts that use PowerShell to construct binary
+    files programmatically — rare in enterprise environments without a known build pipeline
+  - Custom developer tooling that writes binary data via .NET System.IO.File methods
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name
+level: high

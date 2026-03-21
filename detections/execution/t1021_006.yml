@@ -1,0 +1,51 @@
+title: Remote WMI Process Execution for Lateral Movement
+id: a7c2e8f1-3d45-4b6e-9a12-8f5c7d3e2b01
+status: experimental
+description: >
+  Detects wmic.exe invoking 'process call create' against a remote host via the /node: flag.
+  This is a primary lateral movement technique used by threat actors and C2 frameworks such as
+  Fawkes to spawn arbitrary processes on remote systems over WMI (DCOM/RPC port 135).
+  Legitimate administrative use of this specific invocation pattern is rare; benign remote WMI
+  queries (inventory, monitoring) do not use 'process call create'.
+author: Detection Engineering Agent
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://attack.mitre.org/techniques/T1021/006/
+  - https://github.com/galoryber/fawkes
+  - https://thedfirreport.com/2022/02/21/qbot-and-zerologon-lead-to-full-domain-compromise/
+tags:
+  - attack.lateral_movement
+  - attack.t1021.006
+  - attack.execution
+  - attack.t1047
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    process.name: 'wmic.exe'
+    process.command_line|contains|all:
+      - '/node:'
+      - 'process'
+      - 'call'
+      - 'create'
+  filter_sccm:
+    process.parent.name:
+      - 'CcmExec.exe'
+      - 'ccmexec.exe'
+      - 'CCMEXEC.EXE'
+  filter_system_account:
+    user.name: 'SYSTEM'
+    user.domain: 'NT AUTHORITY'
+    process.parent.name:
+      - 'CcmExec.exe'
+      - 'svchost.exe'
+      - 'services.exe'
+  condition: selection and not 1 of filter_*
+falsepositives:
+  - SCCM/ConfigMgr (CcmExec.exe) performing remote software deployment — excluded by filter_sccm
+  - Legitimate IT administrator scripts that use wmic /node for remote process creation (whitelist by process.parent.executable path)
+  - Remote monitoring and management (RMM) platforms such as Kaseya, ConnectWise, or Datto that invoke WMI remotely
+  - Automated patching systems running as SYSTEM that spawn processes via WMI
+level: high

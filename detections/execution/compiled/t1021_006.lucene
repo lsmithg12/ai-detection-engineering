@@ -1,0 +1,1 @@
+(process.name:wmic.exe AND (process.command_line:*\/node\:* AND process.command_line:*process* AND process.command_line:*call* AND process.command_line:*create*)) AND (NOT ((process.parent.name:(CcmExec.exe OR ccmexec.exe OR CCMEXEC.EXE)) OR (user.name:SYSTEM AND user.domain:NT\ AUTHORITY AND (process.parent.name:(CcmExec.exe OR svchost.exe OR services.exe)))))

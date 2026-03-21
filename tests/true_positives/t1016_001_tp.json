@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "arp.exe",
+      "executable": "C:\\Windows\\System32\\arp.exe",
+      "command_line": "arp  -a",
+      "parent": {
+        "pid": 4412,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016.001",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes arp command spawns arp.exe -a to enumerate the local ARP cache for host discovery"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:33.109Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7901,
+      "name": "arp.exe",
+      "executable": "C:\\Windows\\System32\\arp.exe",
+      "command_line": "arp  -a -N 10.10.10.1",
+      "parent": {
+        "pid": 4412,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016.001",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes arp command follows up with interface-specific ARP enumeration to map subnet neighbors"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:34.802Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7965,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c arp -a > C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\~tmp.dat",
+      "parent": {
+        "pid": 4412,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-02",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016.001",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes redirects ARP output to a staging file in AppData for exfiltration or in-memory parsing by the C2 agent"
+    }
+  }
+]

@@ -1,0 +1,49 @@
+title: System Owner and Privilege Discovery via Suspicious Parent Process
+id: 7c3e1f28-9a4b-4d6e-b802-3f1c5d8a92e7
+status: experimental
+description: >
+  Detects whoami /all or net user /domain executed by a process whose parent
+  resides outside standard Windows system directories. This pattern indicates
+  post-exploitation user and privilege enumeration by a C2 agent (e.g., Fawkes
+  svc_updater.exe) spawned from a user-writable path such as AppData or Temp.
+references:
+  - https://attack.mitre.org/techniques/T1033/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+tags:
+  - attack.discovery
+  - attack.t1033
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_whoami:
+    process.name: 'whoami.exe'
+    process.command_line|contains: '/all'
+  selection_net_user_domain:
+    process.name: 'net.exe'
+    process.command_line|contains|all:
+      - 'user'
+      - '/domain'
+  filter_legit_parent:
+    process.parent.executable|startswith:
+      - 'C:\Windows\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: (selection_whoami or selection_net_user_domain) and not filter_legit_parent
+falsepositives:
+  - Legitimate administrative or deployment scripts launched from a non-standard install
+    path (e.g., custom agent installed under ProgramData\Vendor\) that query user context
+  - Security tooling or EDR agents running from non-Windows paths that invoke whoami
+    internally for audit purposes
+  - Developer build pipelines that execute from source tree directories outside Program Files
+fields:
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name
+level: medium

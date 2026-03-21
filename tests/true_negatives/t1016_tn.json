@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-21T08:52:11.203Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4412,
+      "name": "ipconfig.exe",
+      "executable": "C:\\Windows\\System32\\ipconfig.exe",
+      "command_line": "ipconfig /all",
+      "parent": {
+        "pid": 3208,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1016",
+      "description": "User-initiated ipconfig /all from interactive cmd.exe \u2014 legitimate network troubleshooting by dkim"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T08:55.47.918Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6630,
+      "name": "ipconfig.exe",
+      "executable": "C:\\Windows\\System32\\ipconfig.exe",
+      "command_line": "ipconfig /release && ipconfig /renew",
+      "parent": {
+        "pid": 1192,
+        "name": "CorpIT-Support.exe",
+        "executable": "C:\\Program Files\\Corp IT\\CorpIT-Support.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1016",
+      "description": "Corp IT support tool running ipconfig release/renew as SYSTEM \u2014 routine DHCP remediation task"
+    }
+  }
+]

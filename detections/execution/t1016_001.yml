@@ -1,0 +1,49 @@
+title: ARP Cache Enumeration via Suspicious Parent Process
+id: 7f3a2e91-4b5c-4d8e-9f1a-6c3e8b2d0f47
+status: experimental
+description: >
+  Detects execution of arp.exe with enumeration arguments (-a) spawned from a
+  suspicious or non-standard parent process. Legitimate invocations of arp.exe
+  typically originate from cmd.exe, powershell.exe, or trusted Windows diagnostic
+  binaries running from System32. Fawkes C2 agent uses the 'arp' command to
+  enumerate the local ARP cache for host discovery (T1016.001), and its agent
+  process typically runs from user-writable directories such as AppData.
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1016/001/
+tags:
+  - attack.discovery
+  - attack.t1016
+  - attack.t1016.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    process.name: 'arp.exe'
+    process.executable: 'C:\Windows\System32\arp.exe'
+    process.command_line|contains: '-a'
+  filter_legitimate_parents:
+    process.parent.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection and not filter_legitimate_parents
+falsepositives:
+  - Security scanning tools or network management software running from non-standard
+    paths that legitimately invoke arp.exe
+  - Custom enterprise scripts stored outside System32 that perform network diagnostics
+  - Third-party network monitoring agents installed in non-standard directories
+level: medium
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name

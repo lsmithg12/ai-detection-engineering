@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:22:10.114Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7740,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic.exe /node:192.168.10.30 os get Caption,Version,BuildNumber /format:csv",
+      "parent": {
+        "pid": 4412,
+        "name": "CcmExec.exe",
+        "executable": "C:\\Windows\\CCM\\CcmExec.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1021.006",
+      "description": "SCCM client (CcmExec.exe) legitimately using wmic.exe with /node flag to collect OS inventory from a managed endpoint \u2014 similar network/process pattern but benign parent and read-only query"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:31:55.882Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 2244,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c ipconfig /all",
+      "parent": {
+        "pid": 1608,
+        "name": "WmiPrvSE.exe",
+        "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-HR-04",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1021.006",
+      "description": "WmiPrvSE.exe spawns cmd.exe \u2014 same parent/child chain as attack event 3 \u2014 but triggered by a legitimate monitoring tool collecting network config via WMI scripting; SYSTEM context and benign child command distinguish it"
+    }
+  }
+]

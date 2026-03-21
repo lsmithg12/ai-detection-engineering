@@ -1,0 +1,1 @@
+process.name="wmic.exe" process.command_line="*/node:*" process.command_line="*process*" process.command_line="*call*" process.command_line="*create*" NOT (process.parent.name IN ("CcmExec.exe", "ccmexec.exe", "CCMEXEC.EXE") OR (user.name="SYSTEM" user.domain="NT AUTHORITY" process.parent.name IN ("CcmExec.exe", "svchost.exe", "services.exe")))

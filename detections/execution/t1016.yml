@@ -1,0 +1,70 @@
+title: Network Discovery Tools Spawned by Suspicious Parent Process
+id: 8b3e1f2a-9c4d-4a7e-b6f5-d2e8c9a01234
+status: experimental
+description: >
+  Detects network interface configuration and enumeration tools (ipconfig, arp, netstat, route, nslookup)
+  spawned by processes that are not standard interactive shells or known IT management binaries.
+  Adversaries use these utilities post-compromise to map network topology and plan lateral movement.
+  Aligns with Fawkes C2 agent ifconfig and arp commands (T1016).
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1016/
+tags:
+  - attack.discovery
+  - attack.t1016
+  - attack.t1049
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tools:
+    event.category: process
+    event.type: start
+    process.name:
+      - ipconfig.exe
+      - arp.exe
+      - netstat.exe
+      - route.exe
+      - nslookup.exe
+      - net.exe
+      - net1.exe
+  filter_interactive_shells:
+    process.parent.name:
+      - cmd.exe
+      - powershell.exe
+      - powershell_ise.exe
+      - pwsh.exe
+      - explorer.exe
+      - WindowsTerminal.exe
+      - wt.exe
+      - bash.exe
+      - cscript.exe
+      - wscript.exe
+  filter_system_parents:
+    process.parent.executable|startswith:
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Windows\WinSxS\'
+  condition: selection_tools and not (filter_interactive_shells or filter_system_parents)
+falsepositives:
+  - Monitoring agents or endpoint management tools installed outside Program Files that
+    invoke network utilities as part of health checks (e.g., installed under AppData for
+    per-user deployments — review parent executable path and add targeted exclusion)
+  - Custom scripts or automation tools in non-standard install paths that perform DHCP
+    renewal or network diagnostics — validate parent executable and add to filter_system_parents
+  - Software deployment tools that chain network checks during install phases from temp
+    staging directories — correlation with software deployment activity recommended
+level: medium
+fields:
+  - process.name
+  - process.command_line
+  - process.executable
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name
