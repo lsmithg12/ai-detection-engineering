@@ -1,0 +1,1 @@
+(process.name="whoami.exe" process.command_line="*/all*") OR (process.name="net.exe" process.command_line="*/domain*") process.parent.executable IN ("*\\AppData\\*", "*\\Temp\\*", "*\\ProgramData\\*", "*\\Downloads\\*", "*\\Desktop\\*") | table process.name,process.command_line,process.executable,process.parent.name,process.parent.executable,user.name,host.name

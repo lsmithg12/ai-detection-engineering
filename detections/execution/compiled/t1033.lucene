@@ -1,0 +1,1 @@
+((process.name:whoami.exe AND process.command_line:*\/all*) OR (process.name:net.exe AND process.command_line:*\/domain*)) AND (process.parent.executable:(*\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\* OR *\\Downloads\\* OR *\\Desktop\\*))

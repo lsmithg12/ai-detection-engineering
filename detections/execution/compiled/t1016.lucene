@@ -1,0 +1,1 @@
+(event.category:process AND event.type:start AND (process.name:(*ipconfig.exe* OR *arp.exe* OR *netstat.exe* OR *route.exe* OR *nbtstat.exe*))) AND (NOT (process.parent.executable:(C\:\\Windows\\* OR C\:\\Program\ Files\\* OR C\:\\Program\ Files\ \(x86\)\\*)))

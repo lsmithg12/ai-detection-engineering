@@ -1,0 +1,1 @@
+process.name="arp.exe" process.command_line="*-a*" NOT (process.parent.executable IN ("C:\\Windows\\System32\\*", "C:\\Windows\\SysWOW64\\*", "C:\\Windows\\explorer.exe*", "C:\\Program Files\\*", "C:\\Program Files (x86)\\*")) | table process.executable,process.command_line,process.parent.executable,process.parent.name,user.name,host.name

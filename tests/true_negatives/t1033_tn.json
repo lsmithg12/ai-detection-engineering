@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:02:11.554Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4412,
+      "name": "whoami.exe",
+      "executable": "C:\\Windows\\System32\\whoami.exe",
+      "command_line": "whoami",
+      "parent": {
+        "pid": 3108,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1033",
+      "description": "Developer running whoami from an interactive cmd.exe session \u2014 legitimate, no /all flag, parent is cmd.exe not a suspicious AppData binary"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:08:45.219Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5880,
+      "name": "net.exe",
+      "executable": "C:\\Windows\\System32\\net.exe",
+      "command_line": "net user dkim /domain",
+      "parent": {
+        "pid": 2764,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1033",
+      "description": "IT support script launched via Explorer by the user to verify their own domain account \u2014 same command but parent is explorer.exe, not an AppData executable"
+    }
+  }
+]

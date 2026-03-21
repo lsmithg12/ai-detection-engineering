@@ -1,0 +1,128 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6284,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic.exe /node:192.168.10.45 /user:CORP\\jsmith process call create \"cmd.exe /c C:\\Windows\\Temp\\svc_updater.exe\"",
+      "parent": {
+        "pid": 5120,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1021.006",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent (svc_updater.exe) spawns wmic.exe with /node flag targeting remote host via WMI lateral movement"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:32.819Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 6284,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe"
+    },
+    "destination": {
+      "ip": "192.168.10.45",
+      "port": 135
+    },
+    "source": {
+      "ip": "192.168.10.22",
+      "port": 49823
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1021.006",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "wmic.exe connects to remote host on DCOM/RPC port 135 to invoke remote WMI process creation"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:35.207Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3892,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c C:\\Windows\\Temp\\svc_updater.exe",
+      "parent": {
+        "pid": 812,
+        "name": "WmiPrvSE.exe",
+        "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-HR-04",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1021.006",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "On the remote target host WS-HR-04, WmiPrvSE.exe spawns cmd.exe executing the dropped payload \u2014 classic WMI lateral movement child process chain"
+    }
+  }
+]

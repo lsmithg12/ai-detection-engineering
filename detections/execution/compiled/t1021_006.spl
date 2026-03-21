@@ -1,0 +1,1 @@
+event.category="process" process.name="wmic.exe" process.command_line="*/node:*" process.command_line="*process call create*" NOT (process.parent.name IN ("CcmExec.exe", "sccmexec.exe", "mmc.exe", "services.exe") OR (user.name="SYSTEM" user.domain="NT AUTHORITY" process.command_line="*process call create*"))

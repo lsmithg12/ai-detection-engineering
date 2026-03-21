@@ -1,0 +1,48 @@
+title: Remote WMI Process Execution via WMIC /node and process call create
+id: a3f7c2e1-9b4d-4f8a-b621-5e8d9f0a1c2b
+status: experimental
+description: >
+  Detects wmic.exe invoking the /node flag in combination with "process call create"
+  to remotely execute a process on a target host over WMI. This pattern is a primary
+  lateral movement technique used by the Fawkes C2 agent and other adversaries.
+  Read-only WMI queries (os get, path, etc.) and local WmiPrvSE.exe child spawns are
+  explicitly excluded to minimize false positives from management tooling such as SCCM.
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://attack.mitre.org/techniques/T1021/006/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.lateral_movement
+  - attack.t1021.006
+  - attack.execution
+  - attack.t1047
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.category: process
+    process.name: wmic.exe
+    process.command_line|contains|all:
+      - '/node:'
+      - 'process call create'
+  filter_management_parents:
+    process.parent.name:
+      - 'CcmExec.exe'
+      - 'sccmexec.exe'
+      - 'mmc.exe'
+      - 'services.exe'
+  filter_system_account:
+    user.name: 'SYSTEM'
+    user.domain: 'NT AUTHORITY'
+    process.command_line|contains: 'process call create'
+  condition: selection and not 1 of filter_*
+falsepositives:
+  - SCCM or endpoint management platforms that remotely create processes via WMI using
+    wmic.exe with /node (very rare; most management tools use read-only WMI queries)
+  - Legitimate IT automation scripts executing remote processes via wmic process call create
+    from known management hosts — add parent executable exclusions to filter_management_parents
+  - Vulnerability scanners or asset management tools probing remote WMI namespaces
+level: high

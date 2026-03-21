@@ -1,0 +1,58 @@
+title: Fawkes Binary Inflation via PowerShell WriteAllBytes Null Byte Padding
+id: 7c3e2a1f-8b4d-4f91-bc2e-5d6a9e0f3c47
+status: experimental
+description: |
+  Detects binary padding (inflation) used to push executable file size past antivirus scan
+  thresholds. The Fawkes C2 agent inflates its own binary by appending a large null-byte array
+  using PowerShell WriteAllBytes combined with New-Object byte[] construction. This pushes the
+  file size to ~100 MB, causing many AV engines to skip scanning due to size limits.
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1027/001/
+author: Detection Engineering Agent
+date: 2026-03-21
+modified: 2026-03-21
+tags:
+  - attack.defense_evasion
+  - attack.t1027.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    event.category: process
+    event.code: "1"
+  selection_cmdline_writebytes:
+    process.command_line|contains|all:
+      - WriteAllBytes
+      - "New-Object byte[]"
+  selection_cmdline_exe_target:
+    process.command_line|contains:
+      - ".exe"
+  filter_known_safe_parents:
+    process.parent.executable|startswith:
+      - "C:\\Windows\\System32\\"
+      - "C:\\Windows\\SysWOW64\\"
+      - "C:\\Program Files\\Microsoft\\EdgeUpdate\\"
+      - "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\"
+  filter_known_safe_names:
+    process.name|contains:
+      - OneDrive
+      - MicrosoftEdgeUpdate
+      - MicrosoftEdge
+      - Teams
+  condition: selection_process and selection_cmdline_writebytes and selection_cmdline_exe_target and not filter_known_safe_parents and not filter_known_safe_names
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name
+falsepositives:
+  - Custom build scripts or deployment tools that programmatically write executable files using
+    PowerShell WriteAllBytes — review parent process and target path for legitimacy
+  - Developer environments using PowerShell to assemble or patch binary files during CI/CD
+  - Security testing frameworks or red team tooling running in authorized lab environments
+level: high

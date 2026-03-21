@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-21T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "ipconfig.exe",
+      "executable": "C:\\Windows\\System32\\ipconfig.exe",
+      "command_line": "ipconfig /all",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent (svc_updater.exe) spawns ipconfig /all to enumerate network interface configuration"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:34.109Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7961,
+      "name": "arp.exe",
+      "executable": "C:\\Windows\\System32\\arp.exe",
+      "command_line": "arp -a",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes arp command maps local network neighbours \u2014 supports lateral movement planning"
+    }
+  },
+  {
+    "@timestamp": "2026-03-21T09:14:35.872Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 8044,
+      "name": "route.exe",
+      "executable": "C:\\Windows\\System32\\route.exe",
+      "command_line": "route print",
+      "parent": {
+        "pid": 5124,
+        "name": "svc_updater.exe",
+        "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1016",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes ifconfig/route command enumerates routing table to identify accessible subnets"
+    }
+  }
+]
