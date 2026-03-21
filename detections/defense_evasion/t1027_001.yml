@@ -1,0 +1,57 @@
+title: Fawkes Binary Inflation via PowerShell WriteAllBytes and Null Byte Padding
+id: a3f7d219-bc84-4e1f-9b3c-5e2a8f1c0d67
+status: experimental
+description: >
+  Detects binary padding (T1027.001) where an executable is inflated with null bytes via PowerShell
+  to push its file size past antivirus scan size thresholds. The Fawkes C2 agent implements this
+  by invoking [System.IO.File]::WriteAllBytes with the original binary bytes concatenated with a
+  large New-Object byte[] allocation. Matches on the combined presence of WriteAllBytes,
+  ReadAllBytes, and New-Object byte[] in a single PowerShell command line.
+author: Detection Engineering Agent
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://github.com/galoryber/fawkes
+  - https://attack.mitre.org/techniques/T1027/001/
+tags:
+  - attack.defense_evasion
+  - attack.t1027.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    event.category: process
+    event.code: "1"
+    process.name|contains:
+      - powershell.exe
+      - cmd.exe
+  selection_inflate_pattern:
+    process.command_line|contains|all:
+      - WriteAllBytes
+      - ReadAllBytes
+      - New-Object byte[]
+  filter_system_parents:
+    process.parent.executable|startswith:
+      - C:\Windows\System32\
+      - C:\Windows\SysWOW64\
+      - C:\Program Files\
+      - C:\Program Files (x86)\
+  filter_known_updaters:
+    process.name|contains:
+      - OneDrive
+      - MicrosoftEdgeUpdate
+      - Teams
+      - MsiExec
+  condition: (selection_process and selection_inflate_pattern) and not (filter_system_parents and filter_known_updaters)
+falsepositives:
+  - Legitimate software packaging or self-update scripts that use PowerShell WriteAllBytes to write large binaries are unlikely to also use ReadAllBytes concatenation with New-Object byte[], but custom enterprise tooling should be reviewed
+  - Developer build pipelines that use PowerShell to pad test binaries
+fields:
+  - process.command_line
+  - process.executable
+  - process.parent.executable
+  - process.parent.name
+  - user.name
+  - host.name
+level: high

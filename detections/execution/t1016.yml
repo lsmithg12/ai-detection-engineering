@@ -1,0 +1,47 @@
+title: Network Discovery Utilities Spawned from Suspicious Parent Process
+id: a3f8c2d1-5e7b-4f9a-8c6d-2e1b4a7f3c9e
+status: experimental
+description: >
+  Detects Windows network configuration discovery utilities (ipconfig, arp, netstat,
+  route, getmac, nslookup, hostname, nbtstat) spawned from a parent process located
+  outside trusted Windows system directories or Program Files. Fawkes C2 and similar
+  implants invoke these utilities directly from implant processes residing in
+  user-writable paths (AppData, Temp, Downloads) to enumerate network interfaces,
+  ARP tables, and routing for lateral movement planning. Legitimate shells and IT
+  management tools operating from trusted paths are excluded.
+author: Detection Engineering
+date: 2026-03-21
+modified: 2026-03-21
+references:
+  - https://attack.mitre.org/techniques/T1016/
+  - https://github.com/galoryber/fawkes
+tags:
+  - attack.discovery
+  - attack.t1016
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tools:
+    process.name:
+      - ipconfig.exe
+      - arp.exe
+      - netstat.exe
+      - route.exe
+      - getmac.exe
+      - nslookup.exe
+      - hostname.exe
+      - nbtstat.exe
+  filter_trusted_parent:
+    process.parent.executable|startswith:
+      - 'C:\Windows\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection_tools and not filter_trusted_parent
+falsepositives:
+  - Third-party monitoring or endpoint management agents installed in ProgramData or
+    vendor-specific directories outside Program Files that invoke network utilities
+  - Custom IT automation scripts launched from non-standard working directories
+  - Developer or QA toolchains invoking network utilities from project build paths
+  - Legitimate software installed in non-default locations (e.g., portable apps)
+level: medium

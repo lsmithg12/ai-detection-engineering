@@ -1,0 +1,1 @@
+(process.name:(ipconfig.exe OR arp.exe OR netstat.exe OR route.exe OR getmac.exe OR nslookup.exe OR hostname.exe OR nbtstat.exe)) AND (NOT (process.parent.executable:(C\:\\Windows\\* OR C\:\\Program\ Files\\* OR C\:\\Program\ Files\ \(x86\)\\*)))

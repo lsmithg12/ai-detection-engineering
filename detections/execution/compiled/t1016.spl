@@ -1,0 +1,1 @@
+process.name IN ("ipconfig.exe", "arp.exe", "netstat.exe", "route.exe", "getmac.exe", "nslookup.exe", "hostname.exe", "nbtstat.exe") NOT (process.parent.executable IN ("C:\\Windows\\*", "C:\\Program Files\\*", "C:\\Program Files (x86)\\*"))
