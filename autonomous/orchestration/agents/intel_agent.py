@@ -60,11 +60,11 @@ PRIORITY_SOURCES = [
     "thedfirreport.com",
 ]
 
-# Index pages to scrape for recent threat reports
+# Index pages to scrape for recent threat reports (ordered by report richness)
 INTEL_INDEX_URLS = [
-    "https://www.cisa.gov/news-events/cybersecurity-advisories",
-    "https://thedfirreport.com/",
-    "https://elastic.co/security-labs",
+    "https://thedfirreport.com/",              # Best: full ATT&CK-mapped intrusion reports
+    "https://elastic.co/security-labs",         # Good: detection-focused research
+    "https://www.cisa.gov/news-events/cybersecurity-advisories",  # Mostly KEV alerts, fewer TTPs
 ]
 
 
@@ -133,15 +133,32 @@ def _fetch_page(url: str, max_bytes: int = 300_000, timeout: int = 30) -> dict |
 
 
 def _strip_markdown_fences(text: str) -> str:
-    """Remove markdown code fences from Claude responses."""
+    """Extract JSON content from Claude responses, handling fences and trailing text."""
     text = text.strip()
+    # If wrapped in markdown fences, extract just the fenced block
     if text.startswith("```"):
         lines = text.split("\n")
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
+        # Remove opening fence line (```json, ```, etc.)
+        lines = lines[1:]
+        # Find closing fence and discard everything after it
+        for i, line in enumerate(lines):
+            if line.strip() == "```":
+                lines = lines[:i]
+                break
         text = "\n".join(lines)
+    # If response starts with JSON, trim any trailing non-JSON text
+    text = text.strip()
+    if text.startswith("[") or text.startswith("{"):
+        bracket = "]" if text.startswith("[") else "}"
+        depth = 0
+        for i, ch in enumerate(text):
+            if ch in ("[", "{"):
+                depth += 1
+            elif ch in ("]", "}"):
+                depth -= 1
+                if depth == 0:
+                    text = text[:i + 1]
+                    break
     return text.strip()
 
 
