@@ -1,0 +1,1 @@
+{"timestamp": "2026-03-21T13:01:48Z", "run_id": "20260321-720c28", "agent": "intel", "run_type": "single", "duration_minutes": 3.13, "tokens_estimated": 0, "detections_processed": 0, "state_transitions": {}, "errors": 0, "retries": 0, "f1_scores": {}, "coverage_delta": 0.0}

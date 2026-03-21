@@ -1,0 +1,91 @@
+title: 'Cat''s Got Your Files: Lynx Ransomware'
+source: https://thedfirreport.com/2025/12/17/cats-got-your-files-lynx-ransomware/
+date_published: '2025-12-17'
+date_ingested: '2026-03-21'
+threat_actors:
+- Lynx Ransomware Group
+platforms:
+- Windows
+techniques:
+- id: T1078.002
+  name: 'Valid Accounts: Domain Accounts'
+  description: Threat actor used pre-compromised domain administrator credentials to pivot to the domain controller via RDP
+    with no on-host credential dumping observed; assessed to be obtained via infostealer or initial access broker prior to
+    intrusion
+  priority: high
+- id: T1136.002
+  name: 'Create Account: Domain Account'
+  description: "Created three new domain accounts on the domain controller using dsa.msc \u2014 one named 'administratr' and\
+    \ two others designed as look-alikes mimicking existing legitimate accounts altered by a single character to blend in"
+  priority: high
+- id: T1098
+  name: Account Manipulation
+  description: Immediately after creating the look-alike accounts, threat actor added them to privileged security groups including
+    Domain Administrators to establish persistent privileged access
+  priority: high
+- id: T1219
+  name: Remote Access Software
+  description: Installed AnyDesk remote access client on the domain controller to establish a persistent remote access channel,
+    though it was never observed being used during the remainder of the intrusion
+  priority: medium
+- id: T1018
+  name: Remote System Discovery
+  description: Used SoftPerfect Network Scanner (netscan) extensively across multiple sessions to discover virtualization
+    infrastructure, domain controllers, backup servers, and other network hosts; netscan.exe also launched mstsc.exe /v:<IP>
+    directly for RDP pivoting
+  priority: medium
+- id: T1135
+  name: Network Share Discovery
+  description: Browsed multiple network file shares during reconnaissance phases to identify targets for collection; performed
+    on both the initial access session and the return session six days later
+  priority: medium
+- id: T1039
+  name: Data from Network Shared Drive
+  description: Collected sensitive files from multiple network shares identified during reconnaissance, targeting them specifically
+    for compression and exfiltration
+  priority: high
+- id: T1560.001
+  name: 'Archive Collected Data: Archive via Utility'
+  description: Compressed collected files from network shares into archives using 7-Zip prior to exfiltration
+  priority: high
+- id: T1567
+  name: Exfiltration Over Web Service
+  description: Exfiltrated compressed archive files to temp[.]sh, a temporary file-sharing web service, rather than a dedicated
+    C2 channel
+  priority: high
+- id: T1110.003
+  name: 'Brute Force: Password Spraying'
+  description: Downloaded NetExec via web browser on the sixth day and conducted a password spray attack over port 445 (SMB)
+    against the environment
+  priority: medium
+- id: T1021.002
+  name: 'Remote Services: SMB/Windows Admin Shares'
+  description: Used NetExec over port 445 for password spraying and lateral movement enumeration across the environment
+  priority: medium
+- id: T1087.001
+  name: 'Account Discovery: Local Account'
+  description: Used Microsoft Management Console (MMC) Local Users and Groups snap-in on multiple domain controllers and hypervisor
+    systems to enumerate and review local user accounts and permissions
+  priority: low
+- id: T1069.002
+  name: 'Permission Groups Discovery: Domain Groups'
+  description: Enumerated domain security groups including Domain Administrators during account creation and environment mapping
+    phases using Active Directory tools
+  priority: low
+- id: T1490
+  name: Inhibit System Recovery
+  description: Connected to backup servers via RDP and deleted existing backup jobs before deploying ransomware, eliminating
+    the victim's ability to recover without paying ransom
+  priority: critical
+- id: T1486
+  name: Data Encrypted for Impact
+  description: Deployed and executed Lynx ransomware across multiple backup servers and file servers accessed via RDP, completing
+    the ransomware attack approximately 178 hours after initial access
+  priority: critical
+iocs: []
+raw_summary: "A threat actor used pre-compromised RDP credentials \u2014 likely from an infostealer or initial access broker\
+  \ \u2014 to access an internet-exposed server, pivot to a domain controller, and create look-alike privileged accounts within\
+  \ minutes. Over nine days they performed network enumeration with SoftPerfect NetScan, collected and exfiltrated sensitive\
+  \ files from network shares via 7-Zip and temp.sh, then deleted backup jobs before deploying Lynx ransomware across backup\
+  \ and file servers. The Time to Ransomware was approximately 178 hours, with infrastructure tied to Railnet LLC/Virtualine,\
+  \ a provider associated with criminal networks."
