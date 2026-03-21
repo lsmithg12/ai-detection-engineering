@@ -174,6 +174,7 @@ BOOKKEEPING_FILES = {
     "monitoring/pipeline-metrics.jsonl",
     "autonomous/budget-log.jsonl",
     "autonomous/security/audit-log.jsonl",
+    "autonomous/learnings/",
     "monitoring/reports/",
 }
 

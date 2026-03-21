@@ -187,13 +187,26 @@ def load_fawkes_techniques() -> dict[str, dict]:
         if not tid.startswith("T"):
             continue
 
-        if tid not in techniques:
-            techniques[tid] = {
-                "commands": [],
-                "priority": priority,
-                "description": description,
-            }
-        techniques[tid]["commands"].append(command)
+        # Handle compound IDs like "T1087.001/002" — split into separate entries
+        # T1087.001/002 -> [T1087.001, T1087.002]
+        if "/" in tid:
+            base = tid.split("/")[0]          # "T1087.001"
+            prefix = base.rsplit(".", 1)[0]   # "T1087"
+            suffixes = tid.split("/")         # ["T1087.001", "002"]
+            tids = [base]
+            for s in suffixes[1:]:
+                tids.append(f"{prefix}.{s}")
+        else:
+            tids = [tid]
+
+        for resolved_tid in tids:
+            if resolved_tid not in techniques:
+                techniques[resolved_tid] = {
+                    "commands": [],
+                    "priority": priority,
+                    "description": description,
+                }
+            techniques[resolved_tid]["commands"].append(command)
 
     return techniques
 
@@ -455,7 +468,7 @@ Return ONLY a JSON array (no markdown fences, no commentary):
         prompt=prompt,
         agent_name="intel",
         system_prompt=system_prompt,
-        timeout_seconds=180,
+        timeout_seconds=300,
     )
 
     if not result["success"]:
@@ -489,6 +502,77 @@ Return ONLY a JSON array (no markdown fences, no commentary):
         print(f"  [intel] Failed to parse Claude web search response: {e}")
         print(f"  [intel] Raw response (first 500 chars): {response[:500]}")
         return []
+
+
+def fill_fawkes_gaps(
+    state_manager: StateManager,
+    fawkes_map: dict[str, dict],
+    existing: set[str],
+    threat_actor_registry: dict[str, list[str]] | None = None,
+) -> dict:
+    """
+    Create detection requests for Fawkes techniques that have no existing
+    request. This ensures the pipeline always has work even when web search
+    fails or all reports have been fully consumed.
+
+    Returns stats dict with created/skipped counts.
+    """
+    stats = {
+        "gap_filled": 0,
+        "requests_created": [],
+        "skipped_existing": 0,
+    }
+
+    for tid, info in sorted(fawkes_map.items()):
+        if tid in existing:
+            stats["skipped_existing"] += 1
+            continue
+
+        priority = info.get("priority", "high").lower()
+        # Fawkes techniques default to at least high priority
+        if priority in ("medium", "low"):
+            priority = "high"
+
+        # Build threat_actors from registry
+        threat_actors: list[str] = []
+        if threat_actor_registry:
+            threat_actors = list(threat_actor_registry.get(tid, []))
+        if "Fawkes C2 Agent" not in threat_actors:
+            threat_actors.append("Fawkes C2 Agent")
+
+        try:
+            state_manager.create(
+                technique_id=tid,
+                title=f"Detection for {tid} — {info.get('description', 'Fawkes capability')}",
+                priority=priority,
+                intel_report="threat-intel/fawkes/fawkes-ttp-mapping.md",
+                requested_by=AGENT_NAME,
+            )
+            state_manager.update(
+                tid, agent=AGENT_NAME,
+                threat_actors=threat_actors,
+                fawkes_commands=info["commands"],
+            )
+            # Tag data source requirements
+            ds_requirements = get_data_source_requirements(tid)
+            ds_gaps = check_data_source_gaps(tid)
+            if ds_requirements:
+                state_manager.update(tid, agent=AGENT_NAME,
+                                     data_source_requirements=ds_requirements)
+            if ds_gaps:
+                state_manager.update(tid, agent=AGENT_NAME,
+                                     data_source_gaps=ds_gaps)
+                print(f"    [intel] Warning: {tid} has data source gaps: {ds_gaps}")
+
+            existing.add(tid)
+            stats["gap_filled"] += 1
+            stats["requests_created"].append(tid)
+            print(f"    [intel] Gap-fill: created request for {tid} "
+                  f"(Fawkes commands: {', '.join(info['commands'])})")
+        except ValueError as e:
+            print(f"    [intel] Skipped gap-fill {tid}: {e}")
+
+    return stats
 
 
 def run(state_manager: StateManager) -> dict:
@@ -627,16 +711,29 @@ def run(state_manager: StateManager) -> dict:
                 str(e),
             )
 
-    # 7. Update digest
+    # 7. Fawkes gap-fill — create requests for uncovered Fawkes techniques
+    gap_stats = fill_fawkes_gaps(
+        state_manager, fawkes_map, existing,
+        threat_actor_registry=threat_actor_registry,
+    )
+    if gap_stats["gap_filled"]:
+        print(f"\n  [intel] Fawkes gap-fill: created {gap_stats['gap_filled']} new requests")
+        total_stats["total_new"] += gap_stats["gap_filled"]
+        total_stats["total_requests"] += gap_stats["gap_filled"]
+    else:
+        print(f"\n  [intel] Fawkes gap-fill: all {gap_stats['skipped_existing']} techniques covered")
+
+    # 8. Update digest
     if reports_processed:
         update_digest(reports_processed, total_stats)
         print(f"\n  [intel] Updated digest at {DIGEST_PATH}")
 
-    # 8. Summary
+    # 9. Summary
     summary = (
         f"Processed {len(reports_processed)} reports "
         f"({len(web_reports)} from web search), "
-        f"created {total_stats['total_requests']} detection requests, "
+        f"created {total_stats['total_requests']} detection requests "
+        f"({gap_stats['gap_filled']} from Fawkes gap-fill), "
         f"found {total_stats['total_fawkes']} Fawkes overlaps"
     )
     print(f"\n  [intel] {summary}")
@@ -647,7 +744,8 @@ def run(state_manager: StateManager) -> dict:
         "web_reports_found": len(web_reports),
         "techniques_found": total_stats["total_new"],
         "requests_created": total_stats["total_requests"],
-        "requests_list": [],
+        "fawkes_gap_filled": gap_stats["gap_filled"],
+        "requests_list": gap_stats["requests_created"],
         "skipped_existing": total_stats["total_skipped"],
         "fawkes_overlap": total_stats["total_fawkes"],
         "search_queries_used": queries,
