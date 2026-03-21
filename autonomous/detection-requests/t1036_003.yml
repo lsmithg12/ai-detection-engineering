@@ -1,0 +1,27 @@
+technique_id: T1036.003
+title: 'Masquerading: Rename System Utilities'
+status: REQUESTED
+priority: low
+requested_by: intel
+requested_date: '2026-03-21T13:04:56Z'
+intel_report: threat-intel\reports\2026-03-21-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml
+scenario_file: ''
+sigma_rule: ''
+deployed_date: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: false
+changelog:
+- date: '2026-03-21T13:04:56Z'
+  agent: intel
+  action: created
+  details: 'Detection request created from intel: threat-intel\reports\2026-03-21-apache-activemq-exploit-leads-to-lockbit-ransomwar.yml'
+- date: '2026-03-21T13:04:56Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: threat_actors'
+threat_actors: []
