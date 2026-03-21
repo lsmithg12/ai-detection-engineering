@@ -1,13 +1,15 @@
-title: Suspicious LSASS Memory Access via Process Access
+title: Suspicious LSASS Credential Dumping Activity
 id: 8a7b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
 status: experimental
 description: >
-  Detects suspicious process access to lsass.exe with access rights indicating
-  memory reading capability (PROCESS_VM_READ). Excludes known legitimate
-  security products and OS processes. Covers Fawkes C2 credential dumping
-  and tools like Mimikatz, nanodump, and custom LSASS dumpers.
+  Detects suspicious LSASS credential dumping activity via three vectors:
+  (1) direct process memory access to lsass.exe with sensitive access rights (Sysmon EID 10),
+  (2) suspicious process launched from user-writable paths with lsass in the command line (Sysmon EID 1),
+  (3) creation of LSASS memory dump files (Sysmon EID 11).
+  Covers Fawkes C2 credential dumping and tools like Mimikatz, nanodump, and custom LSASS dumpers.
 author: Blue Team Detection Engineering Agent
 date: 2026/03/08
+modified: 2026/03/21
 references:
   - https://attack.mitre.org/techniques/T1003/001/
   - https://github.com/galoryber/fawkes
@@ -16,12 +18,16 @@ tags:
   - attack.credential_access
   - attack.t1003.001
 logsource:
-  category: process_access
   product: windows
+  service: sysmon
 detection:
-  selection:
-    TargetImage|endswith: '\lsass.exe'
-    GrantedAccess|contains:
+  # Branch 1: Direct LSASS process memory access (Sysmon EID 10)
+  sel_access_event:
+    event.code: '10'
+  sel_access_target:
+    target.process.executable|endswith: '\lsass.exe'
+  sel_access_rights:
+    winlog.event_data.GrantedAccess|contains:
       - '0x1010'
       - '0x1410'
       - '0x1438'
@@ -33,11 +39,11 @@ detection:
       - '0x1400'
       - '0x100000'
   filter_defender:
-    SourceImage|contains:
+    process.executable|contains:
       - '\Microsoft\Windows Defender\'
       - '\Windows Defender Advanced Threat Protection\'
   filter_security_products:
-    SourceImage|contains:
+    process.executable|contains:
       - '\CrowdStrike\'
       - '\SentinelOne\'
       - '\Carbon Black\'
@@ -48,24 +54,48 @@ detection:
       - '\Cybereason\'
       - '\Cylance\'
   filter_os_processes:
-    SourceImage|startswith:
+    process.executable|startswith:
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\Windows\WinSxS\'
   filter_vmware:
-    SourceImage|contains: '\VMware\'
+    process.executable|contains: '\VMware\'
   filter_query_only:
-    GrantedAccess: '0x1000'
-  condition: selection and not 1 of filter_*
+    winlog.event_data.GrantedAccess: '0x1000'
+  # Branch 2: Suspicious process create with lsass dump command line (Sysmon EID 1)
+  sel_proc_create:
+    event.code: '1'
+  sel_proc_suspicious_path:
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  sel_proc_cmdline_lsass:
+    process.command_line|contains: 'lsass'
+  # Branch 3: LSASS dump file creation (Sysmon EID 11)
+  sel_file_create:
+    event.code: '11'
+  sel_file_lsass_dump:
+    file.name|contains: 'lsass'
+  condition: >
+    (sel_access_event and sel_access_target and sel_access_rights and not 1 of filter_*)
+    or (sel_proc_create and sel_proc_suspicious_path and sel_proc_cmdline_lsass)
+    or (sel_file_create and sel_file_lsass_dump)
 fields:
-  - SourceImage
-  - TargetImage
-  - GrantedAccess
-  - CallTrace
-  - User
-  - SourceProcessGUID
+  - event.code
+  - process.executable
+  - process.command_line
+  - target.process.executable
+  - winlog.event_data.GrantedAccess
+  - winlog.event_data.CallTrace
+  - file.name
+  - file.path
+  - user.name
+  - winlog.event_data.SourceProcessGUID
 falsepositives:
-  - Legitimate security products not covered by filters
+  - Legitimate security products accessing LSASS not covered by filters
   - IT asset management or inventory tools that query process metadata
-  - Custom enterprise monitoring agents accessing LSASS for health checks
+  - Windows Error Reporting creating dump files for LSASS crashes (legitimate path)
+  - Procdump run from System32 for authorized diagnostics
 level: high

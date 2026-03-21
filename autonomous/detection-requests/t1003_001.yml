@@ -40,6 +40,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-03-21T13:36:15Z'
+  agent: validation
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
 compiled_lucene: detections\credential_access\compiled\t1003_001.lucene
 compiled_spl: detections\credential_access\compiled\t1003_001.spl
 mitre_tactic: credential_access
