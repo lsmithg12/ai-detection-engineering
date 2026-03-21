@@ -1,0 +1,30 @@
+technique_id: T1057
+title: "Detection for T1057 \u2014 List running processes (tasklist)"
+status: REQUESTED
+priority: high
+requested_by: intel
+requested_date: '2026-03-21T12:48:49Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: ''
+sigma_rule: ''
+deployed_date: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: false
+changelog:
+- date: '2026-03-21T12:48:49Z'
+  agent: intel
+  action: created
+  details: 'Detection request created from intel: threat-intel/fawkes/fawkes-ttp-mapping.md'
+- date: '2026-03-21T12:48:49Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: threat_actors, fawkes_commands'
+threat_actors:
+- Fawkes C2 Agent
+fawkes_commands:
+- ps
