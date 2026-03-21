@@ -32,7 +32,7 @@ jobs:
       - name: Find changed detection files
         id: changes
         run: |
-          changed=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD -- 'detections/**/*.yml' | grep -v '/compiled/' || echo "")
+          changed=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD -- 'detections/**/*.yml' | grep -v '/compiled/' | tr '\n' ' ' || echo "")
           echo "files=$changed" >> $GITHUB_OUTPUT
 
       - name: Run regression tests
