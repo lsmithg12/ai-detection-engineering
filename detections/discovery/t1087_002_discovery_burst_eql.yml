@@ -3,7 +3,7 @@ id: 8a3c1f2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b
 status: experimental
 description: |
   Detects rapid-fire reconnaissance commands typical of post-exploitation enumeration.
-  Matches 3+ discovery tools executed on the same host within 60 seconds — a pattern
+  Matches 3+ discovery tools executed on the same host within 60 seconds - a pattern
   consistent with automated C2 post-exploitation (Fawkes ps, whoami, net-enum, net-stat,
   arp, ifconfig). Human administrators rarely run 3+ recon tools within 60 seconds.
 references:

@@ -4,7 +4,7 @@ status: experimental
 description: >
   Detects CreateRemoteThread (Sysmon EID 8) where the source process is in a
   user-writable path (AppData, Temp, ProgramData, Downloads). This is a strong
-  indicator of process injection — legitimate software rarely creates remote
+  indicator of process injection - legitimate software rarely creates remote
   threads from temp directories. Covers Fawkes vanilla-injection command.
 author: blue-team-agent
 date: '2026-03-06'

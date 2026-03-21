@@ -1,5 +1,5 @@
 technique_id: "T1486_THRESHOLD"
-title: "Rapid File Modification Burst — Ransomware Indicator (Threshold)"
+title: "Rapid File Modification Burst - Ransomware Indicator (Threshold)"
 status: "AUTHORED"
 priority: "critical"
 mitre_tactic: "impact"
@@ -39,4 +39,4 @@ changelog:
   - date: "2026-03-19T00:00:00Z"
     agent: "remediation"
     action: "registered"
-    details: "Fix Pack 1 — registered orphaned Phase 6 threshold rule in state machine"
+    details: "Fix Pack 1 - registered orphaned Phase 6 threshold rule in state machine"

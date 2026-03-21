@@ -1,5 +1,5 @@
 technique_id: "T1055_EQL"
-title: "Process Injection Sequence — Handle Open Then Remote Thread Creation (EQL)"
+title: "Process Injection Sequence - Handle Open Then Remote Thread Creation (EQL)"
 status: "AUTHORED"
 priority: "critical"
 mitre_tactic: "privilege_escalation"
@@ -39,4 +39,4 @@ changelog:
   - date: "2026-03-19T00:00:00Z"
     agent: "remediation"
     action: "registered"
-    details: "Fix Pack 1 — registered orphaned Phase 6 EQL rule in state machine"
+    details: "Fix Pack 1 - registered orphaned Phase 6 EQL rule in state machine"
