@@ -1,0 +1,46 @@
+technique_id: T1056.001
+title: "Detection for T1056.001 \u2014 Low-level keyboard hook via SetWindowsHookEx"
+status: REQUESTED
+priority: high
+requested_by: intel
+requested_date: '2026-03-21T12:57:18Z'
+intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
+scenario_file: ''
+sigma_rule: ''
+deployed_date: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: false
+changelog:
+- date: '2026-03-21T12:57:18Z'
+  agent: intel
+  action: created
+  details: 'Detection request created from intel: threat-intel/fawkes/fawkes-ttp-mapping.md'
+- date: '2026-03-21T12:57:18Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: threat_actors, fawkes_commands'
+- date: '2026-03-21T12:57:18Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: data_source_requirements'
+- date: '2026-03-21T12:57:18Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: data_source_gaps'
+threat_actors:
+- Fawkes C2 Agent
+- Generic Remote Access Trojan
+fawkes_commands:
+- keylog
+data_source_requirements:
+- source: elastic_endpoint
+  event_ids: []
+  fields:
+  - process.Ext.api.name
+data_source_gaps:
+- GAP-008
