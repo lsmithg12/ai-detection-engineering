@@ -1,0 +1,243 @@
+{
+  "technique_id": "T1056.001",
+  "technique_name": "Detection for T1056.001 — Low-level keyboard hook via SetWindowsHookEx",
+  "description": "Simulates Detection for T1056.001 — Low-level keyboard hook via SetWindowsHookEx attack sequence",
+  "mitre_tactic": "collection",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:33.211Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+          "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+          "parent": {
+            "pid": 3412,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1056.001",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes keylog: malicious task_scheduler.exe spawns from svchost — masquerading as a scheduler binary in ProgramData to blend with OS noise"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:33.589Z",
+        "event": {
+          "category": "library",
+          "type": "start",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+          "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+          "parent": {
+            "pid": 3412,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "file": {
+          "name": "user32.dll",
+          "path": "C:\\Windows\\System32\\user32.dll",
+          "extension": "dll"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1056.001",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes keylog: task_scheduler.exe loads user32.dll — required to call SetWindowsHookEx with WH_KEYBOARD_LL (hook ID 13) for low-level keyboard capture across all processes"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:41.002Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File created (rule: FileCreate)",
+          "code": "11"
+        },
+        "process": {
+          "pid": 7832,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+          "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+          "parent": {
+            "pid": 3412,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "file": {
+          "name": "upd_cache.dat",
+          "path": "C:\\ProgramData\\WindowsUpdate\\upd_cache.dat",
+          "extension": "dat"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1056.001",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes keylog: keylogger output written to disguised .dat file in same ProgramData directory — collected keystrokes buffered for exfiltration via Fawkes download command"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T09:22:05.774Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5160,
+          "name": "osk.exe",
+          "executable": "C:\\Windows\\System32\\osk.exe",
+          "command_line": "\"C:\\Windows\\System32\\osk.exe\"",
+          "parent": {
+            "pid": 1040,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1056.001",
+          "description": "Legitimate Windows On-Screen Keyboard (osk.exe) — uses SetWindowsHookEx internally for keyboard input routing; signed Microsoft binary from System32; benign keyboard hook consumer"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:22:05.991Z",
+        "event": {
+          "category": "library",
+          "type": "start",
+          "action": "Image loaded (rule: ImageLoad)",
+          "code": "7"
+        },
+        "process": {
+          "pid": 5160,
+          "name": "osk.exe",
+          "executable": "C:\\Windows\\System32\\osk.exe",
+          "command_line": "\"C:\\Windows\\System32\\osk.exe\"",
+          "parent": {
+            "pid": 1040,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "file": {
+          "name": "user32.dll",
+          "path": "C:\\Windows\\System32\\user32.dll",
+          "extension": "dll"
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-FILE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1056.001",
+          "description": "osk.exe loads user32.dll — identical DLL load pattern to the attack but from a Microsoft-signed accessibility binary in System32; blue team rule must discriminate by process.executable path and signature"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.name",
+      "file.name",
+      "file.path",
+      "process.parent.name"
+    ],
+    "notes": "Detection should focus on (1) process.executable path outside System32/Program Files loading user32.dll — especially from ProgramData, AppData, or Temp; (2) unsigned or unknown binaries calling SetWindowsHookEx via user32.dll load; (3) the combination of user32.dll ImageLoad (EID 7) + subsequent file creation in the same non-standard directory is high-fidelity for keylog output staging. Tune out: osk.exe, accessibility tools (narrator.exe, magnify.exe), known AV/EDR vendors, and input method editors (IME) from System32. Correlate EID 1 + EID 7 (user32.dll) + EID 11 from same PID for highest confidence."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_7",
+    "sysmon_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
