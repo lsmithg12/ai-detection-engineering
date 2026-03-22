@@ -6,48 +6,59 @@ description: |
   thresholds. The Fawkes C2 agent inflates its own binary by appending a large null-byte array
   using PowerShell WriteAllBytes combined with New-Object byte[] construction. This pushes the
   file size to ~100 MB, causing many AV engines to skip scanning due to size limits.
+  Also detects execution of potentially inflated binaries staged in user-writable
+  Microsoft-impersonating AppData paths (AppData\Roaming\Microsoft, AppData\Local\Microsoft),
+  a common Fawkes deployment pattern where the padded agent is dropped and executed directly.
+  Matches process creation (Sysmon EID 1) and file creation (Sysmon EID 11) events.
 references:
   - https://github.com/galoryber/fawkes
   - https://attack.mitre.org/techniques/T1027/001/
 author: Detection Engineering Agent
 date: 2026-03-21
-modified: 2026-03-21
+modified: 2026-03-22
 tags:
   - attack.defense_evasion
   - attack.t1027.001
 logsource:
-  category: process_creation
   product: windows
 detection:
-  selection_process:
+  selection_process_creation:
     event.category: process
     event.code: "1"
-  selection_cmdline_writebytes:
     process.command_line|contains|all:
       - WriteAllBytes
       - "New-Object byte[]"
-  selection_cmdline_exe_target:
-    process.command_line|contains:
-      - ".exe"
-  filter_known_safe_parents:
-    process.parent.executable|startswith:
-      - "C:\\Windows\\System32\\"
-      - "C:\\Windows\\SysWOW64\\"
-      - "C:\\Program Files\\Microsoft\\EdgeUpdate\\"
-      - "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\"
+  selection_file_creation:
+    event.category: file
+    event.code: "11"
+    process.command_line|contains|all:
+      - WriteAllBytes
+      - "New-Object byte[]"
+    file.extension: exe
+  selection_inflated_binary_execution:
+    event.category: process
+    event.code: "1"
+    process.executable|contains:
+      - \AppData\Roaming\Microsoft\
+      - \AppData\Local\Microsoft\
   filter_known_safe_names:
     process.name|contains:
       - OneDrive
       - MicrosoftEdgeUpdate
       - MicrosoftEdge
       - Teams
-  condition: selection_process and selection_cmdline_writebytes and selection_cmdline_exe_target and not filter_known_safe_parents and not filter_known_safe_names
+      - msedgewebview
+  condition: (selection_process_creation or selection_file_creation or selection_inflated_binary_execution) and not filter_known_safe_names
 fields:
+  - event.category
+  - event.code
   - process.name
   - process.executable
   - process.command_line
   - process.parent.name
   - process.parent.executable
+  - file.name
+  - file.path
   - user.name
   - host.name
 falsepositives:
@@ -55,4 +66,6 @@ falsepositives:
     PowerShell WriteAllBytes - review parent process and target path for legitimacy
   - Developer environments using PowerShell to assemble or patch binary files during CI/CD
   - Security testing frameworks or red team tooling running in authorized lab environments
+  - Legitimate Microsoft applications (Teams, OneDrive, Edge) executing from AppData\Microsoft
+    paths - covered by filter but verify process name exclusion list is current
 level: high

@@ -1,0 +1,42 @@
+{
+  "technique_id": "T1016.001",
+  "date": "2026-03-22T15:48:57Z",
+  "sigma_rule": "detections\\execution\\t1016_001.yml",
+  "metrics": {
+    "tp": 2,
+    "fp": 0,
+    "fn": 1,
+    "tn": 2,
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1_score": 0.8,
+    "fp_rate": 0.0,
+    "tp_rate": 0.667,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "human_review",
+  "validation_method": "elasticsearch",
+  "validated_by": "validation-agent",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections\\execution\\t1016_001.yml",
+  "scenario_path": "simulator\\scenarios\\t1016_001.json",
+  "attack_event_count": 3,
+  "benign_event_count": 2,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  },
+  "validation_details": {
+    "index": "sim-validation-cbc66ffa",
+    "query": "(process.name:arp.exe AND process.command_line:*\\-a*) AND (NOT (process.parent.executable:(C\\:\\\\Windows\\\\System32\\\\* OR C\\:\\\\Windows\\\\SysWOW64\\\\* OR C\\:\\\\Windows\\\\explorer.exe* OR C\\:\\\\Program\\ Files\\",
+    "events_ingested": 5,
+    "query_hits": 2,
+    "query_time_ms": 3,
+    "errors": []
+  }
+}

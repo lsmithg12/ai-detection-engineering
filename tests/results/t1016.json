@@ -1,0 +1,44 @@
+{
+  "technique_id": "T1016",
+  "date": "2026-03-22T15:46:42Z",
+  "sigma_rule": "detections\\execution\\t1016.yml",
+  "metrics": {
+    "tp": 3,
+    "fp": 0,
+    "fn": 0,
+    "tn": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "fp_rate": 0.0,
+    "tp_rate": 1.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "auto_deploy",
+  "validation_method": "elasticsearch",
+  "validated_by": "validation-agent",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections\\execution\\t1016.yml",
+  "scenario_path": "simulator\\scenarios\\t1016.json",
+  "attack_event_count": 3,
+  "benign_event_count": 2,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  },
+  "validation_details": {
+    "index": "sim-validation-b976670d",
+    "query": "(event.category:process AND event.type:start AND (process.name:(*ipconfig.exe* OR *arp.exe* OR *netstat.exe* OR *route.exe* OR *nbtstat.exe*))) AND (NOT (process.parent.executable:(C\\:\\\\Windows\\\\* OR ",
+    "events_ingested": 5,
+    "query_hits": 3,
+    "query_time_ms": 30,
+    "errors": [
+      "Bulk ingest had 1 errors: [1:16] failed to parse field [@timestamp] of type [date] in document with id 'ben-4'. Preview of field's value: '2026-03-21T08:55.47.918Z'"
+    ]
+  }
+}

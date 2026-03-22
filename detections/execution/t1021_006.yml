@@ -2,14 +2,14 @@ title: Remote WMI Process Execution via WMIC /node and process call create
 id: a3f7c2e1-9b4d-4f8a-b621-5e8d9f0a1c2b
 status: experimental
 description: >
-  Detects wmic.exe invoking the /node flag in combination with "process call create"
-  to remotely execute a process on a target host over WMI. This pattern is a primary
-  lateral movement technique used by the Fawkes C2 agent and other adversaries.
-  Read-only WMI queries (os get, path, etc.) and local WmiPrvSE.exe child spawns are
-  explicitly excluded to minimize false positives from management tooling such as SCCM.
+  Detects remote WMI process execution across three artifact types: (1) wmic.exe invoked
+  with /node and "process call create" to initiate remote execution, (2) wmic.exe making
+  a network connection to port 135 (DCOM/RPC) on a remote host, and (3) a process spawned
+  by WmiPrvSE.exe on the receiving host — indicating successful remote WMI execution.
+  This pattern covers the full kill chain of T1021.006 as implemented by the Fawkes C2 agent.
 author: Detection Engineering
 date: 2026-03-21
-modified: 2026-03-21
+modified: 2026-03-22
 references:
   - https://attack.mitre.org/techniques/T1021/006/
   - https://github.com/galoryber/fawkes
@@ -19,15 +19,22 @@ tags:
   - attack.execution
   - attack.t1047
 logsource:
-  category: process_creation
   product: windows
+  category: process_creation
 detection:
-  selection:
+  selection_wmic_cmd:
     event.category: process
     process.name: wmic.exe
     process.command_line|contains|all:
       - '/node:'
       - 'process call create'
+  selection_wmic_network:
+    event.category: network
+    process.name: wmic.exe
+    destination.port: 135
+  selection_wmiprvse_child:
+    event.category: process
+    process.parent.name: 'WmiPrvSE.exe'
   filter_management_parents:
     process.parent.name:
       - 'CcmExec.exe'
@@ -38,11 +45,36 @@ detection:
     user.name: 'SYSTEM'
     user.domain: 'NT AUTHORITY'
     process.command_line|contains: 'process call create'
-  condition: selection and not 1 of filter_*
+  filter_wmiprvse_benign_children:
+    process.parent.name: 'WmiPrvSE.exe'
+    process.name:
+      - 'mofcomp.exe'
+      - 'scrcons.exe'
+      - 'WmiApSrv.exe'
+  filter_wmiprvse_cmd_benign:
+    process.parent.name: 'WmiPrvSE.exe'
+    user.name: 'SYSTEM'
+    user.domain: 'NT AUTHORITY'
+    process.name: 'cmd.exe'
+    process.command_line|contains:
+      - 'ipconfig'
+      - 'systeminfo'
+      - 'hostname'
+      - 'net config'
+      - 'netstat'
+      - 'arp'
+      - 'route'
+      - 'ping'
+      - 'tracert'
+  condition: 1 of selection_* and not 1 of filter_*
 falsepositives:
   - SCCM or endpoint management platforms that remotely create processes via WMI using
     wmic.exe with /node (very rare; most management tools use read-only WMI queries)
   - Legitimate IT automation scripts executing remote processes via wmic process call create
-    from known management hosts - add parent executable exclusions to filter_management_parents
-  - Vulnerability scanners or asset management tools probing remote WMI namespaces
+    from known management hosts — add parent executable exclusions to filter_management_parents
+  - WmiPrvSE.exe spawning child processes as part of legitimate WMI subscriptions or
+    scheduled WMI scripts — tune filter_wmiprvse_benign_children with observed process names
+  - Monitoring tools using WMI scripting to collect network configuration (ipconfig, netstat)
+    as SYSTEM via WmiPrvSE.exe — covered by filter_wmiprvse_cmd_benign
+  - Vulnerability scanners or asset management tools probing remote WMI namespaces on port 135
 level: high
