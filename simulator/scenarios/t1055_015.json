@@ -1,0 +1,247 @@
+{
+  "technique_id": "T1055.015",
+  "technique_name": "Detection for T1055.015 — 8 variants abusing Windows thread pool internals",
+  "description": "Simulates Detection for T1055.015 — 8 variants abusing Windows thread pool internals attack sequence",
+  "mitre_tactic": "privilege_escalation",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:33.412Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 7348,
+          "name": "runtime_host.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\runtime_host.exe",
+          "command_line": "runtime_host.exe",
+          "parent": {
+            "pid": 4912,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1FFFFF",
+            "TargetImage": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.015",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "PoolParty injection stage 1 — runtime_host.exe opens svchost.exe with PROCESS_ALL_ACCESS (0x1FFFFF) to gain a handle for worker factory manipulation"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:33.891Z",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "pid": 7348,
+          "name": "runtime_host.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\runtime_host.exe",
+          "command_line": "runtime_host.exe",
+          "parent": {
+            "pid": 4912,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.015",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "PoolParty injection stage 2 — runtime_host.exe plants shellcode in svchost.exe thread pool worker factory via CreateRemoteThread; start address points to NtSetInformationWorkerFactory-staged payload"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:35.204Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 9032,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c whoami /all & ipconfig /all",
+          "parent": {
+            "pid": 1124,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.015",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "PoolParty injection stage 3 — injected payload executing inside svchost.exe spawns cmd.exe for discovery; svchost.exe spawning cmd.exe is a strong anomaly indicator"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T09:10:05.117Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 3144,
+          "name": "MsMpEng.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MsMpEng.exe",
+          "command_line": "MsMpEng.exe",
+          "parent": {
+            "pid": 788,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1000",
+            "TargetImage": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.015",
+          "description": "Windows Defender (MsMpEng.exe) performing routine process inspection of svchost.exe with limited PROCESS_QUERY_LIMITED_INFORMATION access (0x1000) — similar EID 10 pattern but from a trusted signed binary with low-privilege access mask"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:11:48.330Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6204,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c \"C:\\Windows\\system32\\rundll32.exe\" C:\\Windows\\system32\\pnpclean.dll,RunDLL_PnpClean /DEVICES /MAXCLEAN",
+          "parent": {
+            "pid": 1124,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.015",
+          "description": "Legitimate svchost.exe (SYSTEM context, PnP service) spawning cmd.exe for scheduled PnP device cleanup — same parent-child pattern as the injected payload but runs as SYSTEM with a known signed rundll32 invocation and a stable cron-like schedule"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.executable",
+      "process.parent.name",
+      "winlog.event_data.GrantedAccess",
+      "winlog.event_data.TargetImage",
+      "event.code",
+      "user.name"
+    ],
+    "notes": "Detection strategy: (1) EID 10 alert on process.executable matching AppData paths with GrantedAccess 0x1FFFFF against svchost/lsass/werfault targets — high-fidelity PoolParty signal. (2) EID 8 alert on CreateRemoteThread from non-system executables into svchost.exe. (3) EID 1 anomaly rule: svchost.exe spawning cmd.exe/powershell.exe where user.domain != 'NT AUTHORITY' — injected payload inherits token of the calling thread, leaking mjones identity. Tuning: exclude MsMpEng.exe, csrss.exe, and WerFault.exe for EID 10; exclude SYSTEM-context svchost→cmd chains for known scheduled tasks (pnpclean, dfsvc) on EID 1."
+  },
+  "log_sources_used": [
+    "sysmon_8",
+    "sysmon_10",
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

@@ -1,0 +1,245 @@
+{
+  "technique_id": "T1070.006",
+  "technique_name": "Detection for T1070.006 — Modify file timestamps to hide activity",
+  "description": "Simulates Detection for T1070.006 — Modify file timestamps to hide activity attack sequence",
+  "mitre_tactic": "defense_evasion",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T14:23:11.402Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6144,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+          "command_line": "task_scheduler.exe --timestomp C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe 2023-01-15T08:00:00",
+          "parent": {
+            "pid": 4832,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1070.006",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent (task_scheduler.exe) launched with timestomp arguments targeting its own executable to backdate creation time and evade timeline forensics"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T14:23:12.881Z",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "action": "File creation time changed (rule: FileCreateTimeChanged)",
+          "code": "2"
+        },
+        "process": {
+          "pid": 6144,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+          "parent": {
+            "pid": 4832,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "file": {
+          "name": "task_scheduler.exe",
+          "path": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+          "extension": "exe"
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1070.006",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Sysmon EID 2 — file creation timestamp of the Fawkes dropper backdated to 2023-01-15 to blend into pre-existing system files and defeat timeline analysis"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T14:23:14.217Z",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "action": "File creation time changed (rule: FileCreateTimeChanged)",
+          "code": "2"
+        },
+        "process": {
+          "pid": 6144,
+          "name": "task_scheduler.exe",
+          "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+          "parent": {
+            "pid": 4832,
+            "name": "powershell.exe",
+            "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+          }
+        },
+        "file": {
+          "name": "svchost_helper.dll",
+          "path": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\Windows\\svchost_helper.dll",
+          "extension": "dll"
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1070.006",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Sysmon EID 2 — secondary payload DLL dropped in Roaming profile also timestomped; process.executable outside System32/Program Files is the key anomaly alongside a non-OS binary modifying file creation times"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T09:11:44.003Z",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "action": "File creation time changed (rule: FileCreateTimeChanged)",
+          "code": "2"
+        },
+        "process": {
+          "pid": 3280,
+          "name": "robocopy.exe",
+          "executable": "C:\\Windows\\System32\\robocopy.exe",
+          "command_line": "robocopy.exe C:\\Projects\\reports D:\\Backup\\reports /COPYALL /MIR /LOG:C:\\Backup\\logs\\robocopy.log",
+          "parent": {
+            "pid": 1120,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "file": {
+          "name": "quarterly_report_Q4.xlsx",
+          "path": "D:\\Backup\\reports\\quarterly_report_Q4.xlsx",
+          "extension": "xlsx"
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1070.006",
+          "description": "Legitimate robocopy backup with /COPYALL preserves original file timestamps — triggers Sysmon EID 2 but process.executable is a known system binary under System32 and command_line contains recognizable backup flags"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T11:47:29.651Z",
+        "event": {
+          "category": "file",
+          "type": "change",
+          "action": "File creation time changed (rule: FileCreateTimeChanged)",
+          "code": "2"
+        },
+        "process": {
+          "pid": 5912,
+          "name": "7z.exe",
+          "executable": "C:\\Program Files\\7-Zip\\7z.exe",
+          "command_line": "7z.exe x C:\\Downloads\\archive_2025.zip -oC:\\Projects\\archive_2025 -tzip",
+          "parent": {
+            "pid": 2048,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "file": {
+          "name": "design_spec_v3.pdf",
+          "path": "C:\\Projects\\archive_2025\\design_spec_v3.pdf",
+          "extension": "pdf"
+        },
+        "user": {
+          "name": "dkim",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1070.006",
+          "description": "7-Zip extraction preserving archive timestamps for extracted files — EID 2 fires legitimately; process.executable is under Program Files (signed install path), parent is explorer.exe (user-initiated), and affected file has a document extension not an executable"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "event.code",
+      "process.executable",
+      "process.name",
+      "file.path",
+      "file.extension"
+    ],
+    "notes": "Primary detection signal is Sysmon EID 2 (FileCreateTimeChanged) where process.executable resolves outside trusted directories (System32, Program Files, SysWOW64). Chaining EID 1 → EID 2 on the same PID within seconds is high-confidence for Fawkes timestomp. Key differentiators from benign: (1) executable path under AppData/Temp vs. system/installed paths; (2) affected file.extension is exe or dll rather than documents; (3) no recognizable backup/archive parent command_line pattern. Blue team rule should alert on EID 2 where process.executable matches *\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\* and file.extension in (exe, dll, bat, ps1)."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_2"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

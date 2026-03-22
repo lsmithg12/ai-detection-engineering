@@ -1,0 +1,238 @@
+{
+  "technique_id": "T1068",
+  "technique_name": "Exploitation for Privilege Escalation",
+  "description": "Simulates Exploitation for Privilege Escalation attack sequence",
+  "mitre_tactic": "privilege_escalation",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T08:14:33.112Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "svc_updater.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+          "command_line": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe --install --silent",
+          "parent": {
+            "pid": 3120,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1068",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Malicious updater binary launched from ProgramData by low-privilege user — staging privilege escalation exploit"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T08:14:34.887Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 4872,
+          "name": "svc_updater.exe",
+          "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+          "parent": {
+            "pid": 3120,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1fffff",
+            "TargetImage": "C:\\Windows\\System32\\winlogon.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1068",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "svc_updater.exe opens winlogon.exe with PROCESS_ALL_ACCESS (0x1fffff) — consistent with kernel exploit targeting a privileged system process to steal token or inject shellcode"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T08:14:35.621Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 5104,
+          "name": "cmd.exe",
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "command_line": "cmd.exe /c whoami && net localgroup administrators jsmith /add",
+          "parent": {
+            "pid": 4872,
+            "name": "svc_updater.exe",
+            "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1068",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Privilege escalation succeeded — cmd.exe spawned as NT AUTHORITY\\SYSTEM by svc_updater.exe running as low-privilege user; immediate admin group addition indicates post-exploitation persistence"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T08:10:05.334Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 2284,
+          "name": "wuauclt.exe",
+          "executable": "C:\\Windows\\System32\\wuauclt.exe",
+          "command_line": "wuauclt.exe /RunHandlerComServer",
+          "parent": {
+            "pid": 816,
+            "name": "services.exe",
+            "executable": "C:\\Windows\\System32\\services.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1068",
+          "description": "Legitimate Windows Update client launched by services.exe as SYSTEM — similar naming to svc_updater.exe and update-themed path, but spawned from canonical parent with signed system binary"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T08:11:47.009Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 1104,
+          "name": "LogonUI.exe",
+          "executable": "C:\\Windows\\System32\\LogonUI.exe",
+          "parent": {
+            "pid": 492,
+            "name": "winlogon.exe",
+            "executable": "C:\\Windows\\System32\\winlogon.exe"
+          }
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1410",
+            "TargetImage": "C:\\Windows\\System32\\winlogon.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "SRV-DC-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1068",
+          "description": "Legitimate LogonUI.exe accesses winlogon.exe with limited rights (0x1410 = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ) — same target process as attack but narrow access mask and canonical SYSTEM-to-SYSTEM IPC pattern"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.parent.name",
+      "user.name",
+      "user.domain",
+      "winlog.event_data.GrantedAccess",
+      "winlog.event_data.TargetImage"
+    ],
+    "notes": "Detection anchors: (1) process.executable matching C:\\ProgramData\\* spawning privileged children as SYSTEM while parent ran as domain user — user context flip is the strongest signal; (2) GrantedAccess 0x1fffff against winlogon.exe or lsass.exe from a non-system binary in a writable directory; (3) child process user.domain = 'NT AUTHORITY' where parent user.domain = 'CORP' in the same process tree. Benign differentiation: GrantedAccess values below 0x1000 from winlogon.exe and processes with signed parents from System32 should be excluded. False positives: some EDR agents and AV products open privileged processes with broad access masks — tune by excluding known-signed executables in System32/Program Files."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_10"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

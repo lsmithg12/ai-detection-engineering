@@ -1,0 +1,225 @@
+{
+  "technique_id": "T1057",
+  "technique_name": "Detection for T1057 — List running processes (tasklist)",
+  "description": "Simulates Detection for T1057 — List running processes (tasklist) attack sequence",
+  "mitre_tactic": "discovery",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:23.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6432,
+          "name": "tasklist.exe",
+          "executable": "C:\\Windows\\System32\\tasklist.exe",
+          "command_line": "tasklist.exe /v /fo csv",
+          "parent": {
+            "pid": 4812,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1057",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes C2 agent (runtime_host.exe) spawns tasklist.exe with verbose CSV output to enumerate running processes for situational awareness"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:25.117Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6589,
+          "name": "tasklist.exe",
+          "executable": "C:\\Windows\\System32\\tasklist.exe",
+          "command_line": "tasklist.exe /svc /fo csv",
+          "parent": {
+            "pid": 4812,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1057",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Second tasklist invocation with /svc flag to enumerate services hosted in each process — Fawkes ps command follow-up for AV/EDR identification"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:27.882Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6701,
+          "name": "wmic.exe",
+          "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+          "command_line": "wmic process get Name,ProcessId,ParentProcessId,CommandLine /format:csv",
+          "parent": {
+            "pid": 4812,
+            "name": "runtime_host.exe",
+            "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1057",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes follows up with WMI process enumeration to collect parent PIDs and full command lines — deeper process tree reconnaissance, consistent with Fawkes ps command behavior"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T09:02:11.334Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 3920,
+          "name": "tasklist.exe",
+          "executable": "C:\\Windows\\System32\\tasklist.exe",
+          "command_line": "tasklist.exe",
+          "parent": {
+            "pid": 3204,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1057",
+          "description": "User manually runs tasklist from an interactive cmd.exe session — routine admin activity, no suspicious flags or output formatting, parent is interactive shell"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T08:47:55.009Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 2288,
+          "name": "tasklist.exe",
+          "executable": "C:\\Windows\\System32\\tasklist.exe",
+          "command_line": "tasklist.exe /fo list",
+          "parent": {
+            "pid": 1104,
+            "name": "CcmExec.exe",
+            "executable": "C:\\Windows\\CCM\\CcmExec.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1057",
+          "description": "SCCM client (CcmExec.exe) invokes tasklist as SYSTEM for compliance inventory — legitimate endpoint management tooling, expected on managed corporate workstations"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "process.parent.executable"
+    ],
+    "notes": "High-fidelity detection pivot: tasklist.exe or wmic.exe spawned by a process located under C:\\Users\\*\\AppData\\Roaming\\* is strongly anomalous. The parent path (AppData\\Roaming\\Microsoft\\runtime_host.exe) is the primary discriminator vs. benign cases where parents are interactive shells (cmd.exe, powershell.exe) or known management agents (CcmExec.exe, msiexec.exe). Secondary signal: rapid sequential invocations (tasklist /v then /svc within seconds) from the same parent PID is a Fawkes ps command pattern. Tune out SYSTEM-context invocations from known management parents to reduce FP rate."
+  },
+  "log_sources_used": [
+    "sysmon_1"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
