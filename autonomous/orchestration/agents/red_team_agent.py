@@ -938,8 +938,8 @@ def run(state_manager: StateManager) -> dict:
         print(f"    [red-team] Saved: {path.name} "
               f"({n_attack} attack, {n_benign} benign events)")
 
-        # Update detection request with scenario path
-        rel_path = str(path.relative_to(REPO_ROOT))
+        # Update detection request with scenario path (always use POSIX separators)
+        rel_path = path.relative_to(REPO_ROOT).as_posix()
         state_manager.update(
             tid, agent=AGENT_NAME,
             scenario_file=rel_path,

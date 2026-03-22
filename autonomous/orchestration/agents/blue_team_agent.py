@@ -40,8 +40,11 @@ MAX_TUNE_RETRIES = 2  # Max attempts to refine a rule when F1 < threshold
 # Map MITRE technique prefixes to tactic directories
 TECHNIQUE_TACTIC_MAP = {
     "T1055": "privilege_escalation",
+    "T1068": "privilege_escalation",
     "T1134": "credential_access",
     "T1059": "execution",
+    "T1047": "execution",
+    "T1569": "execution",
     "T1053": "persistence",
     "T1547": "persistence",
     "T1543": "persistence",
@@ -51,15 +54,27 @@ TECHNIQUE_TACTIC_MAP = {
     "T1197": "defense_evasion",
     "T1071": "command_and_control",
     "T1219": "command_and_control",
+    "T1090": "command_and_control",
     "T1078": "initial_access",
     "T1566": "initial_access",
+    "T1133": "initial_access",
     "T1087": "discovery",
-    "T1047": "execution",
-    "T1003": "credential_access",
-    "T1490": "impact",
-    "T1569": "execution",
     "T1046": "discovery",
+    "T1049": "discovery",
+    "T1057": "discovery",
     "T1083": "discovery",
+    "T1518": "discovery",
+    "T1003": "credential_access",
+    "T1056": "collection",
+    "T1113": "collection",
+    "T1115": "collection",
+    "T1560": "collection",
+    "T1490": "impact",
+    "T1486": "impact",
+    "T1489": "impact",
+    "T1110": "credential_access",
+    "T1021": "lateral_movement",
+    "T1105": "command_and_control",
 }
 
 
@@ -93,6 +108,8 @@ SYSMON_CATEGORIES = {
 
 def load_scenario(scenario_path: str) -> dict | None:
     """Load a scenario JSON file."""
+    # Normalize path separators — YAML files written on Windows may contain backslashes
+    scenario_path = scenario_path.replace("\\", "/")
     full_path = REPO_ROOT / scenario_path
     if not full_path.exists():
         return None
@@ -514,7 +531,7 @@ def assess_quality(metrics: dict) -> str:
 
     if f1 >= AUTO_DEPLOY_THRESHOLD and fp_rate <= MAX_FP_RATE_AUTO_DEPLOY:
         return "auto_deploy"
-    elif f1 >= 0.70:
+    elif f1 >= 0.75:
         return "human_review"
     else:
         return "needs_rework"
@@ -586,6 +603,8 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
 
     # Transpile
     lucene, spl = transpile_sigma(rule_path)
+    lucene_path = None
+    spl_path = None
     if lucene:
         lucene_path, spl_path = save_compiled(tactic, tid_under, lucene, spl)
         print(f"    [blue-team] Transpiled: Lucene ({len(lucene)} chars), SPL ({len(spl)} chars)")
@@ -600,8 +619,8 @@ def author_and_validate(request: dict, state_manager: StateManager, run_id: str)
     state_manager.update(
         tid, agent=AGENT_NAME,
         sigma_rule=str(rule_path.relative_to(REPO_ROOT)),
-        compiled_lucene=str(lucene_path.relative_to(REPO_ROOT)) if lucene else "",
-        compiled_spl=str(spl_path.relative_to(REPO_ROOT)) if spl else "",
+        compiled_lucene=str(lucene_path.relative_to(REPO_ROOT)) if lucene_path else "",
+        compiled_spl=str(spl_path.relative_to(REPO_ROOT)) if spl_path else "",
         mitre_tactic=tactic,
     )
 
@@ -966,5 +985,6 @@ def run(state_manager: StateManager) -> dict:
         "detections_validated": validated,
         "detections_deploy_eligible": deploy_eligible,
         "detections_needs_rework": needs_rework,
+        "detections_reviewed": authored,  # agent_runner budget tracking key
         "results": results,
     }

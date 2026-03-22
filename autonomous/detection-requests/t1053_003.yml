@@ -5,7 +5,7 @@ priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
-scenario_file: simulator\scenarios\t1053_003.json
+scenario_file: simulator/scenarios/t1053_003.json
 sigma_rule: ''
 deployed_date: ''
 last_quality_review: ''
