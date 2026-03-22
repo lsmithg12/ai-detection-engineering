@@ -3,8 +3,8 @@
 Master plan for enhancing the AI Detection Engineering Lab from a single-threat-actor lab
 to an enterprise-grade, scalable detection engineering platform.
 
-**Last reviewed**: 2026-03-17
-**Current state**: 37 detection rules (30 Sigma + 3 EQL + 4 threshold), 11 deployed (MONITORING), 5 agents operational, 2 SIEMs active, Phases 1-3 + Phase 6 complete
+**Last reviewed**: 2026-03-22
+**Current state**: 42 authored rule files (35 Sigma + 3 EQL + 4 threshold), 16 MONITORING, 17 VALIDATED, 8 AUTHORED, 71 total detection requests tracked, 10 specialized agents + coordinator, 2 SIEMs active, Phases 1-7 complete
 **Architecture redesign**: Phases 4-8 rebuilt around real-world scaling concerns (see `plans/architecture-scalable-detection-platform.md`)
 
 ---
@@ -168,25 +168,23 @@ The redesigned phases address these proportions directly:
 
 ---
 
-## Phase 7: Operational Excellence (Priority: HIGH)
+## Phase 7: Operational Excellence
 
-**Status**: NOT STARTED
-**Estimated effort**: 12-16 hours (multi-session)
-**Dependencies**: Phase 4 (coordinator, tuning agent), Phase 6 recommended
+**Status**: COMPLETED — Merged to main via PR #68 (2026-03-18)
 
 **Plan**: [plans/phase7-operational-excellence.md](plans/phase7-operational-excellence.md)
 
 **Goal**: Close the operational feedback loop — build, deploy, measure, improve. This separates a lab from a production detection program.
 
-**Scope**:
-- **Detection health dashboard**: Kibana + Splunk dashboards with 8 panels (fleet overview, alert volume, F1 distribution, coverage radar, SLA trends)
-- **Analyst feedback loop**: CLI + ES-based verdict capture, FP aggregation, auto-tuning triggers
-- **Automated regression testing**: CI gate on PRs that modify detections (F1 drop > 0.10 = block)
-- **SLA tracking**: Time from REQUESTED to MONITORING per priority level, breach detection
-- **Pipeline performance metrics**: Per-agent run metrics, token budget tracking, monthly reports
-- **Alert-on-alert**: Detect silent rules, FP spikes, alert floods; auto-create GitHub Issues
+**Delivered**:
+- **Detection health dashboards**: `monitoring/dashboards/detection-health.xml` (Kibana) + `monitoring/dashboards/ingest-metrics.py` (Splunk)
+- **Analyst feedback loop**: `autonomous/orchestration/feedback.py` + `feedback_schema.py` — verdict capture (TP/FP/FN labels) stored in `monitoring/feedback/verdicts.jsonl`
+- **Automated regression testing**: `autonomous/orchestration/regression.py` + `.github/workflows/regression-test.yml` — CI gate blocks PRs if F1 drops > 0.10
+- **SLA tracking**: `autonomous/orchestration/sla.py` — time from REQUESTED to MONITORING per priority level, breach detection
+- **Pipeline performance metrics**: `monitoring/generate-pipeline-report.py` — monthly pipeline + SLA reports in `monitoring/reports/`
+- **Health monitor with alert-on-alert**: `autonomous/orchestration/health_monitor.py` — detects silent rules, FP spikes, alert floods; auto-creates GitHub Issues
 
-**Key deliverables**: Health dashboard, feedback loop, regression CI, SLA module, health monitor with GitHub Issues
+**State after Phase 7**: 9 CI workflows (regression-test.yml added), feedback loop active, SLA tracking live, regression baseline established for 3 rules
 
 ---
 
@@ -214,17 +212,17 @@ Each capability is independent and can be pursued based on interest and availabl
 
 ## Quick Reference: Current State vs Target
 
-| Metric | Phases 1-6 (Current) | Phase 7 Target | Phase 8 Target |
-|--------|---------------------|----------------|----------------|
-| Threat actors | 3 registered (Fawkes, LockBit, Scattered Spider) | 4+ | N |
-| Platforms | Win + Linux + Cloud + Network (sim) | All validated | All |
-| Detections | 37 (30 Sigma + 3 EQL + 4 threshold) | 50+ | 60+ |
-| Deployed | 11 MONITORING | 40+ | 50+ |
-| Coverage (Fawkes) | 67% (14/21) | 80%+ | 90%+ |
-| Agents | 10 specialized + coordinator | 10 + tuning feedback | SDK-based |
-| Data quality | Monitored + scored (Phase 5) | Monitored + alerted | Monitored |
-| Feedback loop | Evasion testing (Phase 6) | Analyst TP/FP + auto-tune | SOAR |
-| CI gates | 7 (continuous-validation added Phase 6) | 8 (regression gate) | 10+ |
+| Metric | Phases 1-7 (Current) | Phase 8 Target |
+|--------|---------------------|----------------|
+| Threat actors | 3 registered (Fawkes, LockBit, Scattered Spider) | N |
+| Platforms | Win + Linux + Cloud + Network (sim) | All |
+| Detection requests | 71 tracked (42 authored files: 35 Sigma + 3 EQL + 4 threshold) | 60+ authored |
+| Deployed | 16 MONITORING | 50+ |
+| Coverage (Fawkes) | ~16/21 techniques | 90%+ |
+| Agents | 10 specialized + coordinator | SDK-based |
+| Data quality | Monitored + scored + per-source Cribl (Phase 5) | Monitored |
+| Feedback loop | Analyst TP/FP + auto-tune + evasion testing (Phase 7) | SOAR |
+| CI gates | 9 (regression-test + schema-validate added Phases 7+) | 10+ |
 
 ---
 
