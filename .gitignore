@@ -40,6 +40,6 @@ simulator/data/
 autonomous/budget-log.jsonl
 autonomous/security/audit-log.jsonl
 
-# Claude Code local settings
-.claude/settings.local.json
-.claude/projects/
+# Claude Code local settings (any depth)
+**/.claude/
+.claude/
