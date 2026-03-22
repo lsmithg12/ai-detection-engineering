@@ -1,0 +1,118 @@
+title: 'Blurring the Lines: Intrusion Shows Connection With Three Major Ransomware Gangs'
+source: https://thedfirreport.com/2025/09/08/blurring-the-lines-intrusion-shows-connection-with-three-major-ransomware-gangs/
+date_published: '2025-09-08'
+date_ingested: '2026-03-22'
+threat_actors:
+- DragonForce Affiliate
+- Play Ransomware Affiliate
+- RansomHub Affiliate
+platforms:
+- Windows
+techniques:
+- id: T1204.002
+  name: 'User Execution: Malicious File'
+  description: Victim executed a malicious binary impersonating DeskSoft's EarthTime application, triggering SectopRAT deployment.
+  priority: high
+- id: T1036.005
+  name: 'Masquerading: Match Legitimate Name or Location'
+  description: Malicious EarthTime.exe mimicked the legitimate DeskSoft EarthTime world clock utility; later binaries spoofed
+    metadata to impersonate SentinelOne and Avast Antivirus.
+  priority: high
+- id: T1553.002
+  name: 'Subvert Trust Controls: Code Signing'
+  description: Malicious EarthTime.exe was signed with a revoked certificate from 'Brave Pragmatic Network Technology Co.,
+    Ltd.' to appear legitimate to users and security software.
+  priority: medium
+- id: T1547.001
+  name: 'Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder'
+  description: Threat actor relocated the malicious file and placed a shortcut in the Startup folder configured to trigger
+    on user logon for persistence.
+  priority: high
+- id: T1136.001
+  name: 'Create Account: Local Account'
+  description: Threat actor created a new local account and assigned it local administrative privileges to maintain access.
+  priority: high
+- id: T1078.002
+  name: 'Valid Accounts: Domain Accounts'
+  description: Threat actor connected to the domain controller via RDP using the built-in Administrator account after obtaining
+    credentials via DCSync.
+  priority: high
+- id: T1569.002
+  name: 'System Services: Service Execution'
+  description: PsExec was used to execute SystemBC with SYSTEM privileges on domain controller hosts.
+  priority: medium
+- id: T1059.001
+  name: 'Command and Scripting Interpreter: PowerShell'
+  description: PowerShell script executed on backup server to retrieve Veeam credentials; PowerShell cmdlets used for host
+    data collection.
+  priority: high
+- id: T1003.006
+  name: 'OS Credential Dumping: DCSync'
+  description: Threat actor performed a DCSync attack against a domain controller to obtain domain credentials shortly after
+    establishing initial access.
+  priority: high
+- id: T1552.001
+  name: 'Unsecured Credentials: Credentials in Files'
+  description: PowerShell script executed on backup server specifically designed to retrieve Veeam backup credentials from
+    stored configuration.
+  priority: high
+- id: T1087.002
+  name: 'Account Discovery: Domain Account'
+  description: AdFind and SharpHound used to enumerate domain accounts and Active Directory structure across the environment.
+  priority: medium
+- id: T1069.002
+  name: 'Permission Groups Discovery: Domain Groups'
+  description: SharpHound used for Active Directory directory mapping including domain group enumeration.
+  priority: medium
+- id: T1482
+  name: Domain Trust Discovery
+  description: nltest executed on domain controller to enumerate domain trust relationships as part of post-compromise discovery.
+  priority: medium
+- id: T1018
+  name: Remote System Discovery
+  description: SoftPerfect NetScan used to scan remote hosts; Grixba (Play ransomware tool) used WMI and WinRM to discover
+    users and systems across the network from domain controller and backup server.
+  priority: high
+- id: T1135
+  name: Network Share Discovery
+  description: Threat actor identified targeted file shares containing sensitive business documents for subsequent collection
+    and exfiltration.
+  priority: medium
+- id: T1562.001
+  name: 'Impair Defenses: Disable or Modify Tools'
+  description: Microsoft Defender protections were disabled as part of defense evasion activity during the intrusion.
+  priority: high
+- id: T1070.006
+  name: 'Indicator Removal: Timestomping'
+  description: Timestomping used to modify file timestamps as a defense evasion technique.
+  priority: medium
+- id: T1090.001
+  name: 'Proxy: Internal Proxy'
+  description: SystemBC deployed across multiple systems including domain controllers to provide proxy tunneling for C2 communications
+    and lateral movement.
+  priority: high
+- id: T1219
+  name: Remote Access Software
+  description: SectopRAT (.NET RAT with info-stealing capabilities) used as primary C2; Betruger multi-function backdoor deployed
+    on day six from beachhead host.
+  priority: high
+- id: T1039
+  name: Data from Network Shared Drive
+  description: Threat actor targeted specific file shares on file server containing sensitive business documents for collection.
+  priority: high
+- id: T1560.001
+  name: 'Archive Collected Data: Archive via Utility'
+  description: WinRAR executed on file server to compress targeted file share contents prior to exfiltration.
+  priority: high
+- id: T1048.003
+  name: Exfiltration Over Unencrypted Non-C2 Protocol
+  description: WinSCP used to transfer WinRAR archives to a U.S.-based cloud host over unencrypted FTP, exposing credentials
+    and data during traffic analysis.
+  priority: high
+- id: T1486
+  name: Data Encrypted for Impact
+  description: Assessed likely final objective based on ransomware-linked tooling (Grixba/Play, Betruger/RansomHub, DragonForce
+    leak site data); no encryption observed before eviction.
+  priority: high
+iocs: []
+raw_summary: ''

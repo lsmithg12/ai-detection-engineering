@@ -4,13 +4,17 @@ and creates structured detection requests.
 
 Called by agent_runner.py. Implements run(state_manager) interface.
 
-When Claude CLI is available (standalone terminal, not CI or nested session):
-  1. Uses WebSearch/WebFetch tools to find new threat reports
-  2. Extracts MITRE ATT&CK techniques from report content
-  3. Creates structured YAML reports and detection requests
+When Claude CLI is available (local terminal or Claude Code session):
+  1. Fetches threat intel index pages via Python urllib
+  2. Uses Claude to select and analyze relevant reports
+  3. Extracts MITRE ATT&CK techniques and creates detection requests
 
-Fallback (CI, nested session, or CLI unavailable):
+Fallback (CI / GitHub Actions where no OAuth session exists):
   Processes pre-downloaded reports from threat-intel/reports/.
+
+Output feeds directly into the red-team agent: each detection request
+created here (state: REQUESTED) becomes a red-team scenario target.
+Run red-team next: python orchestration/agent_runner.py --agent red-team
 """
 
 import datetime
@@ -544,43 +548,59 @@ def search_web_for_intel(
         print("  [intel] Claude CLI not available — skipping link analysis")
         return []
 
-    # Build a summary of links for Claude to choose from
-    link_lines = []
-    for link in index_page["links"][:100]:
-        href = link["href"]
-        if not href.startswith("http"):
+    # Try each fetched index page until Claude selects at least one report
+    picked = []
+    for url in INTEL_INDEX_URLS:
+        if picked:
+            break
+        page = index_page if index_page["url"] == url else _fetch_page(url)
+        if not page or not page["links"]:
             continue
-        link_lines.append(f"- [{link['text'][:80]}]({href})")
-    links_summary = "\n".join(link_lines)
 
-    if not links_summary:
-        print("  [intel] No usable links found on index page")
-        return []
+        link_lines = []
+        for link in page["links"][:100]:
+            href = link["href"]
+            if not href.startswith("http"):
+                continue
+            link_lines.append(f"- [{link['text'][:80]}]({href})")
+        links_summary = "\n".join(link_lines)
 
-    queries_str = ", ".join(queries[:3])
-    pick_result = claude_llm.ask_for_analysis(
-        question=(
-            f"Pick up to {max_reports} threat intelligence report links from this list. "
-            f"Topics of interest: {queries_str}. "
-            "Choose specific reports or advisories — NOT category pages, nav links, or tag pages. "
-            "Return ONLY a JSON array: "
-            '[{"title": "Report Title", "url": "https://..."}]'
-        ),
-        context=f"Links from {index_page['url']}:\n{links_summary}",
-        agent_name="intel",
-    )
+        if not links_summary:
+            print(f"  [intel] No usable links on {url}")
+            continue
 
-    if not pick_result["success"]:
-        print(f"  [intel] Claude failed to pick links: {pick_result.get('error')}")
-        return []
+        queries_str = ", ".join(queries[:3])
+        pick_result = claude_llm.ask_for_analysis(
+            question=(
+                f"Pick up to {max_reports} threat intelligence report links from this list. "
+                f"Topics of interest: {queries_str}. "
+                "Choose specific reports or advisories — NOT category pages, nav links, or tag pages. "
+                "Return ONLY a JSON array: "
+                '[{"title": "Report Title", "url": "https://..."}]'
+            ),
+            context=f"Links from {page['url']}:\n{links_summary}",
+            agent_name="intel",
+        )
 
-    try:
-        resp = _strip_markdown_fences(pick_result["response"])
-        picked = json.loads(resp)
-        if not isinstance(picked, list):
-            picked = [picked]
-    except json.JSONDecodeError:
-        print(f"  [intel] Could not parse link selection: {pick_result['response'][:200]}")
+        if not pick_result["success"]:
+            print(f"  [intel] Claude failed to pick links from {url}: {pick_result.get('error')}")
+            continue
+
+        try:
+            resp = _strip_markdown_fences(pick_result["response"])
+            candidates = json.loads(resp)
+            if not isinstance(candidates, list):
+                candidates = [candidates]
+            picked = candidates
+        except json.JSONDecodeError:
+            print(f"  [intel] Could not parse link selection from {url}: {pick_result['response'][:200]}")
+            continue
+
+        if not picked:
+            print(f"  [intel] Claude found no useful reports on {url} — trying next source")
+
+    if not picked:
+        print("  [intel] No reports selected from any index source")
         return []
 
     print(f"  [intel] Claude selected {len(picked)} reports to fetch")
@@ -784,8 +804,8 @@ def run(state_manager: StateManager) -> dict:
                 str(e),
             )
 
-    # 6. Process all reports (existing + newly downloaded)
-    existing_reports = sorted(REPORTS_DIR.glob("*.yml"))
+    # 6. Process all reports (existing + newly downloaded) — newest first
+    existing_reports = sorted(REPORTS_DIR.glob("*.yml"), reverse=True)
     for report_path in existing_reports[:MAX_REPORTS]:
         try:
             with open(report_path, encoding="utf-8") as f:
