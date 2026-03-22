@@ -23,6 +23,8 @@ from orchestration.state import StateManager
 from orchestration import learnings
 from orchestration.siem import check_elastic
 from orchestration.validation import validate_against_elasticsearch
+from orchestration.validation_eql import validate_eql_against_elasticsearch
+from orchestration.validation_threshold import validate_threshold_against_elasticsearch
 from orchestration import claude_llm
 
 # Re-use authoring utilities for transpilation and scenario loading
@@ -335,22 +337,137 @@ def validate_single(request: dict, state_manager: StateManager, run_id: str,
         result["error"] = f"Sigma rule not found: {sigma_rule_rel}"
         return result
 
+    # Determine rule type and load compiled artifacts
+    rule_type = request.get("rule_type", "sigma")
     compiled_lucene_rel = request.get("compiled_lucene", "")
+    compiled_artifact_rel = request.get("compiled_artifact", "")
     lucene = ""
     if compiled_lucene_rel:
         lucene_full = REPO_ROOT / compiled_lucene_rel
         if lucene_full.exists():
             lucene = lucene_full.read_text(encoding="utf-8").strip()
 
+    # Load compiled artifact JSON (used by EQL and threshold rules)
+    compiled_artifact = {}
+    if compiled_artifact_rel:
+        artifact_path = REPO_ROOT / compiled_artifact_rel
+        if artifact_path.exists():
+            try:
+                compiled_artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                pass
+
     # --- VALIDATE ---
     validation_method = "local_json"
     validation_details = {}
     siem_errors = []
 
-    if use_siem and lucene:
+    attack_events = scenario.get("events", {}).get("attack_sequence", [])
+    benign_events = scenario.get("events", {}).get("benign_similar", [])
+
+    if use_siem and rule_type == "eql":
+        # --- EQL VALIDATION ---
+        eql_query = compiled_artifact.get("query", "")
+        if not eql_query:
+            print(f"    [validation] No EQL query in compiled artifact, falling back to local")
+            metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+        else:
+            print(f"    [validation] Validating EQL rule against Elasticsearch")
+            expected_sequences = compiled_artifact.get("eql_min_sequences", 1)
+            eql_metrics = validate_eql_against_elasticsearch(
+                eql_query=eql_query,
+                attack_events=attack_events,
+                benign_events=benign_events,
+                technique_id=tid,
+                expected_sequences=expected_sequences,
+            )
+            if eql_metrics is not None:
+                validation_method = "elasticsearch_eql"
+                siem_errors = eql_metrics.get("errors", [])
+                validation_details = {
+                    "index": eql_metrics.get("index_used", ""),
+                    "query": eql_metrics.get("eql_query", "")[:200],
+                    "events_ingested": eql_metrics.get("events_ingested", 0),
+                    "sequences_found": eql_metrics.get("sequences_found", 0),
+                    "errors": siem_errors,
+                }
+                metrics = {
+                    "tp": eql_metrics["tp"], "fp": eql_metrics["fp"],
+                    "fn": eql_metrics["fn"], "tn": eql_metrics["tn"],
+                    "precision": eql_metrics["precision"], "recall": eql_metrics["recall"],
+                    "f1_score": eql_metrics["f1_score"],
+                    "fp_rate": eql_metrics.get("fp_rate", 0.0),
+                    "tp_rate": eql_metrics.get("recall", 0.0),
+                    "total_attack": len(attack_events),
+                    "total_benign": len(benign_events),
+                }
+                if siem_errors:
+                    print(f"    [validation] EQL validation warnings: {'; '.join(siem_errors[:2])}")
+            else:
+                print(f"    [validation] ES unreachable, falling back to local validation")
+                metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+
+    elif use_siem and rule_type == "threshold":
+        # --- THRESHOLD VALIDATION ---
+        base_query = compiled_artifact.get("query", "")
+        threshold_cfg = compiled_artifact.get("threshold", {})
+        threshold_field_list = threshold_cfg.get("field", [])
+        threshold_field = threshold_field_list[0] if threshold_field_list else "host.name"
+        threshold_value = threshold_cfg.get("value", 5)
+        # Extract cardinality if present
+        cardinality_list = threshold_cfg.get("cardinality", [])
+        cardinality_field = cardinality_list[0].get("field") if cardinality_list else None
+        cardinality_value = cardinality_list[0].get("value") if cardinality_list else None
+        # Parse window from rule's "from" field (e.g., "now-6m" -> "6m")
+        from_field = compiled_artifact.get("from", "now-5m")
+        window = from_field.replace("now-", "") if from_field.startswith("now-") else "5m"
+
+        if not base_query:
+            print(f"    [validation] No base query in compiled artifact, falling back to local")
+            metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+        else:
+            print(f"    [validation] Validating threshold rule against Elasticsearch")
+            threshold_metrics = validate_threshold_against_elasticsearch(
+                base_query=base_query,
+                threshold_field=threshold_field,
+                threshold_value=threshold_value,
+                window=window,
+                attack_events=attack_events,
+                benign_events=benign_events,
+                technique_id=tid,
+                cardinality_field=cardinality_field,
+                cardinality_value=cardinality_value,
+            )
+            if threshold_metrics is not None:
+                validation_method = "elasticsearch_threshold"
+                siem_errors = threshold_metrics.get("errors", [])
+                validation_details = {
+                    "index": threshold_metrics.get("index_used", ""),
+                    "query": threshold_metrics.get("base_query", "")[:200],
+                    "events_ingested": threshold_metrics.get("events_ingested", 0),
+                    "threshold_breaches": threshold_metrics.get("threshold_breaches", 0),
+                    "errors": siem_errors,
+                }
+                metrics = {
+                    "tp": threshold_metrics["tp"], "fp": threshold_metrics["fp"],
+                    "fn": threshold_metrics["fn"], "tn": threshold_metrics["tn"],
+                    "precision": threshold_metrics["precision"],
+                    "recall": threshold_metrics["recall"],
+                    "f1_score": threshold_metrics["f1_score"],
+                    "fp_rate": threshold_metrics.get("fp_rate", 0.0),
+                    "tp_rate": threshold_metrics.get("recall", 0.0),
+                    "total_attack": len(attack_events),
+                    "total_benign": len(benign_events),
+                }
+                if siem_errors:
+                    print(f"    [validation] Threshold validation warnings: {'; '.join(siem_errors[:2])}")
+            else:
+                print(f"    [validation] ES unreachable, falling back to local validation")
+                metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
+
+    elif use_siem and lucene:
+        # --- STANDARD LUCENE VALIDATION ---
         print(f"    [validation] Validating against Elasticsearch (SIEM-based)")
-        attack_events = scenario.get("events", {}).get("attack_sequence", [])
-        benign_events = scenario.get("events", {}).get("benign_similar", [])
 
         siem_metrics = validate_against_elasticsearch(
             compiled_lucene=lucene,
@@ -389,7 +506,7 @@ def validate_single(request: dict, state_manager: StateManager, run_id: str,
         if not use_siem:
             print(f"    [validation] Validating locally (ES not available)")
         else:
-            print(f"    [validation] Validating locally (no Lucene query available)")
+            print(f"    [validation] Validating locally (no compiled query available)")
         metrics = validate_detection(str(rule_path.relative_to(REPO_ROOT)), scenario)
 
     quality_tier = assess_quality(metrics)
