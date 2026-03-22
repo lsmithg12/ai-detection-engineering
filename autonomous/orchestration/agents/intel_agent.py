@@ -892,6 +892,16 @@ def run(state_manager: StateManager) -> dict:
     )
     print(f"\n  [intel] {summary}")
 
+    # Count how many REQUESTED items are waiting for red-team scenarios
+    all_requested = [r for r in state_manager.list_all()
+                     if r.get("state") == "REQUESTED"]
+    next_step = (
+        f"Next: run red-team agent to generate attack/benign scenarios for "
+        f"{len(all_requested)} queued technique(s). "
+        f"Command: python orchestration/agent_runner.py --agent red-team"
+    )
+    print(f"\n  [intel] {next_step}")
+
     return {
         "summary": summary,
         "reports_processed": len(reports_processed),
@@ -903,4 +913,6 @@ def run(state_manager: StateManager) -> dict:
         "skipped_existing": total_stats["total_skipped"],
         "fawkes_overlap": total_stats["total_fawkes"],
         "search_queries_used": queries,
+        "next_step": next_step,
+        "pending_for_red_team": len(all_requested),
     }
