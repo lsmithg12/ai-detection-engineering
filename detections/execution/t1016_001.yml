@@ -2,13 +2,15 @@ title: ARP Cache Enumeration by Suspicious Parent Process
 id: a7f3c2e1-9b4d-4f8a-b6c5-d2e8f1a3b7c9
 status: experimental
 description: >
-  Detects arp.exe invoked with cache enumeration flags (-a) from a parent process
-  located outside trusted system directories. Fawkes C2 agent uses the 'arp' command
-  to enumerate the local ARP cache for host discovery (T1016.001). Legitimate use
-  originates from cmd.exe, powershell.exe, or Windows diagnostic tools in System32.
+  Detects arp.exe invoked directly with cache enumeration flags (-a) from an untrusted
+  parent, or cmd.exe/powershell.exe containing 'arp -a' in the command line spawned by
+  an untrusted parent. Fawkes C2 uses the 'arp' command for local host discovery
+  (T1016.001), either spawning arp.exe directly or via an intermediate shell. The
+  indirect branch catches the Fawkes→cmd.exe→arp.exe pattern where arp.exe itself
+  appears to have a trusted parent (cmd.exe in System32).
 author: Detection Engineering
 date: 2026-03-21
-modified: 2026-03-21
+modified: 2026-03-22
 references:
   - https://github.com/galoryber/fawkes
   - https://attack.mitre.org/techniques/T1016/001/
@@ -19,25 +21,54 @@ logsource:
   category: process_creation
   product: windows
 detection:
-  selection:
+  selection_direct:
     process.name: 'arp.exe'
-    process.command_line|contains: '-a'
-  filter_trusted_parents:
+    process.command_line|contains: ' -a'
+  filter_direct_trusted_parent:
     process.parent.executable|startswith:
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\Windows\explorer.exe'
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
-  condition: selection and not filter_trusted_parents
+    process.parent.name|in:
+      - 'services.exe'
+      - 'svchost.exe'
+      - 'mmc.exe'
+      - 'taskmgr.exe'
+      - 'WmiPrvSE.exe'
+      - 'wininit.exe'
+      - 'lsass.exe'
+  selection_indirect_proc:
+    process.name|in:
+      - 'cmd.exe'
+      - 'powershell.exe'
+      - 'powershell_ise.exe'
+  selection_indirect_arp:
+    process.command_line|contains: 'arp'
+  selection_indirect_flag:
+    process.command_line|contains: ' -a'
+  filter_indirect_trusted_parent:
+    process.parent.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Windows\explorer.exe'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: >
+    (selection_direct and not filter_direct_trusted_parent)
+    or
+    (selection_indirect_proc and selection_indirect_arp and selection_indirect_flag and not filter_indirect_trusted_parent)
 falsepositives:
-  - Network administrators or IT staff running arp.exe from custom scripts or tools
-    located outside System32 - review parent process path and user context
-  - Third-party network management or monitoring agents that spawn arp.exe from
-    non-standard install paths
-  - Automated IT tooling (e.g., SCCM, Ansible, endpoint agents) running diagnostics
-    from application directories - whitelist by parent executable if confirmed benign
+  - Network administrators running arp.exe from custom scripts outside System32 — review
+    parent process path and user context
+  - Third-party network management agents spawning arp.exe from non-standard install paths
+  - Automated IT tooling (SCCM, Ansible, endpoint agents) running diagnostics from
+    application directories — whitelist parent executable if confirmed benign
+  - Interactive cmd.exe sessions launched by a user from a non-standard parent (e.g., IDE
+    terminal) running arp for legitimate diagnostics — review user context and host role
 fields:
+  - process.name
   - process.executable
   - process.command_line
   - process.parent.executable
