@@ -160,15 +160,20 @@ ai-detection-engineering/
 
 ## Autonomous Agent Pipeline (Patronus)
 
-Five specialized AI agents run the detection lifecycle end-to-end, triggered by GitHub Actions on a daily schedule or manually:
+Ten specialized AI agents + a coordinator run the detection lifecycle end-to-end, triggered by GitHub Actions on a daily schedule or manually:
 
 | Agent | Role | Trigger |
 |-------|------|---------|
 | Intel | Ingests threat reports, creates detection requests | Daily |
-| Red Team | Generates attack + benign scenarios per technique | On intel merge |
-| Blue Team | Authors Sigma rules, validates, deploys to SIEMs | On intel/red-team merge |
-| Quality | Health scoring, daily monitoring reports | Daily |
+| Red Team (Scenario Engineer) | Generates attack + benign scenarios per technique | On intel merge |
+| Author | Authors Sigma/EQL/threshold rules from scenarios | On red-team merge |
+| Validation | Validates rules against ES, scores F1, retry-with-feedback | On author merge |
+| Deployment | Deploys validated rules to Elastic + Splunk | Post-merge / manual |
+| Tuning | Monitors alert health, auto-tunes FP exclusions | Daily |
+| Coverage | Gap analysis, technique prioritization, GitHub Issues | Daily |
+| Quality | Fleet health scoring, monthly reports | Daily |
 | Security | PR gate — secrets scanning, rule quality checks | Every PR to main |
+| Coordinator | Routes work by priority + state across agents | Always on |
 
 Each agent creates a feature branch, commits its work, pushes, and opens a PR for human review. See [STATUS.md](STATUS.md) for current pipeline state.
 
@@ -178,10 +183,11 @@ Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision 
 
 | Agent | Claude Task | Model | Fallback |
 |-------|------------|-------|----------|
-| Blue Team | Author Sigma rules from attack/benign event data | Opus | Deterministic field extraction |
+| Author | Author Sigma/EQL/threshold rules from attack/benign event data | Opus | Deterministic field extraction |
+| Validation | Suggest rule improvements when F1 < 0.90 (retry loop) | Sonnet | Skip refinement |
 | Red Team | Generate attack scenarios dynamically | Sonnet | Hardcoded scenario generators |
-| Quality | Analyze fleet health, recommend tuning actions | Sonnet | Fixed threshold scoring |
-| Intel | Extract MITRE techniques from raw report text + web search | Sonnet | Regex table parsing |
+| Tuning | Analyze fleet health, recommend tuning actions | Sonnet | Fixed threshold scoring |
+| Intel | Extract MITRE techniques from raw report text | Sonnet | Regex table parsing |
 
 - **Locally**: Uses your Claude Pro subscription (OAuth session in `~/.claude/`)
 - **In CI**: Falls back to deterministic Python logic automatically (no credentials needed)
@@ -190,17 +196,18 @@ Agents invoke Claude Code CLI (`claude -p`) for reasoning tasks at key decision 
 
 ### Current Detection Coverage
 
-29 detection rules authored (11 deployed to SIEM, 12 validated, 2 authored, 4 need rework), covering 13/21 Fawkes techniques (62%). Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
+42 authored rule files (35 Sigma + 3 EQL + 4 threshold) — 16 deployed to SIEM (MONITORING), 17 validated, 8 authored/pending validation. Full matrix: [coverage/attack-matrix.md](coverage/attack-matrix.md)
 
 | Phase | Status | Key Deliverable |
 |-------|--------|-----------------|
-| Phase 1 | COMPLETED | Fixed stuck detections, compiled all outputs |
-| Phase 2 | COMPLETED | Elasticsearch-based SIEM validation |
-| Phase 3 | COMPLETED | Raw logs → Cribl Stream → normalized → SIEM data pipeline |
-| Phase 4 | NOT STARTED | Agent intelligence upgrades (EQL, thresholds) |
-| Phase 5 | NOT STARTED | Coverage expansion to 75%+ Fawkes |
-| Phase 6 | NOT STARTED | Operational maturity (dashboards, SLAs) |
-| Phase 7 | NOT STARTED | Advanced capabilities (Agent SDK, live C2) |
+| Phase 1 | COMPLETED (PR #52) | Fixed stuck detections, compiled all outputs |
+| Phase 2 | COMPLETED (PR #54) | Elasticsearch-based SIEM validation |
+| Phase 3 | COMPLETED (PR #58) | Raw logs → Cribl Stream → normalized → SIEM data pipeline |
+| Phase 4 | COMPLETED (PR #62) | 10 specialized agents, threat model registry, coordinator |
+| Phase 5 | COMPLETED (PR #63) | Multi-platform simulation, data quality engine, per-source Cribl pipelines |
+| Phase 6 | COMPLETED (PR #65) | Content packs, EQL/threshold rules, evasion testing, perf profiling |
+| Phase 7 | COMPLETED (PR #68) | Feedback loop, SLA tracking, regression CI, health monitor, dashboards |
+| Phase 8 | NOT STARTED | Advanced capabilities (Agent SDK, live C2, behavioral analytics) |
 
 ## MCP Configuration
 
