@@ -1,13 +1,15 @@
-title: Executable Dropped by Process in Suspicious Directory - Ingress Tool Transfer
+title: Executable Dropped or C2 Network Activity from Suspicious Directory - Ingress Tool Transfer
 id: 8c3e2f1a-4d7b-4e9a-b5c6-1a2d3e4f5a6b
 status: experimental
 description: >
-  Detects a process running from a suspicious writable directory (ProgramData, Temp,
-  AppData, Users\Public) creating an executable file in a similarly suspicious location.
-  This pattern is consistent with C2 agents such as Fawkes pulling second-stage payloads
-  or transferring tools to disk after initial access (T1105).
+  Detects processes running from suspicious writable directories (ProgramData, Temp,
+  AppData, Users\Public) performing one of: writing an executable file to disk (Sysmon
+  EID 11), making outbound network connections (Sysmon EID 3), or spawning child
+  processes (Sysmon EID 1). All three phases are consistent with C2 agents such as
+  Fawkes pulling second-stage payloads or transferring tools after initial access (T1105).
 author: Detection Engineering
 date: 2026/03/08
+modified: 2026/03/22
 references:
   - https://attack.mitre.org/techniques/T1105/
   - https://github.com/galoryber/fawkes
@@ -15,26 +17,31 @@ tags:
   - attack.command_and_control
   - attack.t1105
 logsource:
-  category: file_event
   product: windows
+  category: process_creation
 detection:
-  selection:
+  selection_file_write:
     event.code: '11'
     file.extension:
       - exe
       - dll
       - scr
       - cpl
-  selection_process_path:
-    process.executable|contains:
+  selection_file_path:
+    file.path|contains:
       - '\ProgramData\'
       - '\AppData\Local\Temp\'
       - '\AppData\Roaming\'
       - '\Users\Public\'
       - '\Windows\Temp\'
       - '\Temp\'
-  selection_file_path:
-    file.path|contains:
+  selection_network:
+    event.code: '3'
+    network.direction: egress
+  selection_process_launch:
+    event.code: '1'
+  selection_process_path:
+    process.executable|contains:
       - '\ProgramData\'
       - '\AppData\Local\Temp\'
       - '\AppData\Roaming\'
@@ -55,17 +62,25 @@ detection:
       - msiexec.exe
       - TiWorker.exe
       - TrustedInstaller.exe
-  condition: selection and selection_process_path and selection_file_path and not filter_legitimate_updaters and not filter_windows_modules and not filter_installer
+  condition: >
+    ((selection_file_write and selection_file_path) or selection_network or selection_process_launch)
+    and selection_process_path
+    and not filter_legitimate_updaters
+    and not filter_windows_modules
+    and not filter_installer
 fields:
+  - event.code
   - process.executable
   - process.command_line
   - file.path
   - file.name
+  - destination.ip
+  - destination.port
   - user.name
   - host.name
-  - destination.ip
 falsepositives:
   - Portable applications self-updating from ProgramData
   - Enterprise software with non-standard install locations in ProgramData
   - IT deployment tools staging executables in ProgramData or Temp
+  - Legitimate software making outbound connections from ProgramData (e.g., some AV products)
 level: high
