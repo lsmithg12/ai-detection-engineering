@@ -1,13 +1,13 @@
 technique_id: T1027.001
 title: "Detection for T1027.001 \u2014 Pad binary to exceed AV scan size limit"
-status: VALIDATED
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1027_001.json
 sigma_rule: detections\defense_evasion\t1027_001.yml
-deployed_date: ''
+deployed_date: '2026-03-22T16:04:08Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -60,6 +60,26 @@ changelog:
   agent: validation
   action: update
   details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-22T16:04:08Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-22T16:04:08Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-22T16:04:08Z'
+  agent: deployment
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-22T16:04:08Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: deployed_date'
+- date: '2026-03-22T16:04:08Z'
+  agent: deployment
+  action: transition:DEPLOYED->MONITORING
+  details: Rule confirmed active in SIEM after deployment
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -77,3 +97,5 @@ data_source_gaps:
 compiled_lucene: detections\defense_evasion\compiled\t1027_001.lucene
 compiled_spl: detections\defense_evasion\compiled\t1027_001.spl
 mitre_tactic: defense_evasion
+elastic_rule_id: cb74719c-efec-43fb-adca-55eda87251c1
+splunk_saved_search: "Detection for T1027.001 \u2014 Pad binary to exceed AV scan size limit T1027.001"

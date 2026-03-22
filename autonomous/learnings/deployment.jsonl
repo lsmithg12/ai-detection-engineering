@@ -1,0 +1,1 @@
+{"run_id": "20260322-58770f", "timestamp": "2026-03-22T16:04:10.659079+00:00", "agent": "deployment", "type": "retrospective", "category": "general", "title": "Run 20260322-58770f summary", "description": "Deployed 4/5 detections to Elastic, Splunk", "duration_s": 9.5, "items_processed": 0}

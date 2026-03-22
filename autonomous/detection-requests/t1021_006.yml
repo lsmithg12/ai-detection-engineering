@@ -1,13 +1,13 @@
 technique_id: T1021.006
 title: "Detection for T1021.006 \u2014 Remote WMI execution for lateral movement"
-status: VALIDATED
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1021_006.json
 sigma_rule: detections\execution\t1021_006.yml
-deployed_date: ''
+deployed_date: '2026-03-22T16:04:06Z'
 last_quality_review: ''
 quality_score: 1.0
 fp_rate: 0.0
@@ -52,6 +52,26 @@ changelog:
   agent: validation
   action: update
   details: 'Updated fields: auto_deploy_eligible'
+- date: '2026-03-22T16:04:06Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: elastic_rule_id'
+- date: '2026-03-22T16:04:06Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: splunk_saved_search'
+- date: '2026-03-22T16:04:06Z'
+  agent: deployment
+  action: transition:VALIDATED->DEPLOYED
+  details: Deployed to Elastic + Splunk
+- date: '2026-03-22T16:04:06Z'
+  agent: deployment
+  action: update
+  details: 'Updated fields: deployed_date'
+- date: '2026-03-22T16:04:06Z'
+  agent: deployment
+  action: transition:DEPLOYED->MONITORING
+  details: Rule confirmed active in SIEM after deployment
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -59,3 +79,5 @@ fawkes_commands:
 compiled_lucene: detections\execution\compiled\t1021_006.lucene
 compiled_spl: detections\execution\compiled\t1021_006.spl
 mitre_tactic: execution
+elastic_rule_id: 98c084b2-dc8c-4938-8dff-9f46aebeb254
+splunk_saved_search: "Detection for T1021.006 \u2014 Remote WMI execution for lateral movement T1021.006"
