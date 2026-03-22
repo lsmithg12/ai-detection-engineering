@@ -1,0 +1,227 @@
+{
+  "technique_id": "T1055.013",
+  "technique_name": "Detection for T1055.013 — Ctrl-C handler chain / KernelCallbackTable hijack",
+  "description": "Simulates Detection for T1055.013 — Ctrl-C handler chain / KernelCallbackTable hijack attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:22.441Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6312,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+          "command_line": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe --silent",
+          "parent": {
+            "pid": 4988,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.013",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Fawkes opus-injection stage 1: malicious update_helper.exe spawns from explorer.exe in user AppData — unusual executable path outside Program Files"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:22.819Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 6312,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1fffff",
+            "TargetImage": "C:\\Windows\\System32\\conhost.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.013",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Fawkes opus-injection stage 2: update_helper.exe opens conhost.exe with PROCESS_ALL_ACCESS (0x1fffff) to locate and overwrite the KernelCallbackTable pointer in the PEB — prerequisite for KernelCallbackTable hijack"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:23.107Z",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "pid": 6312,
+          "name": "update_helper.exe",
+          "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\System32\\conhost.exe"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.013",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Fawkes opus-injection stage 3: CreateRemoteThread detected — shellcode execution triggered in conhost.exe via hijacked KernelCallbackTable or Ctrl-C handler chain after VirtualAllocEx+WriteProcessMemory; Fawkes C2 beacon now running in conhost.exe context"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T09:11:05.330Z",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process Access (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "pid": 3120,
+          "name": "MsMpEng.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2403.7-0\\MsMpEng.exe"
+        },
+        "winlog": {
+          "event_data": {
+            "GrantedAccess": "0x1400",
+            "TargetImage": "C:\\Windows\\System32\\conhost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.013",
+          "description": "Legitimate: Windows Defender (MsMpEng.exe) performing routine process inspection of conhost.exe — similar process access pattern but lower GrantedAccess (0x1400 = QUERY_INFORMATION + VM_READ only, no VM_WRITE), from a trusted signed path under ProgramData"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:12:44.887Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7840,
+          "name": "MicrosoftEdgeUpdate.exe",
+          "executable": "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe",
+          "command_line": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /ua /installsource scheduler",
+          "parent": {
+            "pid": 824,
+            "name": "svchost.exe",
+            "executable": "C:\\Windows\\System32\\svchost.exe"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-DEV-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.013",
+          "description": "Legitimate: Microsoft Edge scheduled update process — superficially similar update-named binary but launched from signed Program Files path by svchost.exe (scheduler), not from user AppData"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.executable",
+      "process.name",
+      "winlog.event_data.GrantedAccess",
+      "winlog.event_data.TargetImage",
+      "event.code"
+    ],
+    "notes": "Detection logic for T1055.013 KernelCallbackTable/Ctrl-C handler injection should combine: (1) EID 10 with GrantedAccess containing 0x1fffff or 0x0838 (PROCESS_VM_WRITE+VM_OPERATION) from a non-system process targeting conhost.exe or other console-attached GUI processes, AND (2) source process executable path under user AppData or Temp. The EID 8 CreateRemoteThread into conhost.exe or csrss.exe from a non-system process is a high-confidence signal on its own. Benign discriminators: signed binary path (Program Files vs AppData), SYSTEM vs interactive user, lower GrantedAccess bits. Filter MsMpEng.exe, CrashPad, and known EDR processes by path to reduce FPs."
+  },
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_8",
+    "sysmon_10"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}

