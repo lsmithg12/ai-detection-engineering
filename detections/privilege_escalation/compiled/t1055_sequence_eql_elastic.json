@@ -1,5 +1,5 @@
 {
-  "name": "Process Injection Sequence \u2014 Handle Open Then Remote Thread Creation",
+  "name": "Process Injection Sequence - Handle Open Then Remote Thread Creation",
   "description": "Detects process injection: suspicious process opens full-access handle to another process (EID 10) then creates remote thread (EID 8) within 10 seconds. Covers Fawkes vanilla-injection and apc-injection.",
   "risk_score": 99,
   "severity": "critical",
