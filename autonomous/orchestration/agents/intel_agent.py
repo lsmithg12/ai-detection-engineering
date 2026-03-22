@@ -804,14 +804,22 @@ def run(state_manager: StateManager) -> dict:
                 str(e),
             )
 
-    # 6. Process all reports (existing + newly downloaded) — newest first
+    # 6. Process all reports (existing + newly downloaded) — newest first, dedup by source URL
     existing_reports = sorted(REPORTS_DIR.glob("*.yml"), reverse=True)
+    seen_sources: set[str] = set()
     for report_path in existing_reports[:MAX_REPORTS]:
         try:
             with open(report_path, encoding="utf-8") as f:
                 report = yaml.safe_load(f)
             if not report or not report.get("techniques"):
                 continue
+
+            # Skip duplicate sources — same report saved on different dates
+            source_url = report.get("source", "")
+            if source_url and source_url in seen_sources:
+                continue
+            if source_url:
+                seen_sources.add(source_url)
 
             print(f"\n  [intel] Processing: {report.get('title', report_path.name)}")
 
