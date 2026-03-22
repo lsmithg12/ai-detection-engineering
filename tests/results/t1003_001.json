@@ -1,35 +1,42 @@
 {
   "technique_id": "T1003.001",
-  "date": "2026-03-08T14:30:30Z",
+  "date": "2026-03-22T15:41:22Z",
   "sigma_rule": "detections\\credential_access\\t1003_001.yml",
   "metrics": {
-    "tp": 0,
+    "tp": 2,
     "fp": 0,
-    "fn": 3,
+    "fn": 1,
     "tn": 2,
-    "precision": 0.0,
-    "recall": 0.0,
-    "f1_score": 0.0,
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1_score": 0.8,
     "fp_rate": 0.0,
-    "tp_rate": 0.0,
+    "tp_rate": 0.667,
     "total_attack": 3,
     "total_benign": 2
   },
-  "quality_tier": "needs_rework",
-  "validated_at": "2026-03-08T14:30:30Z",
-  "validated_by": "blue-team-agent",
-  "validation_method": "local_json",
+  "quality_tier": "human_review",
+  "validation_method": "elasticsearch",
+  "validated_by": "validation-agent",
   "siem_targets": [
     "elasticsearch",
     "splunk"
   ],
-  "sigma_rule_path": "detections/credential_access/t1003_001.yml",
-  "scenario_path": "simulator/scenarios/t1003_001.json",
+  "sigma_rule_path": "detections\\credential_access\\t1003_001.yml",
+  "scenario_path": "simulator\\scenarios\\t1003_001.json",
   "attack_event_count": 3,
   "benign_event_count": 2,
   "quality_tier_criteria": {
     "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
     "validated": "F1 >= 0.75",
     "needs_rework": "F1 < 0.75"
+  },
+  "validation_details": {
+    "index": "sim-validation-93a28723",
+    "query": "((winlog.event_data.TargetImage:*\\\\lsass.exe AND (winlog.event_data.GrantedAccess:(*0x1010* OR *0x1410* OR *0x1438* OR *0x143a* OR *0x1fffff* OR *0x1F0FFF* OR *0x1F1FFF* OR *0x40* OR *0x1400* OR *0x10",
+    "events_ingested": 5,
+    "query_hits": 2,
+    "query_time_ms": 52,
+    "errors": []
   }
 }

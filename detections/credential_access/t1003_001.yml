@@ -1,13 +1,14 @@
-title: Suspicious LSASS Memory Access via Process Access
+title: LSASS Credential Dumping Activity Detected
 id: 8a7b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
 status: experimental
 description: >
-  Detects suspicious process access to lsass.exe with access rights indicating
-  memory reading capability (PROCESS_VM_READ). Excludes known legitimate
-  security products and OS processes. Covers Fawkes C2 credential dumping
-  and tools like Mimikatz, nanodump, and custom LSASS dumpers.
+  Detects LSASS credential dumping via three signals: suspicious process access to lsass.exe
+  with memory-read access rights (Sysmon EID 10), creation of LSASS dump files (Sysmon EID 11),
+  and processes referencing lsass in their command line from suspicious user-writable paths.
+  Covers Fawkes C2 credential dumping, Mimikatz, nanodump, and custom LSASS dumpers.
 author: Blue Team Detection Engineering Agent
 date: 2026/03/08
+modified: 2026/03/22
 references:
   - https://attack.mitre.org/techniques/T1003/001/
   - https://github.com/galoryber/fawkes
@@ -16,12 +17,11 @@ tags:
   - attack.credential_access
   - attack.t1003.001
 logsource:
-  category: process_access
   product: windows
 detection:
-  selection:
-    TargetImage|endswith: '\lsass.exe'
-    GrantedAccess|contains:
+  selection_process_access:
+    winlog.event_data.TargetImage|endswith: '\lsass.exe'
+    winlog.event_data.GrantedAccess|contains:
       - '0x1010'
       - '0x1410'
       - '0x1438'
@@ -32,12 +32,24 @@ detection:
       - '0x40'
       - '0x1400'
       - '0x100000'
+  selection_dump_file:
+    file.name|contains: 'lsass'
+    file.extension: 'dmp'
+  selection_dump_file_path:
+    file.path|contains: 'lsass.dmp'
+  selection_cmdline_lsass:
+    process.command_line|contains: 'lsass'
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
   filter_defender:
-    SourceImage|contains:
+    process.executable|contains:
       - '\Microsoft\Windows Defender\'
       - '\Windows Defender Advanced Threat Protection\'
   filter_security_products:
-    SourceImage|contains:
+    process.executable|contains:
       - '\CrowdStrike\'
       - '\SentinelOne\'
       - '\Carbon Black\'
@@ -48,24 +60,28 @@ detection:
       - '\Cybereason\'
       - '\Cylance\'
   filter_os_processes:
-    SourceImage|startswith:
+    process.executable|startswith:
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\Windows\WinSxS\'
   filter_vmware:
-    SourceImage|contains: '\VMware\'
+    process.executable|contains: '\VMware\'
   filter_query_only:
-    GrantedAccess: '0x1000'
-  condition: selection and not 1 of filter_*
+    winlog.event_data.GrantedAccess: '0x1000'
+  condition: (1 of selection_*) and not (1 of filter_*)
 fields:
-  - SourceImage
-  - TargetImage
-  - GrantedAccess
-  - CallTrace
-  - User
-  - SourceProcessGUID
+  - process.executable
+  - process.command_line
+  - file.name
+  - file.path
+  - winlog.event_data.TargetImage
+  - winlog.event_data.GrantedAccess
+  - winlog.event_data.CallTrace
+  - user.name
+  - winlog.event_data.SourceProcessGUID
 falsepositives:
   - Legitimate security products not covered by filters
   - IT asset management or inventory tools that query process metadata
   - Custom enterprise monitoring agents accessing LSASS for health checks
+  - WER (Windows Error Reporting) collecting crash dumps that happen to include lsass
 level: high
