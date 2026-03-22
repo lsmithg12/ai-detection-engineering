@@ -6,7 +6,7 @@ description: >
   (1) netsh.exe spawned from a suspicious parent process to disable firewall
   profiles or add permissive rules, and (2) direct registry modification of
   FirewallPolicy keys to set EnableFirewall to 0. Fawkes C2 agents use both
-  approaches — netsh commands and direct registry writes — to neutralize
+  approaches - netsh commands and direct registry writes - to neutralize
   host-based firewalls after initial compromise.
 author: Blue Team Detection Engineering Agent
 date: 2026/03/11

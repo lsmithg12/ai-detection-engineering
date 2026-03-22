@@ -7,7 +7,7 @@ description: >
   Adversaries using C2 agents (e.g., Fawkes) dropped to user-writable paths will execute
   these tools to enumerate network topology for lateral movement planning.
   Benign invocations from cmd.exe, powershell.exe, or known IT tools in Program Files are excluded.
-author: Detection Engineering — Blue Team Agent
+author: Detection Engineering - Blue Team Agent
 date: 2026-03-21
 modified: 2026-03-21
 references:
@@ -40,7 +40,7 @@ falsepositives:
   - Third-party monitoring agents installed outside of Program Files or Windows directories
   - Custom IT automation scripts running from non-standard paths (e.g., C:\Tools\)
   - Software deployment systems that stage executables in user-accessible directories
-  - Legitimate admin use of portable tools — review process.parent.executable and user context
+  - Legitimate admin use of portable tools - review process.parent.executable and user context
 level: medium
 fields:
   - process.name

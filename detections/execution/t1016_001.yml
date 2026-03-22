@@ -32,11 +32,11 @@ detection:
   condition: selection and not filter_trusted_parents
 falsepositives:
   - Network administrators or IT staff running arp.exe from custom scripts or tools
-    located outside System32 — review parent process path and user context
+    located outside System32 - review parent process path and user context
   - Third-party network management or monitoring agents that spawn arp.exe from
     non-standard install paths
   - Automated IT tooling (e.g., SCCM, Ansible, endpoint agents) running diagnostics
-    from application directories — whitelist by parent executable if confirmed benign
+    from application directories - whitelist by parent executable if confirmed benign
 fields:
   - process.executable
   - process.command_line

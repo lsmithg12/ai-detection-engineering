@@ -1,5 +1,5 @@
 {
-  "name": "APC Injection — Suspicious QueueUserAPC Pattern",
+  "name": "APC Injection - Suspicious QueueUserAPC Pattern",
   "description": "Detects APC injection via QueueUserAPC: EID 8 (CreateRemoteThread) from non-system processes. Covers Fawkes apc-injection command.",
   "risk_score": 73,
   "severity": "high",

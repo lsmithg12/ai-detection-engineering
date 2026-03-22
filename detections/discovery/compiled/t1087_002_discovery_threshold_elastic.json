@@ -1,5 +1,5 @@
 {
-  "name": "Discovery Command Burst — Recon Tool Threshold",
+  "name": "Discovery Command Burst - Recon Tool Threshold",
   "description": "Detects 3+ distinct recon tools (whoami, net.exe, ipconfig, etc.) executed on the same host within 60 seconds. Covers Fawkes automated enumeration commands.",
   "risk_score": 73,
   "severity": "high",

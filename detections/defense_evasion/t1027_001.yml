@@ -52,7 +52,7 @@ fields:
   - host.name
 falsepositives:
   - Custom build scripts or deployment tools that programmatically write executable files using
-    PowerShell WriteAllBytes — review parent process and target path for legitimacy
+    PowerShell WriteAllBytes - review parent process and target path for legitimacy
   - Developer environments using PowerShell to assemble or patch binary files during CI/CD
   - Security testing frameworks or red team tooling running in authorized lab environments
 level: high

@@ -1,8 +1,8 @@
-title: Mass Service Stop — Pre-Ransomware Indicator
+title: Mass Service Stop - Pre-Ransomware Indicator
 id: 4a9c7e8f-0b1d-2e3f-4a5b-6c7d8e9f0a1b
 status: experimental
 description: |
-  Detects mass service stoppage — a common ransomware pre-encryption step
+  Detects mass service stoppage - a common ransomware pre-encryption step
   to release file locks on databases, backup agents, and security tools.
   Alerts when 3 or more services are stopped on the same host within 5 minutes,
   excluding normal Windows Update and BITS service transitions.

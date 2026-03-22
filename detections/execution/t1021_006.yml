@@ -43,6 +43,6 @@ falsepositives:
   - SCCM or endpoint management platforms that remotely create processes via WMI using
     wmic.exe with /node (very rare; most management tools use read-only WMI queries)
   - Legitimate IT automation scripts executing remote processes via wmic process call create
-    from known management hosts — add parent executable exclusions to filter_management_parents
+    from known management hosts - add parent executable exclusions to filter_management_parents
   - Vulnerability scanners or asset management tools probing remote WMI namespaces
 level: high

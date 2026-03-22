@@ -1,10 +1,10 @@
-title: Process Injection Sequence — Handle Open Then Remote Thread Creation
+title: Process Injection Sequence - Handle Open Then Remote Thread Creation
 id: 9b4d2a3f-5c6e-7f8a-9b0c-1d2e3f4a5b6c
 status: experimental
 description: |
   Detects the two-step process injection sequence: first a suspicious process opens
-  a handle to another process with full access rights (EID 10 — process access),
-  then creates a remote thread in that process (EID 8 — CreateRemoteThread).
+  a handle to another process with full access rights (EID 10 - process access),
+  then creates a remote thread in that process (EID 8 - CreateRemoteThread).
   This sequence matches Fawkes vanilla-injection and apc-injection commands.
   The 10-second window is tight enough to exclude legitimate cross-process activity.
 references:

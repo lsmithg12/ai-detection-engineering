@@ -1,10 +1,10 @@
-# Changelog — Command and Control Detection Pack
+# Changelog - Command and Control Detection Pack
 
-## [1.0.0] — 2026-03-15
+## [1.0.0] - 2026-03-15
 
 ### Added
 - Initial pack release
-- C2 Beaconing HTTP/HTTPS (T1071.001) — monitoring, F1=1.00
+- C2 Beaconing HTTP/HTTPS (T1071.001) - monitoring, F1=1.00
 - Phase 6 content pack framework introduction
 
 ### Quality Gates

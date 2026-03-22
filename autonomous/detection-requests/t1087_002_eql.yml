@@ -39,4 +39,4 @@ changelog:
   - date: "2026-03-19T00:00:00Z"
     agent: "remediation"
     action: "registered"
-    details: "Fix Pack 1 — registered orphaned Phase 6 EQL rule in state machine"
+    details: "Fix Pack 1 - registered orphaned Phase 6 EQL rule in state machine"

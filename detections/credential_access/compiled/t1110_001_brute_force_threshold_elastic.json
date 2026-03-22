@@ -1,5 +1,5 @@
 {
-  "name": "Brute Force Login — Failed Logon Threshold",
+  "name": "Brute Force Login - Failed Logon Threshold",
   "description": "Detects brute force login attacks: 5+ failed logon attempts (EID 4625) from the same source IP within 10 minutes.",
   "risk_score": 47,
   "severity": "medium",

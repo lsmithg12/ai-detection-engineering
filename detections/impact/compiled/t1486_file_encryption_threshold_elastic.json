@@ -1,5 +1,5 @@
 {
-  "name": "Rapid File Modification Burst — Ransomware Indicator",
+  "name": "Rapid File Modification Burst - Ransomware Indicator",
   "description": "Detects ransomware-style encryption: a single process creates/modifies 10+ files within 30 seconds, excluding known system processes.",
   "risk_score": 99,
   "severity": "critical",
