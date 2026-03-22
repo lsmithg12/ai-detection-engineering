@@ -228,6 +228,16 @@ def _record_run_summary(agent_name: str, run_id: str, result: dict, duration: fl
 
 
 def _commit_and_push(branch: str, agent_name: str, summary: str):
+    # Guard: verify we're still on the expected branch before committing.
+    # Concurrent git operations (e.g. another agent or user checkout) can
+    # silently switch HEAD, causing agent commits to land on the wrong branch.
+    current_branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+    if current_branch != branch:
+        print(f"  [{agent_name}] Branch mismatch — expected '{branch}', "
+              f"currently on '{current_branch}'. Aborting commit to avoid "
+              f"corrupting unrelated branch.")
+        return False
+
     _run_git(["add", "-A"])
 
     # Check if there are staged changes
