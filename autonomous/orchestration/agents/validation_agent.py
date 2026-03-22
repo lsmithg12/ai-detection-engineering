@@ -843,15 +843,30 @@ def run(state_manager: StateManager) -> dict:
     print(f"  [validation] Found {len(ready)} AUTHORED detections, "
           f"processing up to {MAX_DETECTIONS}")
 
-    # 3. Process each detection
+    # 3. Process each detection (skip those missing scenario files without
+    #    counting against the per-run cap so they don't block the queue)
     results = []
     validated = 0
     deploy_eligible = 0
     needs_rework = 0
+    processed = 0
+    skipped = 0
 
-    for request in ready[:MAX_DETECTIONS]:
+    for request in ready:
+        if processed >= MAX_DETECTIONS:
+            break
+
         tid = request["technique_id"]
+
+        # Pre-check: skip detections with no scenario file (don't count against cap)
+        scenario_path = request.get("scenario_file", "")
+        if not scenario_path:
+            print(f"\n  [validation] Skipping {tid} -- no scenario file (needs red-team)")
+            skipped += 1
+            continue
+
         print(f"\n  [validation] === Validating {tid} -- {request.get('title', '')} ===")
+        processed += 1
 
         vresult = validate_single(request, state_manager, run_id, use_siem=use_siem)
         results.append(vresult)
@@ -867,6 +882,7 @@ def run(state_manager: StateManager) -> dict:
     summary = (
         f"Validated {validated}, deploy-eligible {deploy_eligible}, "
         f"needs rework {needs_rework}"
+        + (f", skipped {skipped} (no scenario)" if skipped else "")
     )
     print(f"\n  [validation] {summary}")
 
