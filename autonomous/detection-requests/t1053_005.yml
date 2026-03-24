@@ -13,7 +13,7 @@ compiled_spl: detections\persistence\compiled\t1053_005.spl
 deployed_date: '2026-03-06T23:10:00Z'
 elastic_rule_id: cf4b3969-5861-4a0d-bd17-785f829f691b
 splunk_saved_search: Scheduled Task Creation for Persistence T1053.005
-last_quality_review: '2026-03-19T11:18:46Z'
+last_quality_review: '2026-03-22T18:19:15Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -113,5 +113,9 @@ changelog:
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-19T11:18:46Z'
   agent: tuning
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-22T18:19:15Z'
+  agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
