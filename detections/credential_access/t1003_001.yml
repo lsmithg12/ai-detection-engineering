@@ -17,6 +17,7 @@ tags:
   - attack.credential_access
   - attack.t1003.001
 logsource:
+  category: process_access
   product: windows
 detection:
   selection_process_access:

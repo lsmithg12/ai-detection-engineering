@@ -49,4 +49,4 @@ falsepositives:
     - Legitimate network scanning tools deployed to non-standard locations by IT teams
     - Vulnerability scanners running from temporary extraction directories
     - Software installers performing network checks during setup
-level: high
+level: medium

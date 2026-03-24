@@ -20,6 +20,7 @@ tags:
   - attack.defense_evasion
   - attack.t1027.001
 logsource:
+  category: process_creation
   product: windows
 detection:
   selection_process_creation:

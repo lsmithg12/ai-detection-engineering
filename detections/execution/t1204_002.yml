@@ -22,7 +22,7 @@ logsource:
   product: windows
 detection:
   selection_parent:
-    ParentImage|endswith:
+    process.parent.executable|endswith:
       - '\OUTLOOK.EXE'
       - '\WINWORD.EXE'
       - '\EXCEL.EXE'
@@ -32,7 +32,7 @@ detection:
       - '\ONENOTE.EXE'
       - '\ONENOTEM.EXE'
   selection_child_path:
-    Image|contains:
+    process.executable|contains:
       - '\ProgramData\'
       - '\AppData\Local\Temp\'
       - '\AppData\Roaming\'
@@ -40,12 +40,12 @@ detection:
       - '\Downloads\'
       - '\Temp\'
   filter_system_account:
-    User|contains:
+    user.name|contains:
       - 'SYSTEM'
       - 'LOCAL SERVICE'
       - 'NETWORK SERVICE'
   filter_legitimate_children:
-    Image|endswith:
+    process.executable|endswith:
       - '\MicrosoftEdgeUpdate.exe'
       - '\Teams.exe'
       - '\OneDrive.exe'
@@ -53,14 +53,14 @@ detection:
       - '\ai.exe'
       - '\splwow64.exe'
   filter_microsoft_signed_paths:
-    Image|contains:
+    process.executable|contains:
       - '\ProgramData\Microsoft\'
   condition: selection_parent and selection_child_path and not filter_system_account and not filter_legitimate_children and not filter_microsoft_signed_paths
 fields:
-  - Image
-  - ParentImage
-  - CommandLine
-  - User
+  - process.executable
+  - process.parent.executable
+  - process.command_line
+  - user.name
   - host.name
   - process.hash.sha256
 falsepositives:

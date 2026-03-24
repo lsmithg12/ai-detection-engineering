@@ -24,12 +24,12 @@ logsource:
   product: windows
 detection:
   selection_cmd:
-    Image|endswith: '\cmd.exe'
+    process.executable|endswith: '\cmd.exe'
   selection_chained_recon:
-    CommandLine|contains|all:
+    process.command_line|contains|all:
       - '/c'
       - '&'
-    CommandLine|contains:
+    process.command_line|contains:
       - 'whoami'
       - 'net user'
       - 'net localgroup'
@@ -43,7 +43,7 @@ detection:
       - 'reg query'
       - 'wmic'
   selection_suspicious_parent:
-    ParentImage|contains:
+    process.parent.executable|contains:
       - '\ProgramData\'
       - '\AppData\'
       - '\Temp\'
@@ -52,26 +52,26 @@ detection:
       - '\Downloads\'
       - '\Recycle'
   filter_programfiles:
-    ParentImage|startswith:
+    process.parent.executable|startswith:
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
   filter_windows_system:
-    ParentImage|startswith:
+    process.parent.executable|startswith:
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\Windows\explorer.exe'
   filter_known_tools:
-    ParentImage|endswith:
+    process.parent.executable|endswith:
       - '\explorer.exe'
       - '\msiexec.exe'
       - '\services.exe'
   condition: selection_cmd and ((selection_chained_recon and not filter_programfiles) or (selection_suspicious_parent and not filter_windows_system and not filter_known_tools))
 fields:
-  - CommandLine
-  - ParentImage
-  - ParentCommandLine
-  - User
-  - Image
+  - process.command_line
+  - process.parent.executable
+  - process.parent.command_line
+  - user.name
+  - process.executable
 falsepositives:
   - Legitimate IT administration scripts running chained commands from Program Files
   - Software installers using cmd.exe for post-install configuration from temp directories

@@ -89,4 +89,4 @@ falsepositives:
   - Security tools that quarantine files with custom extensions
   - Backup software writing encrypted archives to temp paths
   - File sync tools creating conflict copies with unusual extensions
-level: high
+level: critical
