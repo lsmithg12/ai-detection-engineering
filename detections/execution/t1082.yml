@@ -20,33 +20,33 @@ logsource:
   product: windows
 detection:
   selection_shell:
-    Image|endswith: '\cmd.exe'
-    CommandLine|contains|all:
+    process.executable|endswith: '\cmd.exe'
+    process.command_line|contains|all:
       - '/c'
       - 'systeminfo'
-    CommandLine|contains:
+    process.command_line|contains:
       - 'whoami'
       - 'hostname'
       - 'ipconfig'
       - 'net config'
       - 'wmic os'
   filter_legitimate_parents:
-    ParentImage|startswith:
+    process.parent.executable|startswith:
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\ProgramData\Microsoft\Windows Defender\'
   filter_system_account:
-    User|contains: 'SYSTEM'
+    user.name|contains: 'SYSTEM'
   condition: selection_shell and not filter_legitimate_parents and not filter_system_account
 fields:
-  - CommandLine
-  - ParentImage
-  - ParentCommandLine
-  - User
+  - process.command_line
+  - process.parent.executable
+  - process.parent.command_line
+  - user.name
   - host.name
 falsepositives:
   - System administrators running chained discovery commands from custom scripts in non-standard directories
   - Third-party monitoring or inventory tools installed outside Program Files
-level: high
+level: medium

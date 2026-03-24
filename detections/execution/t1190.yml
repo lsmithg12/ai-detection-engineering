@@ -23,7 +23,7 @@ logsource:
   product: windows
 detection:
   selection_parent:
-    ParentImage|endswith:
+    process.parent.executable|endswith:
       - '\w3wp.exe'
       - '\httpd.exe'
       - '\nginx.exe'
@@ -32,7 +32,7 @@ detection:
       - '\java.exe'
       - '\node.exe'
   selection_child_path:
-    Image|contains:
+    process.executable|contains:
       - '\ProgramData\'
       - '\Temp\'
       - '\tmp\'
@@ -43,22 +43,22 @@ detection:
       - '\Windows\Tasks\'
       - '\perflogs\'
   filter_legitimate_iis:
-    Image|endswith:
+    process.executable|endswith:
       - '\csc.exe'
       - '\conhost.exe'
       - '\WerFault.exe'
-    ParentImage|endswith: '\w3wp.exe'
+    process.parent.executable|endswith: '\w3wp.exe'
   filter_dotnet_compilation:
-    Image|endswith:
+    process.executable|endswith:
       - '\vbc.exe'
       - '\csc.exe'
-    Image|startswith: 'C:\Windows\Microsoft.NET\'
+    process.executable|startswith: 'C:\Windows\Microsoft.NET\'
   filter_azure_guest_agent:
-    Image|startswith: 'C:\WindowsAzure\'
-    ParentImage|endswith: '\services.exe'
+    process.executable|startswith: 'C:\WindowsAzure\'
+    process.parent.executable|endswith: '\services.exe'
   condition: selection_parent and selection_child_path and not 1 of filter_*
 falsepositives:
   - Legitimate web application frameworks that compile code at runtime via csc.exe or vbc.exe
   - Web-deployed update utilities that stage binaries in ProgramData before installation
   - Custom IIS modules that spawn helper processes in non-standard paths
-level: high
+level: critical
