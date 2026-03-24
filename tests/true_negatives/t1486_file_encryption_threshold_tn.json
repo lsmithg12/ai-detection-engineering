@@ -1,0 +1,28 @@
+[
+  {
+    "@timestamp": "2026-03-24T08:05:12.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": {
+      "pid": 1204,
+      "name": "SearchIndexer.exe",
+      "executable": "C:\\Windows\\System32\\SearchIndexer.exe"
+    },
+    "file": { "path": "C:\\ProgramData\\Microsoft\\Search\\Data\\temp\\idx001.ci", "name": "idx001.ci", "extension": "ci" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "baseline", "technique": "T1486", "description": "SearchIndexer creating index files - excluded by filter" }
+  },
+  {
+    "@timestamp": "2026-03-24T08:05:13.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": {
+      "pid": 1204,
+      "name": "SearchIndexer.exe",
+      "executable": "C:\\Windows\\System32\\SearchIndexer.exe"
+    },
+    "file": { "path": "C:\\ProgramData\\Microsoft\\Search\\Data\\temp\\idx002.ci", "name": "idx002.ci", "extension": "ci" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "baseline", "technique": "T1486", "description": "SearchIndexer creating index files - below threshold and filtered" }
+  }
+]

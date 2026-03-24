@@ -1,0 +1,110 @@
+[
+  {
+    "@timestamp": "2026-03-24T10:15:01.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 8812,
+      "name": "whoami.exe",
+      "executable": "C:\\Windows\\System32\\whoami.exe",
+      "command_line": "whoami /all",
+      "parent": {
+        "pid": 3344,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\Public\\sync_agent.exe"
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-FIN-03", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1087.002",
+      "description": "Fawkes recon burst - whoami (1 of 4)"
+    }
+  },
+  {
+    "@timestamp": "2026-03-24T10:15:08.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 8820,
+      "name": "net.exe",
+      "executable": "C:\\Windows\\System32\\net.exe",
+      "command_line": "net group \"Domain Admins\" /domain",
+      "parent": {
+        "pid": 3344,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\Public\\sync_agent.exe"
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-FIN-03", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1087.002",
+      "description": "Fawkes recon burst - net group (2 of 4)"
+    }
+  },
+  {
+    "@timestamp": "2026-03-24T10:15:15.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 8830,
+      "name": "ipconfig.exe",
+      "executable": "C:\\Windows\\System32\\ipconfig.exe",
+      "command_line": "ipconfig /all",
+      "parent": {
+        "pid": 3344,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\Public\\sync_agent.exe"
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-FIN-03", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1087.002",
+      "description": "Fawkes recon burst - ipconfig (3 of 4)"
+    }
+  },
+  {
+    "@timestamp": "2026-03-24T10:15:22.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 8840,
+      "name": "systeminfo.exe",
+      "executable": "C:\\Windows\\System32\\systeminfo.exe",
+      "command_line": "systeminfo",
+      "parent": {
+        "pid": 3344,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\Public\\sync_agent.exe"
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-FIN-03", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1087.002",
+      "description": "Fawkes recon burst - systeminfo (4 of 4)"
+    }
+  }
+]

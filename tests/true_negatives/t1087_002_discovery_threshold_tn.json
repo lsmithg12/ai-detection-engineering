@@ -1,0 +1,56 @@
+[
+  {
+    "@timestamp": "2026-03-24T09:30:05.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5512,
+      "name": "ipconfig.exe",
+      "executable": "C:\\Windows\\System32\\ipconfig.exe",
+      "command_line": "ipconfig /all",
+      "parent": {
+        "pid": 2200,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": { "name": "admin_mwilson", "domain": "CORP" },
+    "host": { "name": "WS-IT-01", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "baseline",
+      "technique": "T1087.002",
+      "description": "IT admin running single ipconfig - below 3-tool threshold"
+    }
+  },
+  {
+    "@timestamp": "2026-03-24T09:31:45.000Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5520,
+      "name": "netstat.exe",
+      "executable": "C:\\Windows\\System32\\netstat.exe",
+      "command_line": "netstat -ano",
+      "parent": {
+        "pid": 2200,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": { "name": "admin_mwilson", "domain": "CORP" },
+    "host": { "name": "WS-IT-01", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "baseline",
+      "technique": "T1087.002",
+      "description": "IT admin running netstat - only 2 tools total, below threshold"
+    }
+  }
+]

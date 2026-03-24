@@ -1,0 +1,73 @@
+[
+  {
+    "@timestamp": "2026-03-24T14:30:05.000Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 7788,
+      "name": "payload.exe",
+      "executable": "C:\\Users\\jdoe\\AppData\\Local\\Temp\\payload.exe"
+    },
+    "target": {
+      "process": {
+        "pid": 4400,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1F0FFF",
+        "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+9e1d4|C:\\Windows\\System32\\KERNELBASE.dll+2b01e|C:\\Users\\jdoe\\AppData\\Local\\Temp\\payload.exe+1a2f0"
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-DEV-02", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.001",
+      "description": "Process injection sequence step 1 - VirtualAllocEx handle open with PROCESS_ALL_ACCESS"
+    }
+  },
+  {
+    "@timestamp": "2026-03-24T14:30:08.000Z",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+      "code": "8"
+    },
+    "process": {
+      "pid": 7788,
+      "name": "payload.exe",
+      "executable": "C:\\Users\\jdoe\\AppData\\Local\\Temp\\payload.exe"
+    },
+    "target": {
+      "process": {
+        "pid": 4400,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "StartAddress": "0x00007FFB12340000",
+        "StartModule": "",
+        "StartFunction": ""
+      }
+    },
+    "user": { "name": "jdoe", "domain": "CORP" },
+    "host": { "name": "WS-DEV-02", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.001",
+      "description": "Process injection sequence step 2 - CreateRemoteThread in svchost.exe (3s after handle open)"
+    }
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "@timestamp": "2026-03-24T11:15:03.000Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 1152,
+      "name": "svchost.exe",
+      "executable": "C:\\Windows\\System32\\svchost.exe"
+    },
+    "target": {
+      "process": {
+        "pid": 660,
+        "name": "lsass.exe",
+        "executable": "C:\\Windows\\System32\\lsass.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1000",
+        "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+9e1d4|C:\\Windows\\System32\\KERNELBASE.dll+2b01e|C:\\Windows\\System32\\svchost.exe+4f210"
+      }
+    },
+    "user": { "name": "SYSTEM", "domain": "NT AUTHORITY" },
+    "host": { "name": "WS-DEV-02", "os": { "platform": "windows" } },
+    "agent": { "type": "sysmon" },
+    "_simulation": {
+      "type": "baseline",
+      "technique": "T1055.001",
+      "description": "Legitimate svchost accessing lsass with PROCESS_QUERY_LIMITED_INFORMATION (0x1000) - low access code, filtered source process"
+    }
+  }
+]
