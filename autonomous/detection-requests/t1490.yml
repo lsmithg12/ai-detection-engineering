@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-08-cat-s-got-your-files-lynx-ransomwa
 scenario_file: simulator\scenarios\t1490.json
 sigma_rule: detections\execution\t1490.yml
 deployed_date: '2026-03-19T11:19:08Z'
-last_quality_review: ''
+last_quality_review: '2026-03-22T18:19:16Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -68,6 +68,10 @@ changelog:
   agent: deployment
   action: transition:DEPLOYED->MONITORING
   details: Rule confirmed active in SIEM after deployment
+- date: '2026-03-22T18:19:16Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections\execution\compiled\t1490.lucene
 compiled_spl: detections\execution\compiled\t1490.spl
 mitre_tactic: execution
