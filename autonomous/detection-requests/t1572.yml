@@ -1,0 +1,33 @@
+technique_id: T1572
+title: Protocol Tunneling
+status: REQUESTED
+priority: medium
+requested_by: intel
+requested_date: '2026-03-24T06:52:23Z'
+intel_report: threat-intel/reports/2026-03-21-from-bing-search-to-ransomware-bumblebee-and-adapt.yml
+scenario_file: ''
+sigma_rule: ''
+deployed_date: ''
+last_quality_review: ''
+quality_score: 0.0
+fp_rate: 0.0
+tp_rate: 0.0
+alert_volume_24h: 0
+cost_estimate: low
+auto_deploy_eligible: false
+changelog:
+- date: '2026-03-24T06:52:23Z'
+  agent: intel
+  action: created
+  details: 'Detection request created from intel: threat-intel/reports/2026-03-21-from-bing-search-to-ransomware-bumblebee-and-adapt.yml'
+- date: '2026-03-24T06:52:23Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: threat_actors'
+- date: '2026-03-24T06:52:23Z'
+  agent: intel
+  action: update
+  details: 'Updated fields: data_source_gaps'
+threat_actors: []
+data_source_gaps:
+- GAP-007
