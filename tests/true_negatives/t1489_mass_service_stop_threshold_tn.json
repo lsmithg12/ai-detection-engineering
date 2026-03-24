@@ -1,0 +1,32 @@
+[
+  {
+    "@timestamp": "2026-03-24T06:00:01.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "Windows Update",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "baseline", "technique": "T1489", "description": "Normal Windows Update service stop - excluded by filter" }
+  },
+  {
+    "@timestamp": "2026-03-24T06:00:15.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "Background Intelligent Transfer Service",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "baseline", "technique": "T1489", "description": "Normal BITS stop during update cycle - excluded by filter" }
+  }
+]

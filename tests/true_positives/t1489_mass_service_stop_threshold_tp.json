@@ -1,0 +1,62 @@
+[
+  {
+    "@timestamp": "2026-03-24T02:45:01.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "Windows Defender Firewall",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "attack", "technique": "T1489", "description": "Pre-ransomware service kill - firewall stopped (1 of 4)" }
+  },
+  {
+    "@timestamp": "2026-03-24T02:45:08.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "Volume Shadow Copy",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "attack", "technique": "T1489", "description": "Pre-ransomware service kill - VSS stopped (2 of 4)" }
+  },
+  {
+    "@timestamp": "2026-03-24T02:45:15.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "SQL Server (MSSQLSERVER)",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "attack", "technique": "T1489", "description": "Pre-ransomware service kill - SQL stopped (3 of 4)" }
+  },
+  {
+    "@timestamp": "2026-03-24T02:45:22.000Z",
+    "event": { "category": "process", "code": "7036" },
+    "winlog": {
+      "event_data": {
+        "param1": "Veeam Backup Service",
+        "param2": "stopped"
+      },
+      "provider_name": "Service Control Manager",
+      "channel": "System"
+    },
+    "host": { "name": "SRV-DB-01", "os": { "platform": "windows" } },
+    "agent": { "type": "winlogbeat" },
+    "_simulation": { "type": "attack", "technique": "T1489", "description": "Pre-ransomware service kill - backup stopped (4 of 4)" }
+  }
+]

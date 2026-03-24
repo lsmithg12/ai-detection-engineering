@@ -14,12 +14,12 @@ deployed_date: ''
 elastic_rule_id: ''
 splunk_saved_search: ''
 last_quality_review: ''
-quality_score: 0.667
+quality_score: 1.0
 fp_rate: 0.0
-tp_rate: 0.5
+tp_rate: 1.0
 alert_volume_24h: 0
 cost_estimate: medium
-auto_deploy_eligible: false
+auto_deploy_eligible: true
 fawkes_commands:
 - vanilla-injection
 changelog:

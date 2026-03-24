@@ -1,0 +1,114 @@
+[
+  {
+    "@timestamp": "2026-03-24T03:12:01.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": {
+      "pid": 9100,
+      "name": "encrypt.exe",
+      "executable": "C:\\Users\\Public\\encrypt.exe"
+    },
+    "file": { "path": "C:\\Users\\jdoe\\Documents\\report_q4.docx.locked", "name": "report_q4.docx.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (1 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:02.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Documents\\budget_2026.xlsx.locked", "name": "budget_2026.xlsx.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (2 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:03.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Documents\\presentation.pptx.locked", "name": "presentation.pptx.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (3 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:04.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Documents\\notes.txt.locked", "name": "notes.txt.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (4 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:05.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Documents\\passwords.kdbx.locked", "name": "passwords.kdbx.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (5 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:06.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Pictures\\family.jpg.locked", "name": "family.jpg.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (6 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:07.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\todo.txt.locked", "name": "todo.txt.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (7 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:08.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\invoice.pdf.locked", "name": "invoice.pdf.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (8 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:09.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\contracts.zip.locked", "name": "contracts.zip.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (9 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:10.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\meeting_notes.docx.locked", "name": "meeting_notes.docx.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (10 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:11.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\backup.sql.locked", "name": "backup.sql.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (11 of 12)" }
+  },
+  {
+    "@timestamp": "2026-03-24T03:12:12.000Z",
+    "event": { "category": "file", "type": "creation", "code": "11" },
+    "process": { "pid": 9100, "name": "encrypt.exe", "executable": "C:\\Users\\Public\\encrypt.exe" },
+    "file": { "path": "C:\\Users\\jdoe\\Desktop\\ssh_key.pem.locked", "name": "ssh_key.pem.locked", "extension": "locked" },
+    "host": { "name": "WS-FIN-03" },
+    "agent": { "type": "sysmon" },
+    "_simulation": { "type": "attack", "technique": "T1486", "description": "Ransomware file encryption burst (12 of 12)" }
+  }
+]
