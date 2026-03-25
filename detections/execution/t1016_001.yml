@@ -31,14 +31,6 @@ detection:
       - 'C:\Windows\explorer.exe'
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
-    process.parent.name|in:
-      - 'services.exe'
-      - 'svchost.exe'
-      - 'mmc.exe'
-      - 'taskmgr.exe'
-      - 'WmiPrvSE.exe'
-      - 'wininit.exe'
-      - 'lsass.exe'
   selection_indirect_proc:
     process.name|in:
       - 'cmd.exe'

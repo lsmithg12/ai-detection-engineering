@@ -17,10 +17,31 @@ logsource:
 detection:
   selection:
     event.code: '4624'
-    source.ip: 203.0.113.42
     winlog.logon.type: RemoteInteractive
-  condition: selection
+  filter_internal_networks:
+    source.ip|startswith:
+      - '10.'
+      - '172.16.'
+      - '172.17.'
+      - '172.18.'
+      - '172.19.'
+      - '172.20.'
+      - '172.21.'
+      - '172.22.'
+      - '172.23.'
+      - '172.24.'
+      - '172.25.'
+      - '172.26.'
+      - '172.27.'
+      - '172.28.'
+      - '172.29.'
+      - '172.30.'
+      - '172.31.'
+      - '192.168.'
+      - '127.'
+  condition: selection and not filter_internal_networks
 falsepositives:
-- "Limited endpoint telemetry for vishing. Detection relies on correlation: MFA reset + immediate external login. Sysmon alone\
-  \ insufficient \u2014 needs identity provider logs."
-level: high
+  - Legitimate remote employees connecting via RDP from external IPs
+  - VPN exit nodes that appear as external IPs
+  - Note - this rule is limited to endpoint logon events; full vishing detection requires identity provider logs for MFA reset correlation
+level: medium

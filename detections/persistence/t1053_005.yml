@@ -20,11 +20,26 @@ detection:
   selection:
     event.code: '1'
     process.name: schtasks.exe
-    process.command_line|contains: RL HIGHEST
-    process.parent.name: cmd.exe
-    user.name: clee
-  condition: selection
+    process.command_line|contains:
+      - '/Create'
+      - '/create'
+  selection_suspicious_target:
+    process.command_line|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+      - '\Downloads\'
+  filter_system_tasks:
+    process.command_line|contains:
+      - '\Windows\System32\defrag'
+      - '\Windows\System32\cleanmgr'
+      - '\Windows\System32\wsqmcons'
+      - 'GoogleUpdate.exe'
+      - 'MicrosoftEdgeUpdate'
+  condition: selection and selection_suspicious_target and not filter_system_tasks
 falsepositives:
-- Detection should flag schtasks /Create with executables in user-writable paths (AppData, Temp, ProgramData). Exclude known
-  system/vendor tasks.
+  - Legitimate software installers that create scheduled tasks
+  - IT management tools deploying via schtasks
+  - System administrators creating tasks from non-standard paths
 level: high

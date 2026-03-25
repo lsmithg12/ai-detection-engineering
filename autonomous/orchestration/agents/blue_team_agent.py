@@ -349,33 +349,132 @@ def event_matches_block(event: dict, block: dict) -> bool:
     return True
 
 
-def _parse_selection_logic(condition_str: str, selections: dict) -> tuple:
-    """
-    Parse Sigma condition string to determine how selection blocks combine.
-    Returns: ('and' | 'or', [block_names])
-    """
-    # Strip filter clauses for selection parsing
-    cond = condition_str.split(" and not ")[0].split(" | not ")[0].strip()
+def _tokenize_condition(condition_str: str) -> list:
+    """Tokenize a Sigma condition string into a list of tokens.
 
-    # Handle "1 of selection_*" / "all of selection_*"
-    if "of selection" in cond:
-        if cond.startswith("all"):
-            return "and", list(selections.keys())
+    Handles parentheses, keywords (and, or, not, 1, all, of, them),
+    and block names (selection_*, filter_*).
+    """
+    import re
+    # Normalize multi-line conditions
+    cond = " ".join(condition_str.split())
+    tokens = []
+    i = 0
+    while i < len(cond):
+        if cond[i] in " \t":
+            i += 1
+            continue
+        if cond[i] == "(":
+            tokens.append("(")
+            i += 1
+        elif cond[i] == ")":
+            tokens.append(")")
+            i += 1
+        elif cond[i] == "|":
+            # Sigma pipe operator — treat rest as transformation, stop parsing
+            break
         else:
-            return "or", list(selections.keys())
+            # Read a word token
+            j = i
+            while j < len(cond) and cond[j] not in " \t()":
+                j += 1
+            word = cond[i:j]
+            tokens.append(word)
+            i = j
+    return tokens
 
-    # Split on " and " or " or " to find selection block names
-    if " or " in cond:
-        parts = [p.strip() for p in cond.split(" or ")]
-        block_names = [p for p in parts if p in selections]
-        return "or", block_names if block_names else list(selections.keys())
-    elif " and " in cond:
-        parts = [p.strip() for p in cond.split(" and ")]
-        block_names = [p for p in parts if p in selections]
-        return "and", block_names if block_names else list(selections.keys())
-    else:
-        # Single selection
-        return "and", [cond] if cond in selections else list(selections.keys())
+
+def _evaluate_sigma_condition(condition_str: str, all_blocks: dict, event) -> bool:
+    """Evaluate a Sigma condition against a single event using recursive descent.
+
+    Supports: and, or, not, parentheses, ``1 of pattern``, ``all of pattern``,
+    ``1 of them``, ``all of them``, and bare block names.
+    """
+    import fnmatch
+
+    tokens = _tokenize_condition(condition_str)
+    pos = [0]  # mutable position counter
+
+    def peek():
+        return tokens[pos[0]] if pos[0] < len(tokens) else None
+
+    def advance():
+        tok = tokens[pos[0]] if pos[0] < len(tokens) else None
+        pos[0] += 1
+        return tok
+
+    def _resolve_pattern(pattern: str) -> list:
+        """Resolve a glob pattern like 'selection_*' or 'filter_*' to block names."""
+        if pattern == "them":
+            return list(all_blocks.keys())
+        return [k for k in all_blocks if fnmatch.fnmatch(k, pattern)]
+
+    def _match_block(name: str) -> bool:
+        block = all_blocks.get(name, {})
+        return event_matches_block(event, block)
+
+    def parse_or():
+        """OR has lowest precedence."""
+        left = parse_and()
+        while peek() == "or":
+            advance()  # consume 'or'
+            right = parse_and()
+            left = left or right
+        return left
+
+    def parse_and():
+        """AND has higher precedence than OR."""
+        left = parse_not()
+        while peek() == "and":
+            advance()  # consume 'and'
+            right = parse_not()
+            left = left and right
+        return left
+
+    def parse_not():
+        """NOT is a unary prefix with highest precedence."""
+        if peek() == "not":
+            advance()  # consume 'not'
+            return not parse_not()
+        return parse_atom()
+
+    def parse_atom():
+        tok = peek()
+        if tok is None:
+            return False
+
+        # Parenthesized sub-expression
+        if tok == "(":
+            advance()  # consume '('
+            result = parse_or()
+            if peek() == ")":
+                advance()  # consume ')'
+            return result
+
+        # Quantifier: "1 of pattern", "all of pattern"
+        if tok in ("1", "all"):
+            quantifier = advance()  # consume '1' or 'all'
+            if peek() == "of":
+                advance()  # consume 'of'
+                pattern = advance()  # consume pattern (e.g., 'selection_*', 'them')
+                if pattern is None:
+                    return False
+                names = _resolve_pattern(pattern)
+                if quantifier == "all":
+                    return all(_match_block(n) for n in names)
+                else:
+                    return any(_match_block(n) for n in names)
+            else:
+                # '1' or 'all' used as a block name (unlikely but safe fallback)
+                return _match_block(quantifier)
+
+        # Bare block name (e.g., 'selection', 'selection_parent', 'filter_system')
+        name = advance()
+        return _match_block(name)
+
+    if not tokens:
+        return False
+    return parse_or()
 
 
 def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
@@ -405,42 +504,20 @@ def validate_detection(sigma_rule_path: str, scenario: dict) -> dict:
     detection = rule.get("detection", {})
     condition = detection.get("condition", "selection")
 
-    # Collect all selection_* and filter_* blocks
-    selections = {}
-    filters = {}
+    # Collect all detection blocks (selections + filters) for the condition evaluator
+    all_blocks = {}
     for key, val in detection.items():
         if key == "condition":
             continue
-        if key.startswith("selection"):
-            selections[key] = val
-        elif key.startswith("filter"):
-            filters[key] = val
+        all_blocks[key] = val
 
-    # Fallback: if no selection blocks found, empty match (nothing matches)
-    if not selections:
-        selections = {"selection": {}}
-
-    has_filter = "not" in condition and filters
-    sel_logic, sel_block_names = _parse_selection_logic(condition, selections)
+    # Fallback: if no blocks found, nothing matches
+    if not all_blocks:
+        all_blocks = {"selection": {}}
 
     def event_detected(event):
-        """Apply selection + filter logic with multi-block support."""
-        # Check selection blocks with AND/OR logic
-        if sel_logic == "and":
-            if not all(event_matches_block(event, selections.get(name, {}))
-                       for name in sel_block_names):
-                return False
-        else:  # or
-            if not any(event_matches_block(event, selections.get(name, {}))
-                       for name in sel_block_names):
-                return False
-
-        # Apply filters (exclusions)
-        if has_filter:
-            for fblock in filters.values():
-                if event_matches_block(event, fblock):
-                    return False  # Filtered out
-        return True
+        """Evaluate the full Sigma condition against a single event."""
+        return _evaluate_sigma_condition(condition, all_blocks, event)
 
     tp = sum(1 for e in attack_events if event_detected(e))
     fp = sum(1 for e in benign_events if event_detected(e))
@@ -474,34 +551,16 @@ def _event_detected_by_rule(rule_path: Path, event: dict) -> bool:
     detection = rule.get("detection", {})
     condition = detection.get("condition", "selection")
 
-    selections = {}
-    filters = {}
+    all_blocks = {}
     for key, val in detection.items():
         if key == "condition":
             continue
-        if key.startswith("selection"):
-            selections[key] = val
-        elif key.startswith("filter"):
-            filters[key] = val
+        all_blocks[key] = val
 
-    if not selections:
+    if not all_blocks:
         return False
 
-    has_filter = "not" in condition and filters
-    sel_logic, sel_block_names = _parse_selection_logic(condition, selections)
-
-    if sel_logic == "and":
-        if not all(event_matches_block(event, selections.get(n, {})) for n in sel_block_names):
-            return False
-    else:
-        if not any(event_matches_block(event, selections.get(n, {})) for n in sel_block_names):
-            return False
-
-    if has_filter:
-        for fblock in filters.values():
-            if event_matches_block(event, fblock):
-                return False
-    return True
+    return _evaluate_sigma_condition(condition, all_blocks, event)
 
 
 def assess_quality(metrics: dict) -> str:
