@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-08-apache-activemq-exploit-leads-to-l
 scenario_file: simulator\scenarios\t1027.json
 sigma_rule: detections\defense_evasion\t1027.yml
 deployed_date: '2026-03-19T11:19:02Z'
-last_quality_review: '2026-03-22T18:19:15Z'
+last_quality_review: '2026-03-25T18:39:44Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -69,6 +69,10 @@ changelog:
   action: transition:DEPLOYED->MONITORING
   details: Rule confirmed active in SIEM after deployment
 - date: '2026-03-22T18:19:15Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-25T18:39:44Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'

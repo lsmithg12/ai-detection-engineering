@@ -7,7 +7,7 @@ requested_date: '2026-03-07T23:23:27Z'
 intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1562_001.json
 deployed_date: '2026-03-07T23:26:02Z'
-last_quality_review: '2026-03-22T18:19:16Z'
+last_quality_review: '2026-03-25T18:39:44Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -124,6 +124,10 @@ changelog:
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-22T18:19:16Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-25T18:39:44Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
