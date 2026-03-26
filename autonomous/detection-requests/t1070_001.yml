@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-06-cisa-scattered-spider-advisory.yml
 scenario_file: simulator\scenarios\t1070_001.json
 sigma_rule: detections\defense_evasion\t1070_001.yml
 deployed_date: '2026-03-06T23:10:00Z'
-last_quality_review: '2026-03-22T18:19:15Z'
+last_quality_review: '2026-03-26T18:46:29Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -109,6 +109,10 @@ changelog:
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-22T18:19:15Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-26T18:46:29Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
