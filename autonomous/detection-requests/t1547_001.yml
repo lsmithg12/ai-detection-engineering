@@ -13,7 +13,7 @@ compiled_spl: ''
 deployed_date: '2026-03-01T00:00:00Z'
 elastic_rule_id: bddcc2fe-4e9a-48af-a674-756c4bcb1ecd
 splunk_saved_search: Registry Run Key T1547.001
-last_quality_review: '2026-03-22T18:19:16Z'
+last_quality_review: '2026-03-28T18:22:10Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -80,6 +80,10 @@ changelog:
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
 - date: '2026-03-22T18:19:16Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-03-28T18:22:10Z'
   agent: quality
   action: update
   details: 'Updated fields: alert_volume_24h, last_quality_review'
