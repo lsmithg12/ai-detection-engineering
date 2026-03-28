@@ -211,3 +211,20 @@
 - [Cat's Got Your Files: Lynx Ransomware](https://thedfirreport.com/2025/12/17/cats-got-your-files-lynx-ransomware/) — 15 techniques
 
 ---
+
+
+## Intel Run — 2026-03-28
+
+**Reports processed**: 4
+**New techniques found**: 0
+**Detection requests created**: 0
+**Techniques skipped (existing)**: 70
+**Fawkes overlap**: 0
+
+### Reports
+- [Blurring the Lines: Intrusion Shows Connection With Three Major Ransomware Gangs](https://thedfirreport.com/2025/09/08/blurring-the-lines-intrusion-shows-connection-with-three-major-ransomware-gangs/) — 23 techniques
+- [Apache ActiveMQ Exploit Leads to LockBit Ransomware](https://thedfirreport.com/2026/02/23/apache-activemq-exploit-leads-to-lockbit-ransomware/) — 14 techniques
+- [From Bing Search to Ransomware: Bumblebee and AdaptixC2 Deliver Akira](https://thedfirreport.com/2025/11/04/from-bing-search-to-ransomware-bumblebee-and-adaptixc2-deliver-akira-2/) — 18 techniques
+- [Cat's Got Your Files: Lynx Ransomware](https://thedfirreport.com/2025/12/17/cats-got-your-files-lynx-ransomware/) — 15 techniques
+
+---
