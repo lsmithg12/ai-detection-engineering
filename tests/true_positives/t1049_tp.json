@@ -1,0 +1,128 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:33.221Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe",
+      "command_line": "runtime_host.exe",
+      "parent": {
+        "pid": 4412,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1049",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent runtime_host.exe launched from user AppData \u00e2\u20ac\u201d anomalous parent/path for a network enumeration host process"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:35.104Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 9104,
+      "name": "netstat.exe",
+      "executable": "C:\\Windows\\System32\\netstat.exe",
+      "command_line": "netstat.exe -ano",
+      "parent": {
+        "pid": 7832,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1049",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes net-stat command executed \u00e2\u20ac\u201d netstat.exe -ano spawned directly by C2 agent to enumerate all active TCP/UDP connections and listening ports with owning PIDs"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:37.889Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+    },
+    "destination": {
+      "ip": "185.220.101.47",
+      "port": 443
+    },
+    "source": {
+      "ip": "10.10.20.55",
+      "port": 52341
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1049",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "C2 beacon outbound TCP/443 from runtime_host.exe to suspicious external IP \u00e2\u20ac\u201d after network discovery, agent phones home with connection topology data"
+    }
+  }
+]

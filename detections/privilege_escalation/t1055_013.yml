@@ -1,0 +1,50 @@
+title: Opus Injection - Suspicious Full Access to Console Host Process
+id: 0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+status: experimental
+description: |
+  Detects a process from a user-writable directory opening conhost.exe with
+  PROCESS_ALL_ACCESS (0x1FFFFF). This pattern matches the Fawkes C2 opus-injection
+  command which hijacks the KernelCallbackTable pointer in the target PEB. Legitimate
+  processes rarely need full access to console host processes.
+references:
+  - https://attack.mitre.org/techniques/T1055/013/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.privilege_escalation
+  - attack.defense_evasion
+  - attack.t1055.013
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event.code: '10'
+    winlog.event_data.GrantedAccess: '0x1FFFFF'
+  selection_target:
+    winlog.event_data.TargetImage|endswith: '\conhost.exe'
+  selection_suspicious_source:
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  filter_system_binaries:
+    process.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection and selection_target and selection_suspicious_source and not filter_system_binaries
+falsepositives:
+  - Terminal emulators or console management tools accessing conhost from non-standard paths
+level: critical
+fields:
+  - process.name
+  - process.executable
+  - winlog.event_data.GrantedAccess
+  - winlog.event_data.TargetImage
+  - user.name
+  - host.name

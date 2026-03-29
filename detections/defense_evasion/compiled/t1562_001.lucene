@@ -1,2 +1,1 @@
-Parsing Sigma rules
 (event.code:7 AND (file.name:(amsi.dll OR clr.dll))) AND (process.executable:(*AppData* OR *Temp* OR *ProgramData* OR *Users\\Public* OR *Downloads*)) AND (NOT (process.name:(powershell.exe OR pwsh.exe OR dotnet.exe OR devenv.exe OR msbuild.exe OR csc.exe OR vbc.exe OR MSBuild.exe)))

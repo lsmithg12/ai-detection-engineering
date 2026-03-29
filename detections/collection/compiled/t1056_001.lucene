@@ -1,0 +1,1 @@
+((event.code:7 AND file.name:user32.dll) AND (process.executable:(*\\AppData\\* OR *\\ProgramData\\* OR *\\Temp\\* OR *\\Users\\Public\\*)) AND (NOT (process.name:(osk.exe OR narrator.exe OR magnify.exe OR Utilman.exe))))

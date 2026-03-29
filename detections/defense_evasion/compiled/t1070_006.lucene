@@ -1,0 +1,1 @@
+(event.code:2 AND (process.executable:(*\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\* OR *\\Users\\Public\\*)) AND (file.extension:(exe OR dll OR bat OR ps1 OR cmd OR vbs OR js)) AND (NOT (process.name:(robocopy.exe OR 7z.exe OR winrar.exe OR peazip.exe OR tar.exe))))

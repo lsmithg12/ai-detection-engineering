@@ -1,0 +1,83 @@
+[
+  {
+    "@timestamp": "2026-03-22T08:10:05.334Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 2284,
+      "name": "wuauclt.exe",
+      "executable": "C:\\Windows\\System32\\wuauclt.exe",
+      "command_line": "wuauclt.exe /RunHandlerComServer",
+      "parent": {
+        "pid": 816,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1068",
+      "description": "Legitimate Windows Update client launched by services.exe as SYSTEM \u00e2\u20ac\u201d similar naming to svc_updater.exe and update-themed path, but spawned from canonical parent with signed system binary"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T08:11:47.009Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 1104,
+      "name": "LogonUI.exe",
+      "executable": "C:\\Windows\\System32\\LogonUI.exe",
+      "parent": {
+        "pid": 492,
+        "name": "winlogon.exe",
+        "executable": "C:\\Windows\\System32\\winlogon.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1410",
+        "TargetImage": "C:\\Windows\\System32\\winlogon.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1068",
+      "description": "Legitimate LogonUI.exe accesses winlogon.exe with limited rights (0x1410 = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ) \u00e2\u20ac\u201d same target process as attack but narrow access mask and canonical SYSTEM-to-SYSTEM IPC pattern"
+    }
+  }
+]

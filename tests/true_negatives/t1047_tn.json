@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-22T08:45:11.003Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3276,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic.exe os get Caption,Version,BuildNumber /format:csv",
+      "parent": {
+        "pid": 2104,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1047",
+      "description": "IT helpdesk script using wmic.exe locally to query OS version for inventory reporting \u00e2\u20ac\u201d no /node flag, no process call create, no suspicious parent"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T08:51:44.772Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4488,
+      "name": "WmiPrvSE.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "parent": {
+        "pid": 860,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1047",
+      "description": "WmiPrvSE.exe spawned under NT AUTHORITY\\SYSTEM \u00e2\u20ac\u201d routine WMI provider activation for Windows health telemetry or SCCM inventory, not user-initiated and not associated with a suspicious parent"
+    }
+  }
+]

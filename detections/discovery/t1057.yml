@@ -1,0 +1,59 @@
+title: Process Discovery via Tasklist/WMIC from Suspicious Parent
+id: 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
+status: experimental
+description: |
+  Detects tasklist.exe or wmic.exe process enumeration spawned by a parent process
+  located in user-writable directories (AppData, Temp, ProgramData). This pattern
+  matches the Fawkes C2 ps command which uses tasklist/wmic for process discovery.
+  Legitimate process enumeration typically originates from interactive shells or
+  management tools in trusted paths.
+references:
+  - https://attack.mitre.org/techniques/T1057/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.discovery
+  - attack.t1057
+  - detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tasklist:
+    event.code: '1'
+    process.name: 'tasklist.exe'
+  selection_wmic:
+    event.code: '1'
+    process.name: 'wmic.exe'
+    process.command_line|contains:
+      - 'process list'
+      - 'process get'
+      - 'process where'
+  selection_suspicious_parent:
+    process.parent.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  filter_management_tools:
+    process.parent.name:
+      - 'CcmExec.exe'
+      - 'msiexec.exe'
+      - 'svchost.exe'
+      - 'services.exe'
+  filter_system_context:
+    user.domain: 'NT AUTHORITY'
+  condition: (selection_tasklist or selection_wmic) and selection_suspicious_parent and not filter_management_tools and not filter_system_context
+falsepositives:
+  - Third-party agents installed in ProgramData that enumerate processes for health monitoring
+  - Custom IT scripts running from user profile directories
+level: medium
+fields:
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name

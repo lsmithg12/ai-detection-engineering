@@ -43,7 +43,7 @@ detection:
         event.code: '11'
         process.name: 'mstsc.exe'
         file.name|endswith: '.rdp'
-    condition: (selection_process and not filter_legitimate_parents and not filter_parent_system_paths) or selection_network or selection_file
+    condition: selection_process and not filter_legitimate_parents and not filter_parent_system_paths
 falsepositives:
     - Legitimate RDP sessions will generate event.code 3 and 11 events — correlate with process creation event to confirm suspicious parent
     - IT administration tools or remote management agents that programmatically launch mstsc.exe from non-standard paths

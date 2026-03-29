@@ -1,0 +1,46 @@
+title: Remote WMI Process Creation via WMIC
+id: 5d6e7f8a-9b0c-1d2e-3f4a-5b6c7d8e9f0a
+status: experimental
+description: |
+  Detects wmic.exe with /node: flag and process call create in the command line,
+  indicating remote process creation via WMI. This is a high-fidelity lateral
+  movement indicator matching the Fawkes C2 wmi command. Benign WMI usage
+  typically queries local system properties without /node or process call create.
+references:
+  - https://attack.mitre.org/techniques/T1047/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.execution
+  - attack.lateral_movement
+  - attack.t1047
+  - detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.code: '1'
+    process.name: 'wmic.exe'
+  selection_remote_exec:
+    process.command_line|contains|all:
+      - '/node:'
+      - 'process call create'
+  filter_sccm:
+    process.parent.name:
+      - 'CcmExec.exe'
+      - 'svchost.exe'
+  condition: selection and selection_remote_exec and not filter_sccm
+falsepositives:
+  - SCCM/ConfigMgr service accounts using WMI for remote software deployment
+  - IT automation scripts performing remote process management
+level: critical
+fields:
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name

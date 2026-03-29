@@ -1,0 +1,127 @@
+[
+  {
+    "@timestamp": "2026-03-22T08:14:33.112Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "command_line": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe --install --silent",
+      "parent": {
+        "pid": 3120,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1068",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Malicious updater binary launched from ProgramData by low-privilege user \u00e2\u20ac\u201d staging privilege escalation exploit"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T08:14:34.887Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 4872,
+      "name": "svc_updater.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe",
+      "parent": {
+        "pid": 3120,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1FFFFF",
+        "TargetImage": "C:\\Windows\\System32\\winlogon.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1068",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "svc_updater.exe opens winlogon.exe with PROCESS_ALL_ACCESS (0x1fffff) \u00e2\u20ac\u201d consistent with kernel exploit targeting a privileged system process to steal token or inject shellcode"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T08:14:35.621Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5104,
+      "name": "cmd.exe",
+      "executable": "C:\\Windows\\System32\\cmd.exe",
+      "command_line": "cmd.exe /c whoami && net localgroup administrators jsmith /add",
+      "parent": {
+        "pid": 4872,
+        "name": "svc_updater.exe",
+        "executable": "C:\\ProgramData\\WindowsUpdate\\svc_updater.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-DC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1068",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Privilege escalation succeeded \u00e2\u20ac\u201d cmd.exe spawned as NT AUTHORITY\\SYSTEM by svc_updater.exe running as low-privilege user; immediate admin group addition indicates post-exploitation persistence"
+    }
+  }
+]

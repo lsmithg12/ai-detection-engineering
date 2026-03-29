@@ -1,0 +1,48 @@
+title: Network Connection Enumeration from Suspicious Parent
+id: 3f4a5b6c-7d8e-9f0a-1b2c-3d4e5f6a7b8c
+status: experimental
+description: |
+  Detects netstat.exe spawned by a parent process in user-writable directories.
+  Fawkes C2 net-stat command spawns netstat.exe directly from the implant binary
+  to enumerate active TCP/UDP connections and listening ports. Legitimate netstat
+  usage originates from interactive shells or monitoring agents.
+references:
+  - https://attack.mitre.org/techniques/T1049/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.discovery
+  - attack.t1049
+  - detection.fawkes
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    event.code: '1'
+    process.name: 'netstat.exe'
+  selection_suspicious_parent:
+    process.parent.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  filter_monitoring_agents:
+    process.parent.name:
+      - 'SolarWinds.BusinessLayerHost.exe'
+      - 'CcmExec.exe'
+      - 'NSClient++.exe'
+  condition: selection and selection_suspicious_parent and not filter_monitoring_agents
+falsepositives:
+  - Network monitoring tools installed in non-standard paths
+  - Custom diagnostic scripts running from user directories
+level: medium
+fields:
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - user.name
+  - host.name

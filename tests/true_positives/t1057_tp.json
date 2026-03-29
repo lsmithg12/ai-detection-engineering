@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:23.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6432,
+      "name": "tasklist.exe",
+      "executable": "C:\\Windows\\System32\\tasklist.exe",
+      "command_line": "tasklist.exe /v /fo csv",
+      "parent": {
+        "pid": 4812,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1057",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent (runtime_host.exe) spawns tasklist.exe with verbose CSV output to enumerate running processes for situational awareness"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:25.117Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6589,
+      "name": "tasklist.exe",
+      "executable": "C:\\Windows\\System32\\tasklist.exe",
+      "command_line": "tasklist.exe /svc /fo csv",
+      "parent": {
+        "pid": 4812,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1057",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Second tasklist invocation with /svc flag to enumerate services hosted in each process \u00e2\u20ac\u201d Fawkes ps command follow-up for AV/EDR identification"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:27.882Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6701,
+      "name": "wmic.exe",
+      "executable": "C:\\Windows\\System32\\wbem\\wmic.exe",
+      "command_line": "wmic process get Name,ProcessId,ParentProcessId,CommandLine /format:csv",
+      "parent": {
+        "pid": 4812,
+        "name": "runtime_host.exe",
+        "executable": "C:\\Users\\jsmith\\AppData\\Roaming\\Microsoft\\runtime_host.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1057",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes follows up with WMI process enumeration to collect parent PIDs and full command lines \u00e2\u20ac\u201d deeper process tree reconnaissance, consistent with Fawkes ps command behavior"
+    }
+  }
+]

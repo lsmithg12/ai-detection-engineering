@@ -1,0 +1,121 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:22.441Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6312,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe",
+      "command_line": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe --silent",
+      "parent": {
+        "pid": 4988,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.013",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes opus-injection stage 1: malicious update_helper.exe spawns from explorer.exe in user AppData \u00e2\u20ac\u201d unusual executable path outside Program Files"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:22.819Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 6312,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+    },
+    "winlog": {
+      "event_data": {
+        "GrantedAccess": "0x1FFFFF",
+        "TargetImage": "C:\\Windows\\System32\\conhost.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.013",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes opus-injection stage 2: update_helper.exe opens conhost.exe with PROCESS_ALL_ACCESS (0x1fffff) to locate and overwrite the KernelCallbackTable pointer in the PEB \u00e2\u20ac\u201d prerequisite for KernelCallbackTable hijack"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:23.107Z",
+    "event": {
+      "category": "process",
+      "type": "change",
+      "action": "CreateRemoteThread (rule: CreateRemoteThread)",
+      "code": "8"
+    },
+    "process": {
+      "pid": 6312,
+      "name": "update_helper.exe",
+      "executable": "C:\\Users\\mjones\\AppData\\Roaming\\Microsoft\\update_helper.exe"
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\conhost.exe"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-DEV-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.013",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes opus-injection stage 3: CreateRemoteThread detected \u00e2\u20ac\u201d shellcode execution triggered in conhost.exe via hijacked KernelCallbackTable or Ctrl-C handler chain after VirtualAllocEx+WriteProcessMemory; Fawkes C2 beacon now running in conhost.exe context"
+    }
+  }
+]

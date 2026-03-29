@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:02:11.334Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 3920,
+      "name": "tasklist.exe",
+      "executable": "C:\\Windows\\System32\\tasklist.exe",
+      "command_line": "tasklist.exe",
+      "parent": {
+        "pid": 3204,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1057",
+      "description": "User manually runs tasklist from an interactive cmd.exe session \u00e2\u20ac\u201d routine admin activity, no suspicious flags or output formatting, parent is interactive shell"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T08:47:55.009Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 2288,
+      "name": "tasklist.exe",
+      "executable": "C:\\Windows\\System32\\tasklist.exe",
+      "command_line": "tasklist.exe /fo list",
+      "parent": {
+        "pid": 1104,
+        "name": "CcmExec.exe",
+        "executable": "C:\\Windows\\CCM\\CcmExec.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1057",
+      "description": "SCCM client (CcmExec.exe) invokes tasklist as SYSTEM for compliance inventory \u00e2\u20ac\u201d legitimate endpoint management tooling, expected on managed corporate workstations"
+    }
+  }
+]

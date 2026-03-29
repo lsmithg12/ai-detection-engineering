@@ -1,0 +1,1 @@
+(event.code:1 AND process.name:wmic.exe) AND (process.command_line:*\/node\:* AND process.command_line:*process\ call\ create*) AND (NOT (process.parent.name:(CcmExec.exe OR svchost.exe)))

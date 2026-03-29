@@ -1,0 +1,54 @@
+title: PoolParty Injection - Full Access to svchost from User-Writable Path
+id: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+status: experimental
+description: |
+  Detects a process from a user-writable directory opening svchost.exe with
+  PROCESS_ALL_ACCESS (0x1fffff). This pattern matches the Fawkes C2 poolparty-injection
+  command which abuses NtSetInformationWorkerFactory to plant shellcode in the svchost
+  thread pool. The distinguishing artifact is full access from an untrusted path.
+references:
+  - https://attack.mitre.org/techniques/T1055/015/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.privilege_escalation
+  - attack.defense_evasion
+  - attack.t1055.015
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event.code: '10'
+    winlog.event_data.GrantedAccess: '0x1FFFFF'
+  selection_target:
+    winlog.event_data.TargetImage|endswith: '\svchost.exe'
+  selection_suspicious_source:
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  filter_security_products:
+    process.name:
+      - 'MsMpEng.exe'
+      - 'MpCmdRun.exe'
+  filter_trusted_paths:
+    process.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection and selection_target and selection_suspicious_source and not filter_security_products and not filter_trusted_paths
+falsepositives:
+  - Security/monitoring software installed in ProgramData accessing svchost
+level: critical
+fields:
+  - process.name
+  - process.executable
+  - winlog.event_data.GrantedAccess
+  - winlog.event_data.TargetImage
+  - user.name
+  - host.name

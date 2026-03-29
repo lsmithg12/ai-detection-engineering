@@ -1,0 +1,83 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:22:05.774Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 5160,
+      "name": "osk.exe",
+      "executable": "C:\\Windows\\System32\\osk.exe",
+      "command_line": "\"C:\\Windows\\System32\\osk.exe\"",
+      "parent": {
+        "pid": 1040,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1056.001",
+      "description": "Legitimate Windows On-Screen Keyboard (osk.exe) \u00e2\u20ac\u201d uses SetWindowsHookEx internally for keyboard input routing; signed Microsoft binary from System32; benign keyboard hook consumer"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:22:05.991Z",
+    "event": {
+      "category": "library",
+      "type": "start",
+      "action": "Image loaded (rule: ImageLoad)",
+      "code": "7"
+    },
+    "process": {
+      "pid": 5160,
+      "name": "osk.exe",
+      "executable": "C:\\Windows\\System32\\osk.exe",
+      "command_line": "\"C:\\Windows\\System32\\osk.exe\"",
+      "parent": {
+        "pid": 1040,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "file": {
+      "name": "user32.dll",
+      "path": "C:\\Windows\\System32\\user32.dll",
+      "extension": "dll"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1056.001",
+      "description": "osk.exe loads user32.dll \u00e2\u20ac\u201d identical DLL load pattern to the attack but from a Microsoft-signed accessibility binary in System32; blue team rule must discriminate by process.executable path and signature"
+    }
+  }
+]

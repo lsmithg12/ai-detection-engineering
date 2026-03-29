@@ -17,11 +17,33 @@ logsource:
 detection:
   selection:
     event.code: '4624'
-    source.ip: 198.51.100.23
     winlog.logon.type: NewCredentials
-    user.name: mjones
-  condition: selection
+  filter_internal_sources:
+    source.ip|startswith:
+      - '10.'
+      - '172.16.'
+      - '172.17.'
+      - '172.18.'
+      - '172.19.'
+      - '172.20.'
+      - '172.21.'
+      - '172.22.'
+      - '172.23.'
+      - '172.24.'
+      - '172.25.'
+      - '172.26.'
+      - '172.27.'
+      - '172.28.'
+      - '172.29.'
+      - '172.30.'
+      - '172.31.'
+      - '192.168.'
+      - '127.'
+  filter_system_accounts:
+    user.name|endswith: '$'
+  condition: selection and not filter_internal_sources and not filter_system_accounts
 falsepositives:
-- Cloud account abuse is best detected via cloud provider logs (Azure AD, AWS CloudTrail). Endpoint telemetry limited to logon
-  events. Correlate with impossible travel / new device signals.
-level: high
+  - Legitimate cloud service accounts authenticating from external IPs
+  - Remote employees using credential delegation
+  - Note - full cloud account abuse detection requires Azure AD / AWS CloudTrail logs
+level: medium

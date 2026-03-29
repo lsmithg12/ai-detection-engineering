@@ -1,0 +1,1 @@
+(event.code:1 AND process.name:netstat.exe) AND (process.parent.executable:(*\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\* OR *\\Users\\Public\\*)) AND (NOT (process.parent.name:(SolarWinds.BusinessLayerHost.exe OR CcmExec.exe OR NSClient\+\+.exe)))
