@@ -1,0 +1,130 @@
+[
+  {
+    "@timestamp": "2026-03-22T14:23:11.402Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6144,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+      "command_line": "task_scheduler.exe --timestomp C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe 2023-01-15T08:00:00",
+      "parent": {
+        "pid": 4832,
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1070.006",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes C2 agent (task_scheduler.exe) launched with timestomp arguments targeting its own executable to backdate creation time and evade timeline forensics"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T14:23:12.881Z",
+    "event": {
+      "category": "file",
+      "type": "change",
+      "action": "File creation time changed (rule: FileCreateTimeChanged)",
+      "code": "2"
+    },
+    "process": {
+      "pid": 6144,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+      "parent": {
+        "pid": 4832,
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    },
+    "file": {
+      "name": "task_scheduler.exe",
+      "path": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+      "extension": "exe"
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1070.006",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Sysmon EID 2 \u00e2\u20ac\u201d file creation timestamp of the Fawkes dropper backdated to 2023-01-15 to blend into pre-existing system files and defeat timeline analysis"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T14:23:14.217Z",
+    "event": {
+      "category": "file",
+      "type": "change",
+      "action": "File creation time changed (rule: FileCreateTimeChanged)",
+      "code": "2"
+    },
+    "process": {
+      "pid": 6144,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\Users\\dkim\\AppData\\Local\\Temp\\task_scheduler.exe",
+      "parent": {
+        "pid": 4832,
+        "name": "powershell.exe",
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    },
+    "file": {
+      "name": "svchost_helper.dll",
+      "path": "C:\\Users\\dkim\\AppData\\Roaming\\Microsoft\\Windows\\svchost_helper.dll",
+      "extension": "dll"
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1070.006",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Sysmon EID 2 \u00e2\u20ac\u201d secondary payload DLL dropped in Roaming profile also timestomped; process.executable outside System32/Program Files is the key anomaly alongside a non-OS binary modifying file creation times"
+    }
+  }
+]

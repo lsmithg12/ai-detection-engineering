@@ -1,0 +1,88 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:11:44.003Z",
+    "event": {
+      "category": "file",
+      "type": "change",
+      "action": "File creation time changed (rule: FileCreateTimeChanged)",
+      "code": "2"
+    },
+    "process": {
+      "pid": 3280,
+      "name": "robocopy.exe",
+      "executable": "C:\\Windows\\System32\\robocopy.exe",
+      "command_line": "robocopy.exe C:\\Projects\\reports D:\\Backup\\reports /COPYALL /MIR /LOG:C:\\Backup\\logs\\robocopy.log",
+      "parent": {
+        "pid": 1120,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "file": {
+      "name": "quarterly_report_Q4.xlsx",
+      "path": "D:\\Backup\\reports\\quarterly_report_Q4.xlsx",
+      "extension": "xlsx"
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1070.006",
+      "description": "Legitimate robocopy backup with /COPYALL preserves original file timestamps \u00e2\u20ac\u201d triggers Sysmon EID 2 but process.executable is a known system binary under System32 and command_line contains recognizable backup flags"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T11:47:29.651Z",
+    "event": {
+      "category": "file",
+      "type": "change",
+      "action": "File creation time changed (rule: FileCreateTimeChanged)",
+      "code": "2"
+    },
+    "process": {
+      "pid": 5912,
+      "name": "7z.exe",
+      "executable": "C:\\Program Files\\7-Zip\\7z.exe",
+      "command_line": "7z.exe x C:\\Downloads\\archive_2025.zip -oC:\\Projects\\archive_2025 -tzip",
+      "parent": {
+        "pid": 2048,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "file": {
+      "name": "design_spec_v3.pdf",
+      "path": "C:\\Projects\\archive_2025\\design_spec_v3.pdf",
+      "extension": "pdf"
+    },
+    "user": {
+      "name": "dkim",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1070.006",
+      "description": "7-Zip extraction preserving archive timestamps for extracted files \u00e2\u20ac\u201d EID 2 fires legitimately; process.executable is under Program Files (signed install path), parent is explorer.exe (user-initiated), and affected file has a document extension not an executable"
+    }
+  }
+]

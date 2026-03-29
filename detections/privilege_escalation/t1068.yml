@@ -1,0 +1,56 @@
+title: Suspicious Process Accessing Privileged System Process with Full Access
+id: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d
+status: experimental
+description: |
+  Detects a process from a user-writable directory opening winlogon.exe or lsass.exe
+  with PROCESS_ALL_ACCESS (0x1FFFFF). This pattern indicates a privilege escalation
+  exploit targeting a high-privilege system process for token theft or code injection.
+  Legitimate access to these processes uses narrow access masks from System32 binaries.
+  Note: lsass.exe access may also trigger T1003.001 (credential dumping) - this is
+  intentional dual-coverage since the same access pattern serves both techniques.
+references:
+  - https://attack.mitre.org/techniques/T1068/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event.code: '10'
+    winlog.event_data.GrantedAccess: '0x1FFFFF'
+  selection_target:
+    winlog.event_data.TargetImage|endswith:
+      - '\winlogon.exe'
+      - '\lsass.exe'
+  selection_suspicious_source:
+    process.executable|contains:
+      - '\AppData\'
+      - '\ProgramData\'
+      - '\Temp\'
+      - '\Users\Public\'
+      - '\Downloads\'
+  filter_system_binaries:
+    process.executable|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection and selection_target and selection_suspicious_source and not filter_system_binaries
+falsepositives:
+  - EDR/AV agents that open system processes with broad access masks from non-standard install paths
+level: critical
+fields:
+  - process.name
+  - process.executable
+  - winlog.event_data.GrantedAccess
+  - winlog.event_data.TargetImage
+  - user.name
+  - user.domain
+  - host.name

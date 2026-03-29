@@ -22,6 +22,14 @@ A living reference for writing high-quality detections. **Check this file before
 - Name filter blocks descriptively: `filter_legitimate`, `filter_system_processes`, `filter_microsoft`
 - Always use `condition: selection and not filter_*` pattern
 - Never filter on process.pid or timing — too fragile
+- **Dead filter anti-pattern**: If `selection_suspicious_process` requires paths `|contains` user-writable dirs (AppData, Temp), do NOT also add a `filter_trusted_paths` with `|startswith` System32/Program Files — these are mutually exclusive and the filter is unreachable dead code. The selection already constrains to suspicious paths.
+- **csrss.exe as process access target**: Do NOT include `csrss.exe` in EID 10 (ProcessAccess) target lists — Windows kernel protections (PatchGuard) block userspace full-access to csrss. It either never fires or generates noise from kernel internals.
+- **GrantedAccess casing**: Sysmon EID 10 emits uppercase hex (e.g., `0x1FFFFF`). Always use uppercase in rules. Do NOT list both `0x1fffff` and `0x1FFFFF` — pick the Sysmon-native casing.
+- **winlog.event_data passthrough fields**: `winlog.event_data.GrantedAccess` and `winlog.event_data.TargetImage` are Sysmon EID 10 passthrough fields with no standard ECS equivalent. This is acceptable but should be noted in rule comments.
+
+### Detection Scope & Overlap
+- When multiple rules can match the same event (e.g., T1068 and T1003.001 both fire on lsass access), document the intentional overlap in the rule description
+- Scope `wmic.exe` detections carefully — T1047 (execution) targets `/node: + process call create`, while T1057 (discovery) should scope to `process list/get/where` to avoid overlap
 
 ---
 
@@ -101,6 +109,9 @@ sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 - Sigma `|contains` with backslash paths often over-escapes in Lucene output
 - SPL output may use `source` as a field name — conflicts with Splunk reserved field
 - If transpiled output looks wrong, write the compiled query manually and note the issue here
+- **sigma-cli preamble**: `sigma convert` prints `Parsing Sigma rules` on the first line before the query. **Always strip this line** when saving to `.lucene` files: `sigma convert ... 2>/dev/null | grep -v "^Parsing Sigma"`
+- **winlog.channel filter**: sigma-cli with `ecs_windows` pipeline prepends `winlog.channel:Microsoft\-Windows\-Sysmon\/Operational AND` for Sysmon rules. This filter **does not match** events in `sim-*` validation indices (which lack the `winlog.channel` field). **Strip this prefix** when saving compiled output: `sed 's/^winlog.channel:[^ ]* AND //'`
+- **Combined strip command**: `sigma convert -t lucene -p ecs_windows rule.yml 2>/dev/null | grep -v "^Parsing Sigma" | sed 's/^winlog.channel:[^ ]* AND //' > compiled/rule.lucene`
 
 ---
 
@@ -155,3 +166,13 @@ sigma convert -t splunk --without-pipeline detections/<tactic>/<rule>.yml
 | 2026-03-01 | All | `curl -sf` suppresses Splunk API error bodies | Use `-sk` during debugging, only add `-f` for scripted success checks |
 | 2026-03-07 | T1055.001 | Multi-EID detection (EID 8+10) can't use single Sigma selection | Split into separate rules per EID — each event type has different fields, no single event matches all conditions |
 | 2026-03-07 | T1055.001 | Hardcoded process names in detection logic | Use path-based patterns (`\|contains` with temp dirs) instead of specific executable names — attackers rename binaries |
+| 2026-03-29 | All | sigma-cli prints "Parsing Sigma rules" preamble in output | Strip with `grep -v "^Parsing Sigma"` before saving .lucene files |
+| 2026-03-29 | All (Sysmon) | ecs_windows pipeline adds `winlog.channel` filter that breaks sim-* validation | Strip with `sed 's/^winlog.channel:[^ ]* AND //'` |
+| 2026-03-29 | T1055.013/T1068 | csrss.exe as EID 10 target causes noise/never fires | Remove csrss.exe from process access target lists — kernel-protected |
+| 2026-03-29 | T1055.013/015/068 | GrantedAccess casing mismatch (lowercase vs Sysmon uppercase) | Always use uppercase hex (0x1FFFFF) — matches Sysmon native output |
+| 2026-03-29 | T1056.001/T1049/T1070.006 | Dead filter_trusted_paths blocks (mutually exclusive with selection) | Remove filters that can never match due to selection constraints |
+| 2026-03-29 | T1053.003 | crontab -e does not expose cron content in command_line | Detect via file arg from /tmp or suspicious parent, not @reboot in cmdline |
+| 2026-03-29 | T1057 | wmic.exe scope too broad — overlaps with T1047 | Scope wmic to process listing ops (process list/get/where) for T1057 |
+| 2026-03-29 | Validator | `contains\|all` modifier parsed as OR instead of AND | Fixed: check `parts[2:]` for "all" quantifier, use `all()` not `any()` |
+| 2026-03-29 | Validator | assess_quality F1 threshold was 0.70, should be 0.75 | Fixed to match documented VALIDATED threshold |
+| 2026-03-29 | All (multi-event TP) | Kill chain TP tests have 3 events, only 1 matches rule | Expected: F1=0.50 from local validator on multi-stage tests is correct behavior, not a rule bug |

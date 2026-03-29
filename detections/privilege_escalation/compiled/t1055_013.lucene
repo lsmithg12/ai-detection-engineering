@@ -1,0 +1,1 @@
+((event.code:10 AND winlog.event_data.GrantedAccess:0x1FFFFF) AND winlog.event_data.TargetImage:*\\conhost.exe AND (process.executable:(*\\AppData\\* OR *\\Temp\\* OR *\\ProgramData\\* OR *\\Users\\Public\\*)) AND (NOT (process.executable:(C\:\\Windows\\System32\\* OR C\:\\Program\ Files\\* OR C\:\\Program\ Files\ \(x86\)\\*))))

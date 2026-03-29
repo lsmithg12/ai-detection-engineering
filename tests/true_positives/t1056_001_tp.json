@@ -1,0 +1,132 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:33.211Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+      "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+      "parent": {
+        "pid": 3412,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1056.001",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes keylog: malicious task_scheduler.exe spawns from svchost \u00e2\u20ac\u201d masquerading as a scheduler binary in ProgramData to blend with OS noise"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:33.589Z",
+    "event": {
+      "category": "library",
+      "type": "start",
+      "action": "Image loaded (rule: ImageLoad)",
+      "code": "7"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+      "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+      "parent": {
+        "pid": 3412,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "file": {
+      "name": "user32.dll",
+      "path": "C:\\Windows\\System32\\user32.dll",
+      "extension": "dll"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1056.001",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes keylog: task_scheduler.exe loads user32.dll \u00e2\u20ac\u201d required to call SetWindowsHookEx with WH_KEYBOARD_LL (hook ID 13) for low-level keyboard capture across all processes"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:41.002Z",
+    "event": {
+      "category": "file",
+      "type": "creation",
+      "action": "File created (rule: FileCreate)",
+      "code": "11"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "task_scheduler.exe",
+      "executable": "C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe",
+      "command_line": "\"C:\\ProgramData\\WindowsUpdate\\task_scheduler.exe\" -s -h",
+      "parent": {
+        "pid": 3412,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "file": {
+      "name": "upd_cache.dat",
+      "path": "C:\\ProgramData\\WindowsUpdate\\upd_cache.dat",
+      "extension": "dat"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1056.001",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes keylog: keylogger output written to disguised .dat file in same ProgramData directory \u00e2\u20ac\u201d collected keystrokes buffered for exfiltration via Fawkes download command"
+    }
+  }
+]

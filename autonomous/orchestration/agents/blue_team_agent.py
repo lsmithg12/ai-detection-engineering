@@ -314,10 +314,11 @@ def event_matches_block(event: dict, block: dict) -> bool:
     if not block:
         return False  # Empty block matches nothing (prevents accidental match-all)
     for field_expr, expected_vals in block.items():
-        # Parse field name and modifier
+        # Parse field name and modifier (e.g., "contains", "endswith", "contains|all")
         parts = field_expr.split("|")
         field = parts[0]
         modifier = parts[1] if len(parts) > 1 else None
+        all_quantifier = "all" in parts[2:]  # handles "contains|all" compound modifier
 
         actual = _get_nested(event, field)
         if actual is None:
@@ -334,8 +335,13 @@ def event_matches_block(event: dict, block: dict) -> bool:
             return str(v).lower().replace("\\\\", "\\")
 
         if modifier == "contains":
-            if not any(_norm(v) in actual_str for v in expected_vals):
-                return False
+            if all_quantifier:
+                # contains|all: ALL values must be present (AND logic)
+                if not all(_norm(v) in actual_str for v in expected_vals):
+                    return False
+            else:
+                if not any(_norm(v) in actual_str for v in expected_vals):
+                    return False
         elif modifier == "startswith":
             if not any(actual_str.startswith(_norm(v)) for v in expected_vals):
                 return False
@@ -573,7 +579,7 @@ def assess_quality(metrics: dict) -> str:
 
     if f1 >= AUTO_DEPLOY_THRESHOLD and fp_rate <= MAX_FP_RATE_AUTO_DEPLOY:
         return "auto_deploy"
-    elif f1 >= 0.70:
+    elif f1 >= 0.75:
         return "human_review"
     else:
         return "needs_rework"

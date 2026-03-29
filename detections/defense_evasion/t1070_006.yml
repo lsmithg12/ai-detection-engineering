@@ -1,0 +1,60 @@
+title: Suspicious File Timestamp Modification (Timestomping)
+id: 4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b
+status: experimental
+description: |
+  Detects Sysmon EID 2 (FileCreateTimeChanged) where the modifying process resides
+  in a user-writable directory and the affected file is an executable. This pattern
+  matches the Fawkes C2 timestomp command which backdates file creation timestamps
+  to evade timeline forensics. Legitimate timestamp changes come from archive tools
+  and backup utilities in trusted paths affecting document files.
+references:
+  - https://attack.mitre.org/techniques/T1070/006/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.defense_evasion
+  - attack.t1070.006
+  - detection.fawkes
+logsource:
+  category: file_change
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event.code: '2'
+  selection_suspicious_process:
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+  selection_executable_target:
+    file.extension:
+      - 'exe'
+      - 'dll'
+      - 'bat'
+      - 'ps1'
+      - 'cmd'
+      - 'vbs'
+      - 'js'
+  filter_archive_tools:
+    process.name:
+      - 'robocopy.exe'
+      - '7z.exe'
+      - 'winrar.exe'
+      - 'peazip.exe'
+      - 'tar.exe'
+  condition: selection and selection_suspicious_process and selection_executable_target and not filter_archive_tools
+falsepositives:
+  - Software installers that modify timestamps during extraction
+  - Development tools compiling binaries in user profile directories
+level: high
+fields:
+  - process.name
+  - process.executable
+  - file.path
+  - file.extension
+  - user.name
+  - host.name

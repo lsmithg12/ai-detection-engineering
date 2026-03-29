@@ -1,2 +1,1 @@
-Parsing Sigma rules
 (registry.path:*Services\\SysmonDrv\\Parameters* OR (registry.path:*Autologger\\EventLog\-Security* AND registry.value:0)) AND (NOT (process.name:services.exe AND process.executable:*Windows\\System32\\services.exe*))

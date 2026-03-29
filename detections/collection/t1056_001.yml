@@ -1,0 +1,50 @@
+title: Potential Keylogger - Suspicious Process Loading user32.dll
+id: 6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f
+status: experimental
+description: |
+  Detects a process from a user-writable directory loading user32.dll (required for
+  SetWindowsHookEx keyboard hooks). This pattern matches the Fawkes C2 keylog command
+  which installs a low-level keyboard hook via WH_KEYBOARD_LL. Legitimate user32.dll
+  loads from accessibility tools and input methods come from System32 or Program Files.
+references:
+  - https://attack.mitre.org/techniques/T1056/001/
+  - https://github.com/galoryber/fawkes
+author: Detection Engineering
+date: 2026/03/25
+modified: 2026/03/25
+tags:
+  - attack.collection
+  - attack.credential_access
+  - attack.t1056.001
+  - detection.fawkes
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event.code: '7'
+    file.name: 'user32.dll'
+  selection_suspicious_process:
+    process.executable|contains:
+      - '\AppData\'
+      - '\ProgramData\'
+      - '\Temp\'
+      - '\Users\Public\'
+  filter_accessibility:
+    process.name:
+      - 'osk.exe'
+      - 'narrator.exe'
+      - 'magnify.exe'
+      - 'Utilman.exe'
+  condition: selection and selection_suspicious_process and not filter_accessibility
+falsepositives:
+  - Custom applications in ProgramData that legitimately use keyboard hooks
+  - Development tools loading user32.dll from non-standard paths
+level: high
+fields:
+  - process.name
+  - process.executable
+  - file.name
+  - process.parent.name
+  - user.name
+  - host.name

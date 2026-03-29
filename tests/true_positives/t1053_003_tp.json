@@ -1,0 +1,122 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:22.413Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7741,
+      "name": "crontab",
+      "executable": "/usr/bin/crontab",
+      "command_line": "crontab /tmp/.cron_update",
+      "parent": {
+        "pid": 7739,
+        "name": "bash",
+        "executable": "/bin/bash"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "linux"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1053.003",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes crontab persistence: crontab imports a malicious cron file staged in /tmp"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:35.887Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7758,
+      "name": "crontab",
+      "executable": "/usr/bin/crontab",
+      "command_line": "crontab /dev/shm/.agent_cron",
+      "parent": {
+        "pid": 7739,
+        "name": "bash",
+        "executable": "/bin/bash"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "linux"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1053.003",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "Fawkes crontab persistence: crontab imports from /dev/shm ramdisk staging area"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:36.204Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7759,
+      "name": "crontab",
+      "executable": "/usr/bin/crontab",
+      "command_line": "crontab -",
+      "parent": {
+        "pid": 7758,
+        "name": "sync_agent",
+        "executable": "/tmp/.sync_agent"
+      }
+    },
+    "user": {
+      "name": "mjones",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-EXEC-01",
+      "os": {
+        "platform": "linux"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1053.003",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "Fawkes crontab persistence: crontab spawned by C2 agent running from /tmp staging dir"
+    }
+  }
+]

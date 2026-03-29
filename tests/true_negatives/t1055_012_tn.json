@@ -1,0 +1,88 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:09:41.330Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 3104,
+      "name": "WerFault.exe",
+      "executable": "C:\\Windows\\System32\\WerFault.exe",
+      "parent": {
+        "pid": 688,
+        "name": "svchost.exe",
+        "executable": "C:\\Windows\\System32\\svchost.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+        "GrantedAccess": "0x1410"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1055.012",
+      "description": "WerFault.exe opens a crashed svchost.exe for crash dump collection \u00e2\u20ac\u201d GrantedAccess 0x1410 (PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | SYNCHRONIZE) is read-only; no VM_WRITE or VM_OPERATION, distinguishing it from injection activity"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:11:18.774Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 5560,
+      "name": "MsMpEng.exe",
+      "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MsMpEng.exe",
+      "parent": {
+        "pid": 688,
+        "name": "services.exe",
+        "executable": "C:\\Windows\\System32\\services.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+        "GrantedAccess": "0x1478"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1055.012",
+      "description": "Windows Defender MsMpEng.exe performing routine memory scan of svchost.exe \u00e2\u20ac\u201d elevated GrantedAccess 0x1478 includes VM_READ and VM_OPERATION for scanning but originates from a signed, system-trusted process under SYSTEM context; not from a user-writable Temp path"
+    }
+  }
+]

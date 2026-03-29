@@ -1,0 +1,131 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:14:03.112Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe",
+      "command_line": "runtime_host.exe --init --silent",
+      "parent": {
+        "pid": 4216,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.012",
+      "sequence_order": 1,
+      "sequence_total": 3,
+      "description": "Fawkes threadless-inject loader spawned from explorer.exe \u00e2\u20ac\u201d user-land execution precursor to DLL function pointer overwrite"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:04.887Z",
+    "event": {
+      "category": "process",
+      "type": "access",
+      "action": "Process Access (rule: ProcessAccess)",
+      "code": "10"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe",
+      "parent": {
+        "pid": 4216,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "winlog": {
+      "event_data": {
+        "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+        "GrantedAccess": "0x1438"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.012",
+      "sequence_order": 2,
+      "sequence_total": 3,
+      "description": "runtime_host.exe opens svchost.exe with PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE (0x1438) \u00e2\u20ac\u201d notably absent PROCESS_CREATE_THREAD (0x2), consistent with threadless injection overwriting a DLL function pointer rather than spawning a new thread"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:14:05.204Z",
+    "event": {
+      "category": "file",
+      "type": "access",
+      "action": "Image Loaded (rule: ImageLoad)",
+      "code": "7"
+    },
+    "process": {
+      "pid": 7832,
+      "name": "runtime_host.exe",
+      "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\runtime_host.exe",
+      "parent": {
+        "pid": 4216,
+        "name": "explorer.exe",
+        "executable": "C:\\Windows\\explorer.exe"
+      }
+    },
+    "file": {
+      "name": "ntdll.dll",
+      "path": "C:\\Windows\\System32\\ntdll.dll",
+      "extension": "dll"
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "SRV-FILE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "attack",
+      "technique": "T1055.012",
+      "sequence_order": 3,
+      "sequence_total": 3,
+      "description": "runtime_host.exe loads ntdll.dll to resolve and overwrite an exported function pointer (e.g., NtTraceControl or a rarely-called stub) within the target process address space \u00e2\u20ac\u201d no new thread required, execution triggered via normal call chain"
+    }
+  }
+]

@@ -1,0 +1,78 @@
+[
+  {
+    "@timestamp": "2026-03-22T09:22:11.543Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 6620,
+      "name": "netstat.exe",
+      "executable": "C:\\Windows\\System32\\netstat.exe",
+      "command_line": "netstat.exe -ano",
+      "parent": {
+        "pid": 3104,
+        "name": "cmd.exe",
+        "executable": "C:\\Windows\\System32\\cmd.exe"
+      }
+    },
+    "user": {
+      "name": "jsmith",
+      "domain": "CORP"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1049",
+      "description": "Legitimate IT administrator running netstat -ano from an interactive cmd.exe session to troubleshoot a VPN connectivity issue \u00e2\u20ac\u201d identical command line but benign parent and context"
+    }
+  },
+  {
+    "@timestamp": "2026-03-22T09:35:04.772Z",
+    "event": {
+      "category": "process",
+      "type": "start",
+      "action": "Process Create (rule: ProcessCreate)",
+      "code": "1"
+    },
+    "process": {
+      "pid": 11240,
+      "name": "netstat.exe",
+      "executable": "C:\\Windows\\System32\\netstat.exe",
+      "command_line": "netstat.exe -an -p tcp",
+      "parent": {
+        "pid": 8800,
+        "name": "SolarWinds.BusinessLayerHost.exe",
+        "executable": "C:\\Program Files (x86)\\SolarWinds\\Orion\\SolarWinds.BusinessLayerHost.exe"
+      }
+    },
+    "user": {
+      "name": "SYSTEM",
+      "domain": "NT AUTHORITY"
+    },
+    "host": {
+      "name": "WS-FINANCE-01",
+      "os": {
+        "platform": "windows"
+      }
+    },
+    "agent": {
+      "type": "sysmon"
+    },
+    "_simulation": {
+      "type": "benign_similar",
+      "technique": "T1049",
+      "description": "SolarWinds Orion monitoring agent periodically spawning netstat.exe to collect network topology data for IPAM/network performance monitoring \u00e2\u20ac\u201d expected scheduled behaviour from a known monitoring tool"
+    }
+  }
+]

@@ -1,0 +1,1 @@
+process.name:crontab AND ((process.command_line:(*\/tmp\/* OR *\/dev\/shm\/* OR *\/var\/tmp\/*)) OR (process.parent.executable:(*\/tmp\/* OR *\/dev\/shm\/* OR *\/var\/tmp\/*))) AND (NOT (process.parent.name:(ansible\-playbook OR puppet OR chef\-client OR salt\-minion)))
