@@ -1,0 +1,149 @@
+{
+  "technique_id": "T1059.001_T1547.001_EQL",
+  "technique_name": "PowerShell Execution Followed by Registry Persistence (EQL)",
+  "description": "Simulates the Fawkes powershell + persist(registry) attack chain: PowerShell launched with execution policy bypass flags (EID 1) followed within 300s by a registry Run key write (EID 13) on the same host.",
+  "mitre_tactic": "execution",
+  "log_sources_used": [
+    "sysmon_1",
+    "sysmon_13"
+  ],
+  "platforms": [
+    "windows"
+  ],
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "event.code",
+      "process.name",
+      "process.command_line",
+      "registry.path",
+      "host.name"
+    ],
+    "notes": "EQL sequence by host.name with maxspan=300s. Step 1: powershell.exe with bypass flags. Step 2: EID 13 registry write to CurrentVersion\\Run. Benign event is a powershell.exe launch without bypass flags — the command_line pattern won't match the EQL filter."
+  },
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "pid": 5128,
+          "command_line": "powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -enc JABjAG8AbQBtAGEAbgBkACAAPQAgACcAaQBlAHgAJwA=",
+          "parent": {
+            "pid": 3344,
+            "name": "cmd.exe",
+            "executable": "C:\\Windows\\System32\\cmd.exe"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1059.001_T1547.001_EQL",
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "Step 1: Fawkes powershell command — bypass execution policy + encoded payload"
+        }
+      },
+      {
+        "@timestamp": "{{now+30s}}",
+        "event": {
+          "category": "registry",
+          "type": "change",
+          "action": "Registry value set (rule: RegistryEvent)",
+          "code": "13"
+        },
+        "registry": {
+          "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\FawkesAgent",
+          "value": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\sync_update.exe",
+          "hive": "HKCU",
+          "key": "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+        },
+        "process": {
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "pid": 5128
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1059.001_T1547.001_EQL",
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "Step 2: Fawkes persist registry — Run key written 30s after PowerShell execution"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "start",
+          "action": "Process Create (rule: ProcessCreate)",
+          "code": "1"
+        },
+        "process": {
+          "name": "powershell.exe",
+          "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "pid": 8844,
+          "command_line": "powershell.exe -NoProfile Get-Service",
+          "parent": {
+            "pid": 2060,
+            "name": "explorer.exe",
+            "executable": "C:\\Windows\\explorer.exe"
+          }
+        },
+        "user": {
+          "name": "mreynolds",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1059.001_T1547.001_EQL",
+          "description": "Admin running Get-Service without bypass flags — command_line does not match EQL filter patterns, sequence cannot complete"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+(event.code="7" file.name="user32.dll") OR event.code="1" process.executable IN ("*\\AppData\\*", "*\\ProgramData\\*", "*\\Temp\\*", "*\\Users\\Public\\*") NOT (process.name IN ("osk.exe", "narrator.exe", "magnify.exe", "Utilman.exe")) | table process.name,process.executable,process.command_line,process.parent.name,process.parent.executable,file.name,user.name,host.name

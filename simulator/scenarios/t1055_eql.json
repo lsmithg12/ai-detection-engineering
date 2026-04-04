@@ -1,0 +1,152 @@
+{
+  "technique_id": "T1055_EQL",
+  "technique_name": "Process Injection Sequence - Handle Open Then Remote Thread Creation (EQL)",
+  "description": "Simulates the two-step injection sequence: EID 10 (process handle open with PROCESS_ALL_ACCESS) followed within 10s by EID 8 (CreateRemoteThread) on the same host. Covers Fawkes vanilla-injection and apc-injection.",
+  "mitre_tactic": "privilege_escalation",
+  "log_sources_used": [
+    "sysmon_10",
+    "sysmon_8"
+  ],
+  "platforms": [
+    "windows"
+  ],
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "event.code",
+      "winlog.event_data.GrantedAccess",
+      "process.executable",
+      "host.name"
+    ],
+    "notes": "EQL sequence by host.name — both events MUST share the same host.name and occur within 10s. EID 10 with full access rights from a non-system process, followed by EID 8 from same process. Benign event is a single EID 10 from svchost (filtered) that cannot complete the sequence."
+  },
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process accessed (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "name": "temp_agent.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\temp_agent.exe",
+          "pid": 7832
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\explorer.exe",
+            "GrantedAccess": "0x1F3FFF",
+            "SourceProcessGUID": "4a2c1f3e-8b5d-4c6e-9f0a-1b2c3d4e5f60"
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055_EQL",
+          "sequence_order": 1,
+          "sequence_total": 2,
+          "description": "Step 1: Source process opens handle to explorer.exe with PROCESS_ALL_ACCESS (0x1F3FFF)"
+        }
+      },
+      {
+        "@timestamp": "{{now+5s}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "name": "temp_agent.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\temp_agent.exe",
+          "pid": 7832
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\explorer.exe",
+            "StartAddress": "0x7ffb9a001000",
+            "StartModule": "",
+            "StartFunction": ""
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055_EQL",
+          "sequence_order": 2,
+          "sequence_total": 2,
+          "description": "Step 2: CreateRemoteThread into explorer.exe — completes injection sequence (5s after handle open)"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "access",
+          "action": "Process accessed (rule: ProcessAccess)",
+          "code": "10"
+        },
+        "process": {
+          "name": "svchost.exe",
+          "executable": "C:\\Windows\\System32\\svchost.exe",
+          "pid": 1024
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\System32\\lsass.exe",
+            "GrantedAccess": "0x1410",
+            "SourceProcessGUID": "0c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-02",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055_EQL",
+          "description": "svchost.exe process access is filtered by rule; no EID 8 follows — sequence cannot complete"
+        }
+      }
+    ]
+  }
+}

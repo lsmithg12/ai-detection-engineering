@@ -1,17 +1,20 @@
-title: PoolParty Injection - Full Access to svchost from User-Writable Path
+title: PoolParty Injection - svchost.exe Handle, Thread Injection, or Anomalous Child Process
 id: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
 status: experimental
 description: |
-  Detects a process from a user-writable directory opening svchost.exe with
-  PROCESS_ALL_ACCESS (0x1fffff). This pattern matches the Fawkes C2 poolparty-injection
-  command which abuses NtSetInformationWorkerFactory to plant shellcode in the svchost
-  thread pool. The distinguishing artifact is full access from an untrusted path.
+  Detects PoolParty injection targeting svchost.exe via three indicators:
+  (1) A process from a user-writable path opening svchost.exe with PROCESS_ALL_ACCESS
+  via ProcessAccess (EID 10); (2) remote thread injection into svchost.exe via
+  CreateRemoteThread (EID 8); (3) svchost.exe spawning anomalous interactive
+  shell or script-engine child processes post-injection (EID 1). All three stages
+  match the Fawkes C2 poolparty-injection command which abuses
+  NtSetInformationWorkerFactory to plant shellcode in the svchost thread pool.
 references:
   - https://attack.mitre.org/techniques/T1055/015/
   - https://github.com/galoryber/fawkes
 author: Detection Engineering
 date: 2026/03/25
-modified: 2026/03/25
+modified: 2026/04/04
 tags:
   - attack.privilege_escalation
   - attack.defense_evasion
@@ -21,10 +24,12 @@ logsource:
   product: windows
   service: sysmon
 detection:
-  selection:
+  selection_process_access:
     event.code: '10'
     winlog.event_data.GrantedAccess: '0x1FFFFF'
-  selection_target:
+    winlog.event_data.TargetImage|endswith: '\svchost.exe'
+  selection_create_remote_thread:
+    event.code: '8'
     winlog.event_data.TargetImage|endswith: '\svchost.exe'
   selection_suspicious_source:
     process.executable|contains:
@@ -41,13 +46,29 @@ detection:
       - 'C:\Windows\System32\'
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
-  condition: selection and selection_target and selection_suspicious_source and not filter_security_products and not filter_trusted_paths
+  selection_svchost_child:
+    event.code: '1'
+    process.parent.name: 'svchost.exe'
+    process.name:
+      - 'cmd.exe'
+      - 'powershell.exe'
+      - 'pwsh.exe'
+      - 'wscript.exe'
+      - 'cscript.exe'
+      - 'mshta.exe'
+      - 'rundll32.exe'
+      - 'regsvr32.exe'
+  condition: ((selection_process_access or selection_create_remote_thread) and selection_suspicious_source and not filter_security_products and not filter_trusted_paths) or selection_svchost_child
 falsepositives:
-  - Security/monitoring software installed in ProgramData accessing svchost
+  - Security or monitoring software installed in ProgramData accessing svchost
+  - Rare legitimate software management triggering svchost child spawning
 level: critical
 fields:
+  - event.code
   - process.name
   - process.executable
+  - process.parent.name
+  - process.parent.executable
   - winlog.event_data.GrantedAccess
   - winlog.event_data.TargetImage
   - user.name

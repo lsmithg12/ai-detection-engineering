@@ -40,6 +40,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: compiled_splunk'
+- date: '2026-04-04T14:33:30Z'
+  agent: validation
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
 threat_actors: []
 compiled_lucene: detections/privilege_escalation/compiled/t1068.lucene
 compiled_spl: detections/privilege_escalation/compiled/t1068.spl

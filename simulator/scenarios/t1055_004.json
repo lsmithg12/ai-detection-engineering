@@ -1,0 +1,150 @@
+{
+  "technique_id": "T1055.004",
+  "technique_name": "APC Injection - Suspicious QueueUserAPC Pattern",
+  "description": "Simulates APC injection via QueueUserAPC — Fawkes apc-injection command generates EID 8 (CreateRemoteThread) from a suspicious non-system process path",
+  "mitre_tactic": "privilege_escalation",
+  "log_sources_used": [
+    "sysmon_8"
+  ],
+  "platforms": [
+    "windows"
+  ],
+  "expected_detection": {
+    "should_alert_on": "attack_sequence",
+    "should_not_alert_on": "benign_similar",
+    "key_fields": [
+      "event.code",
+      "process.executable",
+      "winlog.event_data.TargetImage"
+    ],
+    "notes": "Detection fires on EID 8 (CreateRemoteThread) from processes NOT in the system/AV filter list. Attack uses a temp-path executable; benign events come from MsMpEng.exe which is filtered."
+  },
+  "events": {
+    "attack_sequence": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "name": "sync_update.exe",
+          "executable": "C:\\Users\\jsmith\\AppData\\Local\\Temp\\sync_update.exe",
+          "pid": 9412
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\explorer.exe",
+            "StartAddress": "0x7ffb1234a000",
+            "StartModule": "",
+            "StartFunction": ""
+          }
+        },
+        "user": {
+          "name": "jsmith",
+          "domain": "CORP"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "attack",
+          "technique": "T1055.004",
+          "sequence_order": 1,
+          "sequence_total": 1,
+          "description": "Fawkes apc-injection: QueueUserAPC creates remote thread in explorer.exe from temp-path executable"
+        }
+      }
+    ],
+    "benign_similar": [
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "name": "MsMpEng.exe",
+          "executable": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2302.7-0\\MsMpEng.exe",
+          "pid": 2488
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\System32\\svchost.exe",
+            "StartAddress": "0x7ff8abcde123",
+            "StartModule": "C:\\Windows\\System32\\ntdll.dll",
+            "StartFunction": "RtlUserThreadStart"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.004",
+          "description": "Windows Defender (MsMpEng.exe) creating thread in svchost — filtered by detection rule"
+        }
+      },
+      {
+        "@timestamp": "{{now}}",
+        "event": {
+          "category": "process",
+          "type": "change",
+          "action": "CreateRemoteThread detected (rule: CreateRemoteThread)",
+          "code": "8"
+        },
+        "process": {
+          "name": "csrss.exe",
+          "executable": "C:\\Windows\\System32\\csrss.exe",
+          "pid": 552
+        },
+        "winlog": {
+          "event_data": {
+            "TargetImage": "C:\\Windows\\System32\\wininit.exe",
+            "StartAddress": "0x7ff8ef001234",
+            "StartModule": "C:\\Windows\\System32\\ntdll.dll",
+            "StartFunction": "RtlUserThreadStart"
+          }
+        },
+        "user": {
+          "name": "SYSTEM",
+          "domain": "NT AUTHORITY"
+        },
+        "host": {
+          "name": "WS-FINANCE-01",
+          "os": {
+            "platform": "windows"
+          }
+        },
+        "agent": {
+          "type": "sysmon"
+        },
+        "_simulation": {
+          "type": "benign_similar",
+          "technique": "T1055.004",
+          "description": "csrss.exe creating thread in wininit.exe — normal OS behavior, filtered by rule"
+        }
+      }
+    ]
+  }
+}

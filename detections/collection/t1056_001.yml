@@ -1,17 +1,19 @@
-title: Potential Keylogger - Suspicious Process Loading user32.dll
+title: Potential Keylogger - Suspicious Process Execution or DLL Load from User-Writable Directory
 id: 6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f
 status: experimental
 description: |
-  Detects a process from a user-writable directory loading user32.dll (required for
-  SetWindowsHookEx keyboard hooks). This pattern matches the Fawkes C2 keylog command
-  which installs a low-level keyboard hook via WH_KEYBOARD_LL. Legitimate user32.dll
-  loads from accessibility tools and input methods come from System32 or Program Files.
+  Detects two patterns associated with the Fawkes C2 keylog command: (1) a process spawning
+  directly from a user-writable directory (AppData, ProgramData, Temp, Public) — typical
+  staging locations for Fawkes implants masquerading as OS components; (2) a process from
+  those same paths loading user32.dll, which is required for SetWindowsHookEx keyboard hooks
+  (WH_KEYBOARD_LL). The original EID 7-only logic missed EID 1 spawn events that are the
+  first observable artifact of the keylogger lifecycle.
 references:
   - https://attack.mitre.org/techniques/T1056/001/
   - https://github.com/galoryber/fawkes
 author: Detection Engineering
 date: 2026/03/25
-modified: 2026/03/25
+modified: 2026/04/04
 tags:
   - attack.collection
   - attack.credential_access
@@ -21,10 +23,12 @@ logsource:
   product: windows
   service: sysmon
 detection:
-  selection:
+  selection_image_load:
     event.code: '7'
     file.name: 'user32.dll'
-  selection_suspicious_process:
+  selection_process_create:
+    event.code: '1'
+  selection_suspicious_path:
     process.executable|contains:
       - '\AppData\'
       - '\ProgramData\'
@@ -36,15 +40,18 @@ detection:
       - 'narrator.exe'
       - 'magnify.exe'
       - 'Utilman.exe'
-  condition: selection and selection_suspicious_process and not filter_accessibility
+  condition: (selection_image_load or selection_process_create) and selection_suspicious_path and not filter_accessibility
 falsepositives:
-  - Custom applications in ProgramData that legitimately use keyboard hooks
+  - Custom applications installed to ProgramData that legitimately use keyboard hooks
   - Development tools loading user32.dll from non-standard paths
+  - Legitimate software installers spawning child processes from Temp directories
 level: high
 fields:
   - process.name
   - process.executable
-  - file.name
+  - process.command_line
   - process.parent.name
+  - process.parent.executable
+  - file.name
   - user.name
   - host.name
