@@ -1,0 +1,42 @@
+{
+  "technique_id": "T1056.001",
+  "date": "2026-04-05T01:07:11Z",
+  "sigma_rule": "detections\\collection\\t1056_001.yml",
+  "metrics": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 3,
+    "tn": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "fp_rate": 0.0,
+    "tp_rate": 0.0,
+    "total_attack": 3,
+    "total_benign": 2
+  },
+  "quality_tier": "needs_rework",
+  "validation_method": "elasticsearch",
+  "validated_by": "validation-agent",
+  "siem_targets": [
+    "elasticsearch",
+    "splunk"
+  ],
+  "sigma_rule_path": "detections\\collection\\t1056_001.yml",
+  "scenario_path": "simulator\\scenarios\\t1056_001.json",
+  "attack_event_count": 3,
+  "benign_event_count": 2,
+  "quality_tier_criteria": {
+    "auto_deploy": "F1 >= 0.90 AND FP_rate <= 0.05",
+    "validated": "F1 >= 0.75",
+    "needs_rework": "F1 < 0.75"
+  },
+  "validation_details": {
+    "index": "sim-validation-cc97636d",
+    "query": "winlog.channel:Microsoft\\-Windows\\-Sysmon\\/Operational AND (((event.code:7 AND file.path:*\\\\user32.dll) OR event.code:1) AND (process.executable:(*\\\\AppData\\\\* OR *\\\\ProgramData\\\\* OR *\\\\Temp\\\\* OR *\\",
+    "events_ingested": 5,
+    "query_hits": 0,
+    "query_time_ms": 5,
+    "errors": []
+  }
+}

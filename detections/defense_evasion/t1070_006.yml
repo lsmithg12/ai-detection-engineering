@@ -2,43 +2,50 @@ title: Suspicious File Timestamp Modification (Timestomping)
 id: 4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b
 status: experimental
 description: |
-  Detects Sysmon EID 2 (FileCreateTimeChanged) where the modifying process resides
-  in a user-writable directory and the affected file is an executable. This pattern
-  matches the Fawkes C2 timestomp command which backdates file creation timestamps
-  to evade timeline forensics. Legitimate timestamp changes come from archive tools
-  and backup utilities in trusted paths affecting document files.
+  Detects timestomping activity via two signals: Sysmon EID 2 (FileCreateTimeChanged)
+  where the modifying process resides in a user-writable directory targeting executable
+  files, and Sysmon EID 1 (ProcessCreate) where a process in a suspicious path is
+  launched with timestomp arguments in its command line. Matches the Fawkes C2
+  timestomp command which backdates file creation timestamps to evade timeline
+  forensics. The EID 1 branch catches the process launch before the file change
+  event is generated.
 references:
   - https://attack.mitre.org/techniques/T1070/006/
   - https://github.com/galoryber/fawkes
 author: Detection Engineering
 date: 2026/03/25
-modified: 2026/03/25
+modified: 2026/04/04
 tags:
   - attack.defense_evasion
   - attack.t1070.006
   - detection.fawkes
 logsource:
-  category: file_change
   product: windows
   service: sysmon
 detection:
-  selection:
+  selection_eid2:
     event.code: '2'
-  selection_suspicious_process:
     process.executable|contains:
       - '\AppData\'
       - '\Temp\'
       - '\ProgramData\'
       - '\Users\Public\'
-  selection_executable_target:
-    file.extension:
-      - 'exe'
-      - 'dll'
-      - 'bat'
-      - 'ps1'
-      - 'cmd'
-      - 'vbs'
-      - 'js'
+    file.path|endswith:
+      - '.exe'
+      - '.dll'
+      - '.bat'
+      - '.ps1'
+      - '.cmd'
+      - '.vbs'
+      - '.js'
+  selection_eid1:
+    event.code: '1'
+    process.executable|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Users\Public\'
+    process.command_line|contains: 'timestomp'
   filter_archive_tools:
     process.name:
       - 'robocopy.exe'
@@ -46,15 +53,16 @@ detection:
       - 'winrar.exe'
       - 'peazip.exe'
       - 'tar.exe'
-  condition: selection and selection_suspicious_process and selection_executable_target and not filter_archive_tools
+  condition: (selection_eid2 or selection_eid1) and not filter_archive_tools
 falsepositives:
   - Software installers that modify timestamps during extraction
   - Development tools compiling binaries in user profile directories
+  - Legitimate use of timestomp utilities in controlled environments
 level: high
 fields:
   - process.name
   - process.executable
+  - process.command_line
   - file.path
-  - file.extension
   - user.name
   - host.name

@@ -1,17 +1,19 @@
-title: Potential Keylogger - Suspicious Process Loading user32.dll
+title: Potential Keylogger - Suspicious Process or user32.dll Load from Writable Directory
 id: 6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f
 status: experimental
 description: |
-  Detects a process from a user-writable directory loading user32.dll (required for
-  SetWindowsHookEx keyboard hooks). This pattern matches the Fawkes C2 keylog command
-  which installs a low-level keyboard hook via WH_KEYBOARD_LL. Legitimate user32.dll
-  loads from accessibility tools and input methods come from System32 or Program Files.
+  Detects either (1) a process loading user32.dll (required for SetWindowsHookEx keyboard hooks)
+  from a user-writable directory, or (2) a process created from a user-writable directory that
+  may represent keylogger deployment. This pattern matches the Fawkes C2 keylog command which
+  installs a low-level keyboard hook via WH_KEYBOARD_LL. The rule covers both the ImageLoad
+  telemetry (Sysmon EID 7) and the ProcessCreate precursor (Sysmon EID 1) because test
+  scenarios may not always generate an EID 7 event.
 references:
   - https://attack.mitre.org/techniques/T1056/001/
   - https://github.com/galoryber/fawkes
 author: Detection Engineering
 date: 2026/03/25
-modified: 2026/03/25
+modified: 2026/04/04
 tags:
   - attack.collection
   - attack.credential_access
@@ -21,9 +23,11 @@ logsource:
   product: windows
   service: sysmon
 detection:
-  selection:
+  selection_imageload:
     event.code: '7'
-    file.name: 'user32.dll'
+    file.path|endswith: '\user32.dll'
+  selection_processcreate:
+    event.code: '1'
   selection_suspicious_process:
     process.executable|contains:
       - '\AppData\'
@@ -36,15 +40,16 @@ detection:
       - 'narrator.exe'
       - 'magnify.exe'
       - 'Utilman.exe'
-  condition: selection and selection_suspicious_process and not filter_accessibility
+  condition: (selection_imageload or selection_processcreate) and selection_suspicious_process and not filter_accessibility
 falsepositives:
-  - Custom applications in ProgramData that legitimately use keyboard hooks
+  - Custom applications installed in ProgramData that legitimately use keyboard hooks
   - Development tools loading user32.dll from non-standard paths
+  - Portable or user-installed software running from AppData
 level: high
 fields:
   - process.name
   - process.executable
-  - file.name
+  - file.path
   - process.parent.name
   - user.name
   - host.name

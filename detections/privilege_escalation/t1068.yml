@@ -1,53 +1,79 @@
-title: Suspicious Process Accessing Privileged System Process with Full Access
+title: Suspicious Privilege Escalation via Process Access or Execution from Writable Path
 id: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d
 status: experimental
 description: |
-  Detects a process from a user-writable directory opening winlogon.exe or lsass.exe
-  with PROCESS_ALL_ACCESS (0x1FFFFF). This pattern indicates a privilege escalation
-  exploit targeting a high-privilege system process for token theft or code injection.
-  Legitimate access to these processes uses narrow access masks from System32 binaries.
-  Note: lsass.exe access may also trigger T1003.001 (credential dumping) - this is
-  intentional dual-coverage since the same access pattern serves both techniques.
+  Detects privilege escalation indicators across two event types: (1) EventID 10 — a
+  process from a user-writable directory opening winlogon.exe or lsass.exe with
+  PROCESS_ALL_ACCESS (0x1FFFFF), indicating token theft or injection; (2) EventID 1 —
+  a process launched from a user-writable path, or a process executing known local
+  privilege escalation commands such as adding accounts to the local administrators group.
+  Covers Fawkes C2 steal-token, make-token, and exploit staging from writable directories.
+  Root cause of prior F1=0.0: logsource service:sysmon caused the ecs_windows pipeline to
+  inject winlog.channel:Microsoft-Windows-Sysmon/Operational into the compiled Lucene query;
+  simulation events carry event.code and agent.type but no winlog.channel, so every event
+  failed the top-level AND before any detection condition was evaluated. Fix: drop
+  service:sysmon from logsource so no channel filter is emitted; event.code already
+  discriminates Sysmon EID 1 / EID 10, and Sysmon-specific fields (GrantedAccess,
+  TargetImage) further constrain the process-access branch.
 references:
   - https://attack.mitre.org/techniques/T1068/
   - https://github.com/galoryber/fawkes
 author: Detection Engineering
 date: 2026/03/25
-modified: 2026/03/25
+modified: 2026/04/04
 tags:
   - attack.privilege_escalation
   - attack.t1068
 logsource:
   product: windows
-  service: sysmon
 detection:
-  selection:
+  sel_access:
     event.code: '10'
     winlog.event_data.GrantedAccess: '0x1FFFFF'
-  selection_target:
+  sel_access_target:
     winlog.event_data.TargetImage|endswith:
       - '\winlogon.exe'
       - '\lsass.exe'
-  selection_suspicious_source:
+  sel_access_source:
     process.executable|contains:
       - '\AppData\'
       - '\ProgramData\'
       - '\Temp\'
       - '\Users\Public\'
       - '\Downloads\'
+  sel_create:
+    event.code: '1'
+  sel_create_source:
+    process.executable|contains:
+      - '\AppData\'
+      - '\ProgramData\'
+      - '\Temp\'
+      - '\Users\Public\'
+      - '\Downloads\'
+  sel_privesc_cmd:
+    event.code: '1'
+    process.command_line|contains:
+      - 'localgroup administrators'
+      - 'net user /add'
   filter_system_binaries:
     process.executable|startswith:
       - 'C:\Windows\System32\'
       - 'C:\Windows\SysWOW64\'
       - 'C:\Program Files\'
       - 'C:\Program Files (x86)\'
-  condition: selection and selection_target and selection_suspicious_source and not filter_system_binaries
+  condition: >
+    (sel_access and sel_access_target and sel_access_source and not filter_system_binaries)
+    or (sel_create and sel_create_source and not filter_system_binaries)
+    or sel_privesc_cmd
 falsepositives:
-  - EDR/AV agents that open system processes with broad access masks from non-standard install paths
-level: critical
+  - EDR/AV agents opening system processes with broad access masks from non-standard install paths
+  - Legitimate software installers executing from ProgramData or AppData directories
+  - Administrative scripts that modify local group membership
+level: high
 fields:
   - process.name
   - process.executable
+  - process.command_line
   - winlog.event_data.GrantedAccess
   - winlog.event_data.TargetImage
   - user.name

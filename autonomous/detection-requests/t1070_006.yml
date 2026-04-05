@@ -1,5 +1,5 @@
 technique_id: T1070.006
-title: Detection for T1070.006 — Modify file timestamps to hide activity
+title: "Detection for T1070.006 \xE2\u20AC\u201D Modify file timestamps to hide activity"
 status: AUTHORED
 priority: high
 requested_by: intel
@@ -48,6 +48,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: compiled_splunk'
+- date: '2026-04-05T01:14:04Z'
+  agent: validation
+  action: update
+  details: 'Updated fields: quality_score, fp_rate, tp_rate'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
