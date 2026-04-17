@@ -1,6 +1,6 @@
 technique_id: T1068
 title: Exploitation for Privilege Escalation
-status: DEPLOYED
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:55Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-21-apache-activemq-exploit-leads-to-l
 scenario_file: simulator\scenarios\t1068.json
 sigma_rule: detections/privilege_escalation/t1068.yml
 deployed_date: '2026-04-12T21:24:41Z'
-last_quality_review: ''
+last_quality_review: '2026-04-17T18:39:03Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -68,6 +68,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-17T18:39:03Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-04-17T18:39:03Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 threat_actors: []
 compiled_lucene: detections/privilege_escalation/compiled/t1068.lucene
 compiled_spl: detections/privilege_escalation/compiled/t1068.spl
