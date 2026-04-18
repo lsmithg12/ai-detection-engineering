@@ -1,6 +1,6 @@
 technique_id: T1047
-title: "Detection for T1047 -- Remote/local WMI execution"
-status: DEPLOYED
+title: Detection for T1047 -- Remote/local WMI execution
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1047.json
 sigma_rule: detections/execution/t1047.yml
 deployed_date: '2026-04-04T14:18:40Z'
-last_quality_review: ''
+last_quality_review: '2026-04-18T18:28:52Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -80,6 +80,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-18T18:28:52Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-04-18T18:28:52Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 threat_actors:
 - Fawkes C2 Agent
 - LockBit 3.0 (Black)
@@ -99,4 +107,4 @@ data_source_gaps:
 compiled_lucene: detections/execution/compiled/t1047.lucene
 compiled_spl: detections/execution/compiled/t1047.spl
 elastic_rule_id: eac3852f-a72f-438a-b6d7-d4a47181d98e
-splunk_saved_search: "Detection for T1047 -- Remote/local WMI execution T1047"
+splunk_saved_search: Detection for T1047 -- Remote/local WMI execution T1047
