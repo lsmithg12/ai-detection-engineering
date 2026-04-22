@@ -8,7 +8,7 @@ intel_report: threat-intel\reports\2026-03-08-from-bing-search-to-ransomware-bum
 scenario_file: simulator\scenarios\t1204_002.json
 sigma_rule: detections\execution\t1204_002.yml
 deployed_date: '2026-04-12T21:34:34Z'
-last_quality_review: ''
+last_quality_review: '2026-04-22T18:54:14Z'
 quality_score: 0.75
 fp_rate: 1.0
 tp_rate: 1.0
@@ -64,6 +64,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-22T18:54:14Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections\execution\compiled\t1204_002.lucene
 compiled_spl: detections\execution\compiled\t1204_002.spl
 mitre_tactic: execution
