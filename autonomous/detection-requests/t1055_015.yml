@@ -1,6 +1,6 @@
 technique_id: T1055.015
-title: "Detection for T1055.015 -- 8 variants abusing Windows thread pool internals"
-status: DEPLOYED
+title: Detection for T1055.015 -- 8 variants abusing Windows thread pool internals
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-21T13:04:56Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator\scenarios\t1055_015.json
 sigma_rule: detections/privilege_escalation/t1055_015.yml
 deployed_date: '2026-04-12T21:24:37Z'
-last_quality_review: ''
+last_quality_review: '2026-04-24T18:33:44Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -80,6 +80,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-24T18:33:44Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-04-24T18:33:44Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -97,4 +105,4 @@ data_source_gaps:
 compiled_lucene: detections/privilege_escalation/compiled/t1055_015.lucene
 compiled_spl: detections/privilege_escalation/compiled/t1055_015.spl
 elastic_rule_id: f6f0dc15-5363-4ada-9d1e-dc9150b7c4a9
-splunk_saved_search: "Detection for T1055.015 -- 8 variants abusing Windows thread pool internals T1055.015"
+splunk_saved_search: Detection for T1055.015 -- 8 variants abusing Windows thread pool internals T1055.015
