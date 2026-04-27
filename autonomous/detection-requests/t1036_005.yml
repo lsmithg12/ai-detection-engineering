@@ -1,6 +1,6 @@
 technique_id: T1036.005
 title: 'Masquerading: Match Legitimate Name or Location'
-status: DEPLOYED
+status: MONITORING
 priority: high
 requested_by: intel
 requested_date: '2026-03-23T06:57:50Z'
@@ -8,7 +8,7 @@ intel_report: threat-intel/reports/2026-03-22-blurring-the-lines-intrusion-shows
 scenario_file: simulator\scenarios\t1036_005.json
 sigma_rule: detections\defense_evasion\t1036_005.yml
 deployed_date: '2026-04-12T21:24:31Z'
-last_quality_review: ''
+last_quality_review: '2026-04-27T19:00:48Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -68,6 +68,14 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-27T19:00:48Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
+- date: '2026-04-27T19:00:49Z'
+  agent: quality
+  action: transition:DEPLOYED->MONITORING
+  details: "Health score 0.915 \u2014 healthy"
 threat_actors: []
 compiled_lucene: detections\defense_evasion\compiled\t1036_005.lucene
 compiled_spl: detections\defense_evasion\compiled\t1036_005.spl
