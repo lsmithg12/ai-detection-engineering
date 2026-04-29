@@ -16,7 +16,7 @@ secondary_techniques: []
 deployed_date: '2026-04-12T21:26:11Z'
 elastic_rule_id: 3f8b6d7e-9a0c-1d2e-3f4a-5b6c7d8e9f0a
 splunk_saved_search: Rapid File Modification Burst - Ransomware Indicator (Threshold) T1486_THRESHOLD
-last_quality_review: ''
+last_quality_review: '2026-04-29T19:03:38Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -61,3 +61,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-04-29T19:03:38Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
