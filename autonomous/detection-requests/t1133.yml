@@ -8,7 +8,7 @@ intel_report: ''
 scenario_file: simulator/scenarios/windows/t1133.json
 sigma_rule: detections/initial_access/t1133.yml
 deployed_date: '2026-04-12T21:34:30Z'
-last_quality_review: ''
+last_quality_review: '2026-05-02T18:38:42Z'
 quality_score: 0.857
 fp_rate: 0.5
 tp_rate: 1.0
@@ -64,6 +64,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-02T18:38:42Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections/initial_access/compiled/t1133.lucene
 compiled_spl: detections/initial_access/compiled/t1133.spl
 mitre_tactic: initial_access
