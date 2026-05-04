@@ -1,5 +1,5 @@
 technique_id: T1135
-title: "Detection for T1135 -- Enumerate network shares"
+title: Detection for T1135 -- Enumerate network shares
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1135.json
 sigma_rule: detections/discovery/t1135.yml
 deployed_date: '2026-04-12T21:24:49Z'
-last_quality_review: ''
+last_quality_review: '2026-05-04T19:08:42Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -64,6 +64,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-04T19:08:42Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -71,4 +75,4 @@ fawkes_commands:
 compiled_lucene: detections/discovery/compiled/t1135.lucene
 compiled_spl: detections/discovery/compiled/t1135.spl
 elastic_rule_id: ee81c093-3fe9-4c4d-ab5a-d0d1b1c12db7
-splunk_saved_search: "Detection for T1135 -- Enumerate network shares T1135"
+splunk_saved_search: Detection for T1135 -- Enumerate network shares T1135
