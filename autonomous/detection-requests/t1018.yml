@@ -8,7 +8,7 @@ intel_report: threat-intel/reports/2026-03-22-blurring-the-lines-intrusion-shows
 scenario_file: simulator/scenarios/windows/t1018.json
 sigma_rule: detections/discovery/t1018.yml
 deployed_date: '2026-04-12T21:24:29Z'
-last_quality_review: ''
+last_quality_review: '2026-05-05T19:00:45Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -68,6 +68,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-05T19:00:45Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors: []
 compiled_lucene: detections/discovery/compiled/t1018.lucene
 compiled_spl: detections/discovery/compiled/t1018.spl
