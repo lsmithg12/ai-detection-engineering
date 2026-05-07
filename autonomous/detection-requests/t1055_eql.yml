@@ -18,7 +18,7 @@ secondary_techniques:
 deployed_date: '2026-04-12T21:26:01Z'
 elastic_rule_id: 9b4d2a3f-5c6e-7f8a-9b0c-1d2e3f4a5b6c
 splunk_saved_search: Process Injection Sequence - Handle Open Then Remote Thread Creation (EQL) T1055_EQL
-last_quality_review: ''
+last_quality_review: '2026-05-07T19:21:25Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -65,3 +65,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-07T19:21:25Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
