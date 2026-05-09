@@ -17,7 +17,7 @@ secondary_techniques:
 deployed_date: '2026-04-12T21:26:07Z'
 elastic_rule_id: 2e7a5c6d-8f9b-0c1d-2e3f-4a5b6c7d8e9f
 splunk_saved_search: Discovery Command Burst - Recon Tool Threshold T1087.002_THRESHOLD
-last_quality_review: ''
+last_quality_review: '2026-05-09T18:39:48Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -70,3 +70,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-09T18:39:48Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'

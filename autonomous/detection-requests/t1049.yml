@@ -1,5 +1,5 @@
 technique_id: T1049
-title: "Detection for T1049 -- Active network connections (netstat)"
+title: Detection for T1049 -- Active network connections (netstat)
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1049.json
 sigma_rule: detections/discovery/t1049.yml
 deployed_date: '2026-04-04T14:18:42Z'
-last_quality_review: ''
+last_quality_review: '2026-05-09T18:39:48Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -72,6 +72,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-05-09T18:39:48Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -79,4 +83,4 @@ fawkes_commands:
 compiled_lucene: detections/discovery/compiled/t1049.lucene
 compiled_spl: detections/discovery/compiled/t1049.spl
 elastic_rule_id: 956a2110-670b-42f5-a6c3-ce01bcd48152
-splunk_saved_search: "Detection for T1049 -- Active network connections (netstat) T1049"
+splunk_saved_search: Detection for T1049 -- Active network connections (netstat) T1049
