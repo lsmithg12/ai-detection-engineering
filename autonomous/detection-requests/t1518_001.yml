@@ -1,5 +1,5 @@
 technique_id: T1518.001
-title: "Detection for T1518.001 -- Detect installed AV/EDR products"
+title: Detection for T1518.001 -- Detect installed AV/EDR products
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1518_001.json
 sigma_rule: detections/discovery/t1518_001.yml
 deployed_date: '2026-04-12T21:24:51Z'
-last_quality_review: ''
+last_quality_review: '2026-06-14T19:03:00Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -60,6 +60,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-06-14T19:03:00Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -67,4 +71,4 @@ fawkes_commands:
 compiled_lucene: detections/discovery/compiled/t1518_001.lucene
 compiled_spl: detections/discovery/compiled/t1518_001.spl
 elastic_rule_id: a922db82-acc5-41ea-962f-28834f2e99d5
-splunk_saved_search: "Detection for T1518.001 -- Detect installed AV/EDR products T1518.001"
+splunk_saved_search: Detection for T1518.001 -- Detect installed AV/EDR products T1518.001
