@@ -8,7 +8,7 @@ intel_report: threat-intel/reports/2026-03-22-apache-activemq-exploit-leads-to-l
 scenario_file: simulator/scenarios/windows/t1003_001.json
 sigma_rule: detections/credential_access/t1003_001.yml
 deployed_date: '2026-04-12T21:34:16Z'
-last_quality_review: ''
+last_quality_review: '2026-07-03T18:56:24Z'
 quality_score: 0.8
 fp_rate: 0.0
 tp_rate: 0.667
@@ -68,6 +68,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-07-03T18:56:24Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections/credential_access/compiled/t1003_001.lucene
 compiled_spl: detections/credential_access/compiled/t1003_001.spl
 mitre_tactic: credential_access
