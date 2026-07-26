@@ -1,5 +1,5 @@
 technique_id: T1056.001
-title: "Detection for T1056.001 -- Low-level keyboard hook via SetWindowsHookEx"
+title: Detection for T1056.001 -- Low-level keyboard hook via SetWindowsHookEx
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1056_001.json
 sigma_rule: detections/collection/t1056_001.yml
 deployed_date: '2026-04-12T21:34:24Z'
-last_quality_review: ''
+last_quality_review: '2026-07-26T18:49:31Z'
 quality_score: 0.8
 fp_rate: 0.0
 tp_rate: 0.667
@@ -76,6 +76,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-07-26T18:49:31Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 - Generic Remote Access Trojan
@@ -91,4 +95,4 @@ data_source_gaps:
 compiled_lucene: detections/collection/compiled/t1056_001.lucene
 compiled_spl: detections/collection/compiled/t1056_001.spl
 elastic_rule_id: 77750ecc-3e67-49ee-8173-575ef8e5519e
-splunk_saved_search: "Detection for T1056.001 -- Low-level keyboard hook via SetWindowsHookEx T1056.001"
+splunk_saved_search: Detection for T1056.001 -- Low-level keyboard hook via SetWindowsHookEx T1056.001
