@@ -16,7 +16,7 @@ secondary_techniques: []
 deployed_date: '2026-04-12T21:24:35Z'
 elastic_rule_id: 0a8df76b-2af4-4c72-b5d0-de6a830ac222
 splunk_saved_search: APC Injection - Suspicious QueueUserAPC Pattern T1055.004
-last_quality_review: ''
+last_quality_review: '2026-08-24T18:19:43Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -62,3 +62,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-08-24T18:19:43Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
