@@ -1,5 +1,5 @@
 technique_id: T1087.001
-title: "Detection for T1087.001 -- Enumerate local/domain users and groups"
+title: Detection for T1087.001 -- Enumerate local/domain users and groups
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1087_001.json
 sigma_rule: detections/discovery/t1087_001.yml
 deployed_date: '2026-04-12T21:24:45Z'
-last_quality_review: ''
+last_quality_review: '2026-08-29T20:02:53Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -65,6 +65,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-08-29T20:02:53Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -72,4 +76,4 @@ fawkes_commands:
 compiled_lucene: detections/discovery/compiled/t1087_001.lucene
 compiled_spl: detections/discovery/compiled/t1087_001.spl
 elastic_rule_id: fdaaeae3-1549-4dc4-a617-855592d65148
-splunk_saved_search: "Detection for T1087.001 -- Enumerate local/domain users and groups T1087.001"
+splunk_saved_search: Detection for T1087.001 -- Enumerate local/domain users and groups T1087.001
