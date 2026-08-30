@@ -1,5 +1,5 @@
 technique_id: T1055.012
-title: "Detection for T1055.012 -- DLL function pointer overwrite (no new thread)"
+title: Detection for T1055.012 -- DLL function pointer overwrite (no new thread)
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1055_012.json
 sigma_rule: detections/privilege_escalation/t1055_012.yml
 deployed_date: '2026-04-04T14:18:48Z'
-last_quality_review: ''
+last_quality_review: '2026-08-30T20:08:50Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -80,6 +80,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-08-30T20:08:50Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -97,4 +101,4 @@ data_source_gaps:
 compiled_lucene: detections/privilege_escalation/compiled/t1055_012.lucene
 compiled_spl: detections/privilege_escalation/compiled/t1055_012.spl
 elastic_rule_id: c524fb98-0e29-452e-a2e4-d5c261eb102f
-splunk_saved_search: "Detection for T1055.012 -- DLL function pointer overwrite (no new thread) T1055.012"
+splunk_saved_search: Detection for T1055.012 -- DLL function pointer overwrite (no new thread) T1055.012
