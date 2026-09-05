@@ -1,5 +1,5 @@
 technique_id: T1134.003
-title: "Detection for T1134.003 -- Create new token with provided credentials (LogonUser)"
+title: Detection for T1134.003 -- Create new token with provided credentials (LogonUser)
 status: DEPLOYED
 priority: high
 requested_by: intel
@@ -8,7 +8,7 @@ intel_report: threat-intel/fawkes/fawkes-ttp-mapping.md
 scenario_file: simulator/scenarios/windows/t1134_003.json
 sigma_rule: detections/credential_access/t1134_003.yml
 deployed_date: '2026-04-12T21:24:47Z'
-last_quality_review: ''
+last_quality_review: '2026-09-05T19:36:58Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -72,6 +72,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-09-05T19:36:58Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 threat_actors:
 - Fawkes C2 Agent
 fawkes_commands:
@@ -89,4 +93,4 @@ data_source_gaps:
 compiled_lucene: detections/credential_access/compiled/t1134_003.lucene
 compiled_spl: detections/credential_access/compiled/t1134_003.spl
 elastic_rule_id: 5b2dce49-652f-4ec9-b112-b48dfa4f51b5
-splunk_saved_search: "Detection for T1134.003 -- Create new token with provided credentials (LogonUser) T1134.003"
+splunk_saved_search: Detection for T1134.003 -- Create new token with provided credentials (LogonUser) T1134.003
