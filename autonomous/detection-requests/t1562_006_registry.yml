@@ -16,7 +16,7 @@ secondary_techniques: []
 deployed_date: '2026-04-12T21:34:02Z'
 elastic_rule_id: e1cd873b-58f1-4dce-be54-e0ba266101b2
 splunk_saved_search: Indicator Blocking via Sysmon/ETW Registry Tampering T1562.006_REGISTRY
-last_quality_review: ''
+last_quality_review: '2026-09-13T19:54:58Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -53,3 +53,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-09-13T19:54:58Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
