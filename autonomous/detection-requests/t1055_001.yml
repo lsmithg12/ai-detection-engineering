@@ -13,7 +13,7 @@ compiled_spl: detections/privilege_escalation/compiled/t1055_001.spl
 deployed_date: '2026-04-04T14:18:46Z'
 elastic_rule_id: c2641694-134e-44e4-b21b-6bd6217c2b98
 splunk_saved_search: Process Injection via CreateRemoteThread T1055.001
-last_quality_review: ''
+last_quality_review: '2026-10-01T22:02:54Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -26,8 +26,8 @@ changelog:
 - date: '2026-03-06T00:00:00Z'
   agent: intel_agent
   action: created
-  details: "Fawkes vanilla-injection maps to CreateRemoteThread injection. High priority -- both Fawkes and\
-    \ Scattered Spider use this."
+  details: Fawkes vanilla-injection maps to CreateRemoteThread injection. High priority -- both Fawkes and Scattered Spider
+    use this.
 - date: '2026-03-06T23:04:09Z'
   agent: blue-team
   action: update
@@ -60,3 +60,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-10-01T22:02:54Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
