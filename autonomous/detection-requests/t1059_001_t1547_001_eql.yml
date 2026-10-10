@@ -18,7 +18,7 @@ secondary_techniques:
 deployed_date: '2026-04-12T21:26:03Z'
 elastic_rule_id: 0c5e3b4a-6d7f-8a9b-0c1d-2e3f4a5b6c7d
 splunk_saved_search: PowerShell Execution Followed by Registry Persistence (EQL) T1059.001_T1547.001_EQL
-last_quality_review: ''
+last_quality_review: '2026-10-10T20:46:06Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -65,3 +65,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-10-10T20:46:06Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
