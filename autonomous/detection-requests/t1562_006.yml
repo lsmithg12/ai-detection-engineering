@@ -8,7 +8,7 @@ intel_report: threat-intel/reports/2026-03-22-apache-activemq-exploit-leads-to-l
 scenario_file: simulator/scenarios/windows/t1562_006.json
 sigma_rule: detections/defense_evasion/t1562_006.yml
 deployed_date: '2026-03-19T11:19:10Z'
-last_quality_review: '2026-03-22T18:19:16Z'
+last_quality_review: '2026-10-25T20:03:13Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -72,6 +72,10 @@ changelog:
   agent: validation
   action: update
   details: 'Updated fields: quality_score, fp_rate, tp_rate'
+- date: '2026-10-25T20:03:13Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections/defense_evasion/compiled/t1562_006.lucene
 compiled_spl: detections/defense_evasion/compiled/t1562_006.spl
 mitre_tactic: defense_evasion
