@@ -8,7 +8,7 @@ intel_report: threat-intel/reports/2026-03-22-apache-activemq-exploit-leads-to-l
 scenario_file: simulator/scenarios/windows/t1190.json
 sigma_rule: detections/initial_access/t1190.yml
 deployed_date: '2026-04-12T21:34:32Z'
-last_quality_review: ''
+last_quality_review: '2026-10-26T21:57:49Z'
 quality_score: 0.75
 fp_rate: 1.0
 tp_rate: 1.0
@@ -64,6 +64,10 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-10-26T21:57:49Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
 compiled_lucene: detections/initial_access/compiled/t1190.lucene
 compiled_spl: detections/initial_access/compiled/t1190.spl
 mitre_tactic: initial_access
