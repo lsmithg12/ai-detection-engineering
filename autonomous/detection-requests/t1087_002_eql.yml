@@ -17,7 +17,7 @@ secondary_techniques:
 deployed_date: '2026-04-12T21:26:05Z'
 elastic_rule_id: 8a3c1f2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b
 splunk_saved_search: Rapid Reconnaissance Command Burst (EQL) T1087.002_EQL
-last_quality_review: ''
+last_quality_review: '2026-10-29T22:04:28Z'
 quality_score: 1.0
 fp_rate: 0.0
 tp_rate: 1.0
@@ -68,3 +68,7 @@ changelog:
   agent: blue-team
   action: update
   details: 'Updated fields: deployed_date'
+- date: '2026-10-29T22:04:28Z'
+  agent: quality
+  action: update
+  details: 'Updated fields: alert_volume_24h, last_quality_review'
